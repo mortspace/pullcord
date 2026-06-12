@@ -2,6 +2,8 @@
 
 A ceiling pull-cord for React. The rope is a real verlet sim (nodes + distance constraints), so it hangs under gravity, swings when you grab it and settles back on its own. I use it as a theme switch.
 
+<video src="https://github.com/mortspace/pullcord/raw/main/media/demo.mp4" controls muted loop width="420"></video>
+
 Everything runs in a single requestAnimationFrame loop that writes the DOM through refs, and the loop goes to sleep once the rope stops moving. So an idle cord costs basically nothing.
 
 Live demo + the rest of the FeralUI stuff: https://github.com/mortspace/feralui
