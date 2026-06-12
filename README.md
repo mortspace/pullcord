@@ -6,7 +6,9 @@ A ceiling pull-cord for React. The rope is a real verlet sim (nodes + distance c
 
 Everything runs in a single requestAnimationFrame loop that writes the DOM through refs, and the loop goes to sleep once the rope stops moving. So an idle cord costs basically nothing.
 
-Live demo + the rest of the FeralUI stuff: https://github.com/mortspace/feralui
+Try it live: https://feralui.vercel.app/#/pullcord
+
+Rest of the FeralUI stuff: https://github.com/mortspace/feralui
 
 ## install
 
