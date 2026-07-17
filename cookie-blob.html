@@ -1,0 +1,462 @@
+<!-- Cookie Blob — one-body cookie animation.
+     The body, arm and hand are same-colored shapes merged by an SVG goo filter,
+     so the hand grows out of the blob's own silhouette: one body, no seams. -->
+<title>Cookie Blob</title>
+<style>
+  :root {
+    --ground: #fbefdd;      /* vanilla frosting */
+    --ink: #4a3628;
+    --muted: #a08868;
+    --card: #ffffff;
+    --blob: #8fa5f5;        /* blueberry milk */
+    --blob-deep: #6d84e4;
+    --blob-light: #c9d4ff;
+    --blush: #f9a8c0;
+    --cookie: #e0a45e;      /* golden bake */
+    --cookie-edge: #c1823e;
+    --chip: #55331d;        /* choco chip */
+    --mouth: #4c2e1e;
+    --plate: #ffffff;
+    --shadow: rgba(122, 84, 44, 0.16);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #26190f;    /* cocoa */
+      --ink: #f4e7d4;
+      --muted: #b9987a;
+      --card: #32220f;
+      --blob: #8fa5f5;
+      --blob-deep: #6d84e4;
+      --blob-light: #c9d4ff;
+      --blush: #ef8fae;
+      --plate: #46311e;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #26190f; --ink: #f4e7d4; --muted: #b9987a; --card: #32220f;
+    --blush: #ef8fae; --plate: #46311e; --shadow: rgba(0, 0, 0, 0.4);
+  }
+  :root[data-theme="light"] {
+    --ground: #fbefdd; --ink: #4a3628; --muted: #a08868; --card: #ffffff;
+    --blush: #f9a8c0; --plate: #ffffff; --shadow: rgba(122, 84, 44, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+      "Varela Round", "Comfortaa", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.6rem;
+    padding: 2.4rem 1.2rem 3rem;
+  }
+  header { text-align: center; }
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  .sub {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .stage {
+    width: min(680px, 94vw);
+  }
+  .stage svg { display: block; width: 100%; height: auto; }
+
+  .palette {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+  .swatch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+    box-shadow: 0 2px 8px var(--shadow);
+    font-size: 0.78rem;
+  }
+  .swatch i {
+    width: 1.15rem; height: 1.15rem;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .swatch b { font-weight: 700; }
+  .swatch code {
+    color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+</style>
+
+<header>
+  <h1>Cookie Blob</h1>
+  <p class="sub">One body, one goo — the hand grows out of the blob itself.</p>
+</header>
+
+<div class="stage">
+  <svg viewBox="0 0 720 470" aria-label="A round blue blob reaches out an arm that grows from its own body, grabs a chocolate-chip cookie, munches it in three bites, then the arm melts back in and a new cookie appears.">
+    <defs>
+      <!-- The goo: blur + alpha contrast fuses body + arm + hand into ONE silhouette -->
+      <filter id="goo" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b" />
+        <feColorMatrix in="b" mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11" />
+      </filter>
+      <mask id="biteMask">
+        <rect x="-60" y="-60" width="120" height="120" fill="#fff" />
+        <circle id="bite1" cx="-29" cy="-13" r="0" fill="#000" />
+        <circle id="bite2" cx="-16" cy="16" r="0" fill="#000" />
+      </mask>
+    </defs>
+
+    <!-- ground shadows -->
+    <ellipse id="blobShadow" cx="240" cy="416" rx="104" ry="14" fill="var(--shadow)" />
+    <ellipse cx="545" cy="412" rx="66" ry="11" fill="var(--shadow)" />
+
+    <!-- plate -->
+    <ellipse cx="545" cy="404" rx="58" ry="13" fill="var(--plate)" />
+    <ellipse cx="545" cy="401" rx="58" ry="13" fill="var(--plate)"
+      stroke="var(--cookie-edge)" stroke-opacity="0.25" stroke-width="1.5" />
+
+    <!-- ONE body: everything in here is the same color and fused by the goo -->
+    <g filter="url(#goo)" fill="var(--blob)">
+      <ellipse id="bodyMain" cx="240" cy="320" rx="88" ry="82" />
+      <circle id="bumpL" cx="185" cy="360" r="46" />
+      <circle id="bumpR" cx="295" cy="360" r="46" />
+      <circle class="arm" r="0" /><circle class="arm" r="0" />
+      <circle class="arm" r="0" /><circle class="arm" r="0" />
+      <circle class="arm" r="0" /><circle class="arm" r="0" />
+      <circle class="arm" r="0" />
+      <ellipse id="hand" cx="240" cy="330" rx="0" ry="0" />
+    </g>
+
+    <!-- soft shading, outside the goo so colors stay crisp -->
+    <ellipse id="belly" cx="240" cy="372" rx="60" ry="26"
+      fill="var(--blob-deep)" opacity="0.28" style="filter: blur(9px)" />
+    <ellipse id="shine" cx="205" cy="262" rx="26" ry="14"
+      fill="var(--blob-light)" opacity="0.75" style="filter: blur(5px)"
+      transform="rotate(-18 205 262)" />
+
+    <!-- cookie (drawn over the body so the blob holds it from behind) -->
+    <g id="cookie">
+      <g mask="url(#biteMask)">
+        <circle r="34" fill="var(--cookie)" />
+        <circle r="34" fill="none" stroke="var(--cookie-edge)" stroke-width="5" stroke-opacity="0.55" />
+        <circle cx="-9" cy="-11" r="4.6" fill="var(--chip)" />
+        <circle cx="12" cy="-4" r="4.2" fill="var(--chip)" />
+        <circle cx="-2" cy="12" r="4.8" fill="var(--chip)" />
+        <circle cx="16" cy="15" r="3.6" fill="var(--chip)" />
+        <circle cx="-18" cy="6" r="3.4" fill="var(--chip)" />
+        <circle cx="3" cy="-20" r="3.2" fill="var(--chip)" />
+      </g>
+    </g>
+    <!-- a little thumb in front of the cookie so the grip reads -->
+    <ellipse id="thumb" fill="var(--blob)" rx="0" ry="0" />
+
+    <!-- face -->
+    <g id="face">
+      <g id="eyesOpen">
+        <g id="eyeL"><ellipse rx="7" ry="9.5" fill="var(--ink)" />
+          <circle cx="-2.2" cy="-3.2" r="2.4" fill="#fff" /></g>
+        <g id="eyeR"><ellipse rx="7" ry="9.5" fill="var(--ink)" />
+          <circle cx="-2.2" cy="-3.2" r="2.4" fill="#fff" /></g>
+      </g>
+      <g id="eyesHappy" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round">
+        <path id="happyL" d="M -8 3 Q 0 -6 8 3" />
+        <path id="happyR" d="M -8 3 Q 0 -6 8 3" />
+      </g>
+      <ellipse id="blushL" rx="9" ry="5.5" fill="var(--blush)" opacity="0.55" />
+      <ellipse id="blushR" rx="9" ry="5.5" fill="var(--blush)" opacity="0.55" />
+      <path id="mouth" fill="var(--mouth)" />
+    </g>
+
+    <!-- crumbs + sparkles -->
+    <g id="crumbs" fill="var(--cookie-edge)"></g>
+    <g id="sparkles" fill="var(--blob-light)"></g>
+  </svg>
+</div>
+
+<div class="palette" aria-hidden="true">
+  <span class="swatch"><i style="background:#8fa5f5"></i><b>Blueberry Milk</b><code>#8FA5F5</code></span>
+  <span class="swatch"><i style="background:#e0a45e"></i><b>Golden Bake</b><code>#E0A45E</code></span>
+  <span class="swatch"><i style="background:#55331d"></i><b>Choco Chip</b><code>#55331D</code></span>
+  <span class="swatch"><i style="background:#f9a8c0"></i><b>Blush</b><code>#F9A8C0</code></span>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id)
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
+  const lerp = (a, b, t) => a + (b - a) * t
+  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2)
+  const easeOutQuad = (t) => 1 - (1 - t) * (1 - t)
+  const easeOutBack = (t) => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2) }
+  // 0→1 eased progress of t through [a,b]
+  const seg = (t, a, b, ease = easeInOut) => ease(clamp((t - a) / (b - a), 0, 1))
+
+  const GROUND = 402
+  const BX = 240                        // blob center x at rest
+  const CK = { x: 545, y: 368 }         // cookie rest center
+  const DUR = 7.6                       // loop length, seconds
+  const BITES = [3.95, 4.5, 5.05]       // bite moments within the loop
+
+  const arms = [...document.querySelectorAll('.arm')]
+  const bodyMain = $('bodyMain'), bumpL = $('bumpL'), bumpR = $('bumpR')
+  const belly = $('belly'), shine = $('shine'), blobShadow = $('blobShadow')
+  const hand = $('hand'), cookie = $('cookie'), face = $('face'), mouth = $('mouth')
+  const eyesOpen = $('eyesOpen'), eyesHappy = $('eyesHappy')
+  const eyeL = $('eyeL'), eyeR = $('eyeR')
+  const blushL = $('blushL'), blushR = $('blushR')
+  const bite1 = $('bite1'), bite2 = $('bite2')
+
+  // ---- particle pools -------------------------------------------------------
+  const crumbPool = []
+  const crumbG = $('crumbs')
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    c.setAttribute('r', (1.8 + Math.random() * 1.8).toFixed(1))
+    c.setAttribute('opacity', '0')
+    crumbG.appendChild(c)
+    crumbPool.push({ el: c, life: 0, x: 0, y: 0, vx: 0, vy: 0 })
+  }
+  function burstCrumbs(x, y, n) {
+    let used = 0
+    for (const p of crumbPool) {
+      if (used >= n) break
+      if (p.life > 0) continue
+      used++
+      p.life = 1
+      p.x = x + (Math.random() - 0.5) * 14
+      p.y = y + (Math.random() - 0.5) * 10
+      p.vx = (Math.random() - 0.5) * 130
+      p.vy = -40 - Math.random() * 90
+    }
+  }
+  function stepCrumbs(dt) {
+    for (const p of crumbPool) {
+      if (p.life <= 0) continue
+      p.life -= dt * 1.1
+      p.vy += 420 * dt
+      p.x += p.vx * dt
+      p.y += p.vy * dt
+      if (p.y > GROUND + 10) { p.y = GROUND + 10; p.vy *= -0.3; p.vx *= 0.6 }
+      p.el.setAttribute('cx', p.x.toFixed(1))
+      p.el.setAttribute('cy', p.y.toFixed(1))
+      p.el.setAttribute('opacity', Math.max(0, p.life).toFixed(2))
+    }
+  }
+
+  const sparkG = $('sparkles')
+  const sparks = []
+  const SPARK_POS = [[150, 232], [332, 218], [178, 198]]
+  for (const [sx, sy] of SPARK_POS) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    s.setAttribute('d', 'M 0 -7 L 1.8 -1.8 L 7 0 L 1.8 1.8 L 0 7 L -1.8 1.8 L -7 0 L -1.8 -1.8 Z')
+    s.setAttribute('opacity', '0')
+    sparkG.appendChild(s)
+    sparks.push({ el: s, x: sx, y: sy })
+  }
+
+  // ---- one frame of the timeline -------------------------------------------
+  function render(t, happyPulse) {
+    // body breathing + squash
+    let sx = 1 + Math.sin(t * 2.6) * 0.012
+    let sy = 1 - Math.sin(t * 2.6) * 0.012
+    let lean = 0
+    let extend = 0
+    let happy = false
+    let mouthO = 0, smile = 0.6
+    let look = { x: 0.15 + 0.1 * Math.sin(t * 1.3), y: 0.05 }
+    let eaten = 0
+    let cookieS = 1, cookieRot = 0
+    let holding = false
+
+    // notice
+    if (t >= 1.3) {
+      const e = seg(t, 1.3, 1.75)
+      look = { x: lerp(look.x, 1, e), y: lerp(look.y, 0.45, e) }
+    }
+    // anticipation squash just before the reach
+    if (t >= 1.55 && t < 1.95) {
+      const e = Math.sin(Math.PI * seg(t, 1.55, 1.95, (x) => x))
+      sy -= 0.07 * e; sx += 0.05 * e
+    }
+    // reach
+    if (t >= 1.9) {
+      extend = seg(t, 1.9, 2.7, easeOutBack)
+      lean = 12 * seg(t, 1.9, 2.7)
+    }
+    // grab
+    const grabbing = t >= 2.7 && t < 3.0
+    if (t >= 3.0) holding = true
+    // carry back to the mouth
+    const carry = seg(t, 3.0, 3.85)
+    if (t >= 3.0) {
+      lean = 12 * (1 - carry)
+      cookieRot = -12 * carry
+    }
+    // chomping
+    if (t >= 3.85 && t < 5.65) {
+      for (const b of BITES) if (t >= b) eaten++
+      const local = (t - 3.55) % 0.55          // open → snap per bite
+      if (eaten < 3) {
+        const before = BITES[eaten] - t
+        if (before < 0.28) mouthO = seg(0.28 - before, 0, 0.2) * 0.9
+      }
+      if (eaten > 0) mouthO = Math.max(mouthO, 0.12 + 0.1 * Math.abs(Math.sin(t * 16)))
+      if (eaten >= 3) { cookieS = Math.max(0, 1 - seg(t, 5.05, 5.2, easeOutQuad)) }
+      sx += 0.02 * Math.sin(t * 16) * (eaten > 0 ? 1 : 0)  // chew wobble
+      void local
+    }
+    // happy — the arm melts back into the body
+    if (t >= 5.65) {
+      happy = t < 6.8
+      extend = 1 - seg(t, 5.65, 6.25)
+      if (eaten < 3) eaten = 3
+      cookieS = 0
+      const w = seg(t, 5.65, 6.8, (x) => x)
+      lean = Math.sin(w * Math.PI * 4) * 4 * (1 - w)
+      smile = 1
+      mouthO = 0.05
+      look = { x: 0.1, y: -0.2 }
+    }
+    // cookie respawn
+    if (t >= 6.8) {
+      eaten = 0
+      cookieS = seg(t, 6.85, 7.35, easeOutBack)
+      holding = false
+      look = { x: lerp(0.8, 0.15, seg(t, 7.1, 7.55)), y: 0.2 }
+    }
+    if (t >= 3.85 && t < 5.65) look = { x: 0.9, y: 0.55 }
+
+    // blink
+    let blink = 1
+    for (const bt of [0.9, 6.95]) {
+      const d = Math.abs(t - bt)
+      if (d < 0.09) blink = Math.min(blink, Math.abs(d) / 0.09)
+    }
+
+    // ---- world positions ----
+    const rx = 88 * sx, ry = 82 * sy
+    const bx = BX + lean
+    const by = GROUND - ry
+    bodyMain.setAttribute('cx', bx); bodyMain.setAttribute('cy', by)
+    bodyMain.setAttribute('rx', rx); bodyMain.setAttribute('ry', ry)
+    bumpL.setAttribute('cx', bx - 55 * sx); bumpL.setAttribute('cy', GROUND - 44 * sy)
+    bumpR.setAttribute('cx', bx + 55 * sx); bumpR.setAttribute('cy', GROUND - 44 * sy)
+    bumpL.setAttribute('r', 46 * sy); bumpR.setAttribute('r', 46 * sy)
+    belly.setAttribute('cx', bx); belly.setAttribute('cy', GROUND - 28)
+    shine.setAttribute('cx', bx - 35); shine.setAttribute('cy', by - ry * 0.68)
+    blobShadow.setAttribute('cx', bx)
+    blobShadow.setAttribute('rx', 104 * (1 + (1 - sy) * 1.6))
+
+    // mouth + hold point
+    const mouthPos = { x: bx + 4, y: by + 20 }
+    const holdPos = { x: mouthPos.x + 50, y: mouthPos.y - 2 + Math.sin(t * 3) * 2 }
+
+    // ---- the arm: circles from a shoulder ON the body toward the hand ----
+    let target = { x: CK.x, y: CK.y }
+    if (t >= 3.0) target = { x: lerp(CK.x, holdPos.x, carry), y: lerp(CK.y, holdPos.y, carry) }
+    const ang = Math.atan2(target.y - by, target.x - bx)
+    const shoulder = { x: bx + Math.cos(ang) * rx * 0.55, y: by + Math.sin(ang) * ry * 0.45 }
+    const hx = lerp(shoulder.x, target.x, extend)
+    const hy = lerp(shoulder.y, target.y, extend)
+    const sag = 13 * extend
+    arms.forEach((c, i) => {
+      const s = (i + 1) / (arms.length + 1)
+      c.setAttribute('cx', lerp(shoulder.x, hx, s))
+      c.setAttribute('cy', lerp(shoulder.y, hy, s) + Math.sin(Math.PI * s) * sag)
+      c.setAttribute('r', lerp(24, 12, s) * (0.4 + 0.6 * extend))
+    })
+    const squish = grabbing ? Math.sin(Math.PI * seg(t, 2.7, 3.0, (x) => x)) : 0
+    hand.setAttribute('cx', hx); hand.setAttribute('cy', hy)
+    hand.setAttribute('rx', (15 + 4 * squish) * Math.max(extend, 0.01))
+    hand.setAttribute('ry', (15 - 3 * squish) * Math.max(extend, 0.01))
+
+    // ---- cookie ----
+    const ckx = holding ? hx + 6 : CK.x
+    const cky = holding ? hy - 9 : CK.y
+    cookie.setAttribute('transform',
+      `translate(${ckx.toFixed(1)} ${cky.toFixed(1)}) rotate(${cookieRot.toFixed(1)}) scale(${Math.max(cookieS, 0.001).toFixed(3)})`)
+    bite1.setAttribute('r', eaten >= 1 ? 18 : 0)
+    bite2.setAttribute('r', eaten >= 2 ? 20 : 0)
+
+    // thumb gripping the cookie's lower edge
+    const thumb = $('thumb')
+    const grip = (grabbing ? squish : holding ? 1 : 0) * cookieS
+    thumb.setAttribute('cx', (ckx - 16).toFixed(1))
+    thumb.setAttribute('cy', (cky + 22).toFixed(1))
+    thumb.setAttribute('rx', (9 * grip).toFixed(1))
+    thumb.setAttribute('ry', (7.5 * grip).toFixed(1))
+
+    // ---- face ----
+    face.setAttribute('transform', `translate(${bx.toFixed(1)} ${by.toFixed(1)})`)
+    const lx = look.x * 5, ly = look.y * 4
+    eyeL.setAttribute('transform', `translate(${-26 + lx} ${-24 + ly}) scale(1 ${blink.toFixed(2)})`)
+    eyeR.setAttribute('transform', `translate(${26 + lx} ${-24 + ly}) scale(1 ${blink.toFixed(2)})`)
+    eyesOpen.style.display = happy ? 'none' : ''
+    eyesHappy.style.display = happy ? '' : 'none'
+    $('happyL').setAttribute('transform', `translate(-26 -24)`)
+    $('happyR').setAttribute('transform', `translate(26 -24)`)
+    blushL.setAttribute('transform', `translate(-46 -2)`)
+    blushR.setAttribute('transform', `translate(46 -2)`)
+    blushL.setAttribute('opacity', happy ? 0.9 : 0.55)
+    blushR.setAttribute('opacity', happy ? 0.9 : 0.55)
+
+    const w2 = 11 + 5 * mouthO
+    const cy1 = 5 * smile * (1 - mouthO) + 2
+    const cy2 = cy1 + 3 + 27 * mouthO
+    mouth.setAttribute('d',
+      `M ${(4 - w2).toFixed(1)} 18 Q 4 ${(18 + cy1).toFixed(1)} ${(4 + w2).toFixed(1)} 18` +
+      ` Q 4 ${(18 + cy2).toFixed(1)} ${(4 - w2).toFixed(1)} 18 Z`)
+
+    // sparkles during the happy wiggle
+    sparks.forEach((s, i) => {
+      const on = happy ? Math.max(0, Math.sin((t - 5.65) * 5 - i * 1.1)) : 0
+      s.el.setAttribute('opacity', (on * 0.9).toFixed(2))
+      s.el.setAttribute('transform', `translate(${s.x} ${s.y}) rotate(${(t * 60 + i * 45).toFixed(0)})`)
+    })
+
+    return { mouthPos }
+  }
+
+  // ---- drive it -------------------------------------------------------------
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reduce) { render(0.6, 0); return }
+
+  let start = performance.now()
+  let prevT = 0
+  function tick(now) {
+    const t = ((now - start) / 1000) % DUR
+    const dt = Math.min(0.05, Math.max(0.001, (now - (tick.pn || now)) / 1000))
+    tick.pn = now
+    const { mouthPos } = render(t)
+    // spawn crumbs exactly when a bite lands (handles the loop wrap too)
+    for (let i = 0; i < BITES.length; i++) {
+      const crossed = prevT < BITES[i] && t >= BITES[i]
+      if (crossed) burstCrumbs(mouthPos.x + 30, mouthPos.y + 4, i === 2 ? 9 : 6)
+    }
+    prevT = t < prevT ? 0 : t
+    stepCrumbs(dt)
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})()
+</script>
