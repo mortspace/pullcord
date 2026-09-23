@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "demo": "esbuild demo/main.tsx --bundle --jsx=automatic --outdir=demo --servedir=demo --serve=5173 --watch=forever",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.27.7",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0"
   }

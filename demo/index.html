@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pullcord demo</title>
+    <link rel="stylesheet" href="/main.css" />
+    <style>
+      :root {
+        --bg: #f3eefb;
+        --card: #fbf8ff;
+        --ink: #4a4560;
+        --line: #e6def5;
+        --accent: #c2408a;
+        --pullcord-right: 2.5rem;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --bg: #16131f;
+        --card: #1f1b2b;
+        --ink: #cfc8e6;
+        --line: #2a2539;
+        --accent: #ff8fc8;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
+        transition: background 0.3s, color 0.3s;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 48px;
+      }
+      .hero {
+        display: grid;
+        justify-items: center;
+      }
+      .hint {
+        margin: 4px 0 28px;
+        font-size: 14px;
+        text-align: center;
+        opacity: 0.8;
+      }
+      .hint b {
+        color: var(--accent);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      figure {
+        margin: 0;
+        padding: 12px 0 14px;
+        border-radius: 22px;
+        background: var(--card);
+        box-shadow: 0 1px 0 var(--line);
+        display: grid;
+        justify-items: center;
+      }
+      figcaption {
+        margin-top: 2px;
+        font-size: 13px;
+        opacity: 0.75;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/main.js"></script>
+  </body>
+</html>

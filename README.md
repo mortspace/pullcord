@@ -95,4 +95,13 @@ No stylesheet needed. Pointer, Space and Enter all press it (hold to keep it dow
 
 Props: `caps`, `autoPlay`, `float` (idle bob), `face`, `legend`, `housing`, `stem`, `size` (width in px), `onPress`, `ariaLabel`, `className`, `style`. Colours are hex. With prefers-reduced-motion it holds still and just changes colour, and the loop sleeps while it's off screen.
 
+## demo
+
+```bash
+npm install
+npm run demo
+```
+
+Then open http://localhost:5173. It's both components on one page: the keys up top, and the cord in the corner switches the page to dark mode. Edits to the source reload the page.
+
 MIT.
