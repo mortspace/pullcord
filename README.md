@@ -69,4 +69,30 @@ CSS vars on any ancestor:
 }
 ```
 
-Respects prefers-reduced-motion. MIT.
+Respects prefers-reduced-motion.
+
+## bubblekey
+
+Also in here: a squishy gummy keycap on a little toy switch. Same idea as the cord, all plain SVG and one rAF loop, but the shapes are tiny 3D models (rounded-rect rings through an orthographic camera) so it tilts and squashes like a real thing. Press it and the cap squishes down, swaps to the next colour right as it bottoms out, puffs some bubbles and pops back up with a wobble. It has a face. It squints when you press it.
+
+```tsx
+import { BubbleKey } from 'pullcord'
+
+<BubbleKey onPress={(cap) => console.log('now on cap', cap)} />
+```
+
+No stylesheet needed. Pointer, Space and Enter all press it (hold to keep it down), and it's a real `<button>`.
+
+```tsx
+<BubbleKey
+  caps={['#ff8fc8', '#7cc4ff', { color: '#e8f3ff', clear: true }]} // cycled per press, clear = ice
+  autoPlay={1600}      // presses itself every 1.6s (false to stop), pauses while someone is pressing
+  legend="A"           // print a letter instead of the face
+  housing="#f4efe9"    // milky switch
+  size={320}
+/>
+```
+
+Props: `caps`, `autoPlay`, `float` (idle bob), `face`, `legend`, `housing`, `stem`, `size` (width in px), `onPress`, `ariaLabel`, `className`, `style`. Colours are hex. With prefers-reduced-motion it holds still and just changes colour, and the loop sleeps while it's off screen.
+
+MIT.

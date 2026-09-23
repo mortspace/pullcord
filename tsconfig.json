@@ -14,5 +14,5 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["index.ts", "PullCord.tsx", "config.ts"]
+  "include": ["index.ts", "PullCord.tsx", "config.ts", "BubbleKey.tsx", "bubbleKeyScene.ts"]
 }
