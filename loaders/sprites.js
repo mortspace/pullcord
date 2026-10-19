@@ -1446,6 +1446,60 @@ const OPTS_SP3 = {
   spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTile(shpR9(9)) }),
 };
 
+/* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
+   cells that nearly touch, each with a soft halo and a gradient from light at the top left to deep at the bottom right.
+   The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
+   renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
+const GL_PASTEL = { peach: '#FFBE8A', apricot: '#FFA06C', salmon: '#FF7F8C', pink: '#FF93C3', lilac: '#BFA2FF', sky: '#7CC6FF', aqua: '#68DDD6', mint: '#86EDB0', butter: '#FFDB74' };
+const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
+const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.4, scale: 0.78, cycle: 7.5 }, opts);
+const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
+const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
+
+/* halo: a five-cell arc runs round the ring, a bright head and a fading tail */
+const glHaloAt = k => glCellsTo3([':', '#', '#', '#', 'W'].map((c, j) => [...GL_RING8[(k + j) % 8], c]));
+/* bloom: one pattern opens into the next from the centre: a dot, a plus, the full square, a ring, an x, and back */
+const GL_BLOOM = [['....W....', 300], ['.#.###.#.', 190], ['####W####', 230], ['####.####', 210], ['#.#.#.#.#', 230], ['....#....', 170]];
+/* flicker: a diamond and an x take turns, each passing through the whole square, half lit */
+const GL_FLICKER = [['.#.#.#.#.', 330], [':::::::::', 140], ['#.#.W.#.#', 330], [':::::::::', 140]];
+/* twist: an S tumbles round an eighth of a turn at a time */
+const GL_TWIST = ['.##.#.##.', '#..###..#', '##..#..##', '..####W..'].map(b => [b, 230]);
+/* stairs: three columns trade heights like steps rolling forward */
+const glStairsAt = hs => glCellsTo3(hs.flatMap((hgt, x) => Array.from({ length: hgt }, (_, k) => [x, 2 - k, hgt === 3 && k === 2 ? 'W' : '#'])));
+/* pulse: the square breathes in from its centre and out again */
+const GL_PULSE = [['.........', 260], ['....#....', 140], ['.:.:#:.:.', 140], ['#########', 240], ['####W####', 280], [':::::::::', 220], ['....:....', 160]];
+/* bounce: a drop in the middle column springs up, stretching as it rises and falls, and squashes on landing */
+const glBounceAt = cells => glCellsTo3(cells.map(([y, c]) => [1, y, c || '#']));
+/* beads: a light passes along a row of three, the others resting half lit */
+const glBeadsAt = k => glCellsTo3([0, 1, 2].map(x => [x, 1, x === k ? 'W' : x === k - 1 ? '#' : ':']));
+/* worm: a three-cell worm wanders the grid row by row and turns back at the end */
+const GL_WORM_PATH = [[0,0],[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[1,2],[2,2]];
+const glWormAt = k => glCellsTo3([0, 1, 2].map(j => { const i = k - j; return i >= 0 && i < 9 ? [...GL_WORM_PATH[i], j === 0 ? 'W' : j === 1 ? '#' : ':'] : null; }).filter(Boolean));
+/* rain: drops fall down the three columns out of step, each with a short dim trail */
+const GL_RAIN_OFF = [0, 3, 1];
+const glRainAt = t => glCellsTo3(GL_RAIN_OFF.flatMap((o, x) => { const y = (t + o) % 5; return [[x, y, '#'], [x, y - 1, ':']]; }));
+/* spiral: the grid fills cell by cell, round and into the middle, holds, and empties the same way */
+const GL_SPIRAL = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1],[1,1]];
+const glSpiralAt = (from, to) => glCellsTo3(GL_SPIRAL.slice(from, to).map(([x, y], i) => [x, y, from === 0 && i === to - 1 && to < 9 ? 'W' : '#']));
+/* tumble: a two-by-two block rolls round the grid corner to corner */
+const GL_TUMBLE = [[0,0],[1,0],[1,1],[0,1]];
+const glTumbleAt = ([x0, y0], tone = '#') => glCellsTo3([[x0, y0], [x0 + 1, y0], [x0, y0 + 1], [x0 + 1, y0 + 1]].map(([x, y]) => [x, y, tone]));
+
+const GLOW_SPRITES = {
+  glow_halo: glGlow(Array.from({ length: 8 }, (_, k) => [glHaloAt(k), 125]), ['pink', 'peach', 'lilac']),
+  glow_bloom: glGlow(GL_BLOOM, ['salmon', 'pink', 'lilac']),
+  glow_flicker: glGlow(GL_FLICKER, ['peach', 'apricot', 'salmon']),
+  glow_twist: glGlow(GL_TWIST, ['sky', 'aqua', 'lilac']),
+  glow_stairs: glGlow([[1, 2, 3], [2, 3, 1], [3, 1, 2]].map(hs => [glStairsAt(hs), 310]), ['mint', 'aqua', 'sky']),
+  glow_pulse: glGlow(GL_PULSE, ['lilac', 'pink', 'peach'], { trail: 1.6, rise: 4 }),
+  glow_bounce: glGlow([[glBounceAt([[2]]), 150], [glBounceAt([[1], [2, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[0, 'W']]), 200], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[2], [1, ':']]), 70], [glCellsTo3([[0, 2, ':'], [1, 2, '#'], [2, 2, ':']]), 130]], ['peach', 'butter', 'apricot'], { trail: 0.9, rise: 1.5 }),
+  glow_beads: glGlow([0, 1, 2, 3].map(k => [glBeadsAt(k), 210]), ['sky', 'lilac', 'pink']),
+  glow_worm: glGlow([...Array.from({ length: 11 }, (_, k) => [glWormAt(k), 95])], ['aqua', 'mint', 'sky'], { trail: 0.8 }),
+  glow_rain: glGlow(Array.from({ length: 5 }, (_, t) => [glRainAt(t), 170]), ['sky', 'aqua', 'mint'], { trail: 0.8 }),
+  glow_spiral: glGlow([...Array.from({ length: 9 }, (_, k) => [glSpiralAt(0, k + 1), 85]), [glSpiralAt(0, 9), 260], ...Array.from({ length: 8 }, (_, k) => [glSpiralAt(k + 1, 9), 85]), ['.........', 200]], ['pink', 'lilac', 'sky']),
+  glow_tumble: glGlow(GL_TUMBLE.map(c => [glTumbleAt(c), 250]), ['apricot', 'salmon', 'pink'], { trail: 1.0 }),
+};
+
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
@@ -1484,4 +1538,5 @@ const SPRITES = {
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
+Object.assign(SPRITES, GLOW_SPRITES);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
