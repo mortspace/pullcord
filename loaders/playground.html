@@ -336,7 +336,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
       <tbody>
         <tr><td class="k">Familiar symbol</td><td>Each state uses the symbol people already know from their phone: a magnifier, a speech bubble with dots, the Wi-Fi fan, an arrow into a tray.</td></tr>
         <tr><td class="k">Shape first</td><td>The icon reads when it is frozen. Motion adds meaning, it never carries it alone. Things that travel, like the arrow streams, the circling magnifier and the crawling ant, are whole in the frozen pose, and no loop leaves the frame empty.</td></tr>
-        <tr><td class="k">One thing moves</td><td>A single dot, cursor or arm moves at a time, and no step is shorter than 90 ms.</td></tr>
+        <tr><td class="k">One gesture, eased</td><td>One idea moves at a time: a dot, a cursor, or a wave across a row that reads as one gesture. Motion starts slow, moves quickly through the middle and settles, sometimes a cell past its mark and back. Pixels cannot move by fractions, so the easing lives in how long each step holds.</td></tr>
         <tr><td class="k">White is an accent</td><td>White marks the moving part, a few cells at most in any frame. A whole shape never flashes white.</td></tr>
         <tr><td class="k">Quiet grid</td><td>The unlit cells sit at 10% and the glow at 0.4, so the outline is sharp and the grid stays texture.</td></tr>
       </tbody>
@@ -431,15 +431,15 @@ const tri = [[4,0],[6,4],[8,8],[4,8],[0,8],[2,4],[4,0]];
 
 const STATES = [
 { id: 'thinking', label: 'Thinking', hue: 270, hueName: 'violet', group: 'General', period: 3.4,
-  idea: 'A speech bubble whose three dots rise and light in turn while the others rest dim, the reply-is-coming pattern from messaging.',
+  idea: 'A speech bubble whose three dots ride a wave, the reply-is-coming pattern from messaging. Each dot lifts while the next one starts, so the wave overlaps instead of ticking.',
   frames: [{ s: [bulb, [[3,5],[4,3],[5,5]]], d: [[0,0],[8,0]] }, { s: [bulb, [[3,5],[4,3],[5,5]]], d: [[0,0],[8,0],[0,4],[8,4]] }],
   hold(u, H) { H.frame = frac(u * 2) < 0.5 ? 0 : 1; H.hotStroke = 1; } },
 { id: 'reading', label: 'Reading docs', hue: 48, hueName: 'amber', group: 'General', period: 3.6,
-  idea: 'A page with a folded corner and three lines of text. A reading cursor runs along each line and the words it has read light up.',
+  idea: 'A page with a folded corner and three lines of text. A reading cursor runs along each line, dwelling on the first word and quickening through the rest. Then the corner peels down and a fresh page is underneath.',
   frames: [{ s: [[[4,1],[2,1],[0,2],[0,7],[2,7],[4,8]], [[4,1],[6,1],[8,2],[8,7],[6,7],[4,8]], [[4,1],[4,8]]], d: [[2,3],[2,5],[6,3],[6,5]] }],
   hold(u, H) { H.readDot = Math.floor(u * 4.99); } },
 { id: 'analyzing', label: 'Analyzing', hue: 192, hueName: 'cyan', group: 'General', period: 3.4,
-  idea: 'Four bars rise one after another, a dot runs across their tops, they hold, then drop and rise again.',
+  idea: 'Four bars rise a beat apart, each overshooting its height by a cell and springing back. A light runs across their tops, they hold, then they drop away left to right.',
   frames: [{ s: [[[1,5],[3,4],[5,3],[7,1]], [[5,1],[7,1],[7,3]], [[0,8],[8,8]]], d: [[1,7],[1,6],[3,7],[3,6],[3,5],[5,7],[5,6],[5,5],[5,4],[7,7],[7,6],[7,5],[7,4],[7,3]] }],
   hold(u, H) { H.spark = frac(u * 1.5); H.sparkStroke = 0; } },
 { id: 'searching', label: 'Searching', hue: 205, hueName: 'azure', group: 'General', period: 3.4,
@@ -447,21 +447,21 @@ const STATES = [
   frames: [{ s: [lens, [[6,6],[7,7],[8,8]]], d: [[2,2]] }, { s: [lens.map(([c, r]) => [c + 1, r + 1]), [[7,7],[8,8]]], d: [[3,3]] }],
   hold(u, H) { H.frame = frac(u * 1.5) < 0.5 ? 0 : 1; H.twinkle = u; } },
 { id: 'generating', label: 'Generating', hue: 295, hueName: 'purple', group: 'General', period: 3.4,
-  idea: 'The sparkle pair: a big four-point star and a small one, twinkling in turn.',
+  idea: 'The sparkle pair: a big four-point star and a small one pulsing in opposite phase. Each pops past its size with a white-hot core and settles, and the big one flicks a quarter turn.',
   frames: [{ s: [star], d: [[7,1],[1,7]] }, { s: [starX], d: [[4,1],[7,4],[1,4],[4,7]] }],
   hold(u, H) { H.frame = frac(u * 2) < 0.5 ? 0 : 1; H.twinkle = u; } },
 { id: 'writing', label: 'Writing', hue: 330, hueName: 'pink', group: 'General', period: 3.6,
-  idea: 'A two-tone pencil whose point traces a line of handwriting. It rises and falls with each stroke, the ink dries to a faint line, and it lifts between words.',
+  idea: 'A two-tone pencil whose point traces a line of handwriting. It rises and falls with each stroke, lingering where a stroke turns, the ink dries to a faint line, and it lifts between words.',
   frames: [{ s: quill, d: [] }, { s: quill, d: [[2,8]] }],
   hold(u, H) { H.frame = u > 0.35 ? 1 : 0; H.spark = 1 - frac(u * 2); H.sparkStroke = 0; } },
 { id: 'syncing', label: 'Syncing', hue: 110, hueName: 'green', group: 'General', period: 3.6,
-  idea: 'Two lanes of arrows flow past each other, right along the top and left along the bottom, without a pause.',
+  idea: 'Two arrows take turns, right along the top and left along the bottom. Each pulls back, dashes off with speed lines behind it, and its replacement slides in, overshoots and settles.',
   frames: [
     { s: [[[0,4],[0,3],[1,2],[2,1],[3,0],[4,0],[5,0],[6,1],[7,2]], [[5,2],[7,2],[7,0]], [[8,4],[8,5],[7,6],[6,7],[5,8],[4,8],[3,8],[2,7],[1,6]], [[3,6],[1,6],[1,8]]], d: [] },
     { s: [[[4,0],[5,0],[6,1],[7,2],[8,3],[8,4],[8,5],[7,6],[6,7]], [[6,5],[6,7],[8,7]], [[4,8],[3,8],[2,7],[1,6],[0,5],[0,4],[0,3],[1,2],[2,1]], [[2,3],[2,1],[0,1]]], d: [] }],
   hold(u, H) { H.frame = Math.floor(u * 4) % 2; } },
 { id: 'connecting', label: 'Connecting', hue: 180, hueName: 'teal', group: 'General', period: 3.4,
-  idea: 'The Wi-Fi fan: a dot and three arcs, filling from the dot outward the way a phone joins a network.',
+  idea: 'The Wi-Fi fan, searching the way a phone does: the fan sits dim and a bright wave runs out from the dot, twice. Then it connects and holds lit.',
   frames: [
     { s: [[[2,1],[2,3]], [[5,1],[5,3]], [[1,3],[6,3],[6,5],[5,6],[2,6],[1,5],[1,3]], [[3,6],[3,7],[2,8],[0,8]]], d: [] },
     { s: [[[2,0],[2,2]], [[5,0],[5,2]], [[1,2],[6,2],[6,4],[5,5],[2,5],[1,4],[1,2]], [[3,5],[3,7],[2,8],[0,8]]], d: [] }],
@@ -479,7 +479,7 @@ const STATES = [
   frames: [{ s: [[[0,4],[1,5],[2,6],[3,7],[4,6],[5,5],[6,4],[7,3],[8,2]]], d: [] }],
   hold(u, H) { if (u < 0.45) H.spark = u / 0.45; } },
 { id: 'error', label: 'Something went wrong', hue: 10, hueName: 'red', group: 'General', period: 3.2,
-  idea: 'A warning triangle with a rounded top. The exclamation mark sits clear of the base and flashes twice.',
+  idea: 'A warning triangle with a rounded top. It gives the quick, settling shake a Mac gives a wrong password, with the exclamation mark white-hot, then blinks once more.',
   frames: [{ s: [tri], d: [[4,3],[4,4],[4,5],[4,7]] }, { s: [tri], d: [[4,3],[4,4],[4,5]] }],
   hold(u, H) { H.frame = frac(u * 3) < 0.6 ? 0 : 1; H.blink = frac(u * 3) < 0.6; } },
 { id: 'building', label: 'Building', hue: 30, hueName: 'orange', group: 'Code', period: 3.4,
@@ -493,11 +493,11 @@ const STATES = [
     { s: [bugBody, [[4,1],[3,0]], [[4,1],[5,0]], [[4,3],[4,6]], [[2,3],[0,3]], [[2,5],[0,4]], [[2,6],[0,7]], [[6,3],[8,3]], [[6,5],[8,4]], [[6,6],[8,7]]], d: [[4,1]] }],
   hold(u, H) { H.frame = Math.floor(u * 8) % 2; } },
 { id: 'heartbeat', label: 'Reading your heartbeat', hue: 352, hueName: 'red', group: 'Health', period: 4,
-  idea: 'A pixel heart beating small, big, medium on a real lub-dub rhythm.',
+  idea: 'A pixel heart beating small, big, medium on a real lub-dub rhythm. Each beat leaves a dim halo of the full heart that lingers and fades, like a pulse ring.',
   frames: [{ s: [heart, ecg], d: [] }, { s: [heartBig, ecg], d: [] }],
   hold(u, H) { const b = frac(u * 2); H.frame = (b < 0.12 || (b > 0.22 && b < 0.32)) ? 1 : 0; H.spark = b; H.sparkStroke = 1; } },
 { id: 'scanning', label: 'Scanning', hue: 310, hueName: 'magenta', group: 'Health', period: 3.6,
-  idea: 'A DNA double helix turning. The strand in front is bright and the one behind is dim, so it has depth.',
+  idea: 'A DNA double helix turning. The strand in front is bright and the one behind is dim, so it has depth. A scan line glides down and back, easing at each end.',
   frames: [{ s: [strandA, strandB, [[2,1],[6,1]], [[1,4],[7,4]], [[2,7],[6,7]]], d: [] }],
   hold(u, H) { H.hotStroke = 4 - Math.floor(frac(u * 1.5) * 2.99); } },
 { id: 'breathing', label: 'Breathe', hue: 160, hueName: 'mint', group: 'Health', period: 4.4,
@@ -505,7 +505,7 @@ const STATES = [
   frames: [{ s: [[[4,0],[4,2]], [[4,2],[3,3]], [[4,2],[5,3]], lungL, mir(lungL)], d: [] }, { s: [[[4,0],[4,2]], [[4,2],[3,3]], [[4,2],[5,3]], lungLBig, mir(lungLBig)], d: [] }],
   hold(u, H) { H.frame = u > 0.3 && u < 0.7 ? 1 : 0; } },
 { id: 'calculating', label: 'Calculating', hue: 150, hueName: 'green', group: 'Finance', period: 3.4,
-  idea: 'A sigma, the sign for a sum. A spark traces the stroke, then the equals sign blinks twice.',
+  idea: 'A sigma, the sign for a sum, laid down as a dim track. A white-hot head draws it, slow at the ends and fast in the middle, the equals sign pops in, and the stroke erases tail first.',
   frames: [{ s: [[[6,0],[0,0],[4,4],[0,8],[6,8]]], d: [[8,3],[8,5]] }],
   hold(u, H) { H.spark = frac(u * 2); H.blink = frac(u * 2) < 0.7; } },
 ];
@@ -567,7 +567,8 @@ function assemble(st, t, c, o) {
 /* Variant B pixel sprites. Hand-drawn 13x13 frames with timing. '#' lit, ':' dim, 'W' white-hot, '.' off.
    13 cells is the density where circles stay round, 45 degree lines stay clean and an arrowhead or a pencil point reads,
    while every cell is still visible as a pixel at the default 32 px.
-   Pacing rules: a motion frame holds at least 90 ms, a rest holds at least 400 ms, a loop runs 1 to 3.5 s.
+   Pacing rules: motion is eased, so a step holds 30 to 190 ms depending on where it falls in its move; a rest holds at
+   least 400 ms; a loop runs 1 to 3.5 s.
    Optional per sprite: still (a pose drawn only when frozen), rest (the frame shown when frozen if there is no still),
    glow (bloom multiplier), trail (decay multiplier; below 1 keeps fast motion crisp). */
 const N = 13;
@@ -584,9 +585,13 @@ const inGrid = cs => cs.filter(([x, y]) => x >= 0 && x < N && y >= 0 && y < N);
 const stamp = (cells, base = EMPTY) => { const g = base.map(r => r.split('')); for (const [x, y, ch] of cells) if (x >= 0 && x < N && y >= 0 && y < N && RANK[ch] > RANK[g[y][x]]) g[y][x] = ch; return g.map(r => r.join('')); };
 const cellsOf = (rows, dx = 0, dy = 0) => rows.flatMap((r, y) => r.split('').map((c, x) => c !== '.' ? [x + dx, y + dy, c] : null).filter(Boolean));
 const restAtLongest = sp => (sp.rest = sp.frames.reduce((bi, f, i, a) => f.ms > a[bi].ms ? i : bi, 0), sp);
+/* ease-in-out timing for n motion frames: slow at both ends, fast through the middle. Pixels cannot move by fractions,
+   so easing lives in how long each step holds */
+const ease = (n, slow, fast) => Array.from({ length: n }, (_, k) => Math.round(fast + (slow - fast) * (1 - Math.sin(Math.PI * (k + 0.5) / n))));
 
-/* thinking: a speech bubble whose three dots rise and light in turn while the others rest dim, the reply-is-coming
-   pattern everyone knows from messaging */
+/* thinking: a speech bubble whose three dots ride a wave, the reply-is-coming pattern everyone knows from messaging.
+   Each dot brightens, lifts, settles and dims, and the next one starts while it is still up, so the wave overlaps
+   instead of ticking from dot to dot */
 const BUBBLE = bm(
   '.............',
   '.............',
@@ -602,10 +607,12 @@ const BUBBLE = bm(
   '..#..........',
   '.............');
 const DOTS = [[3,6],[6,6],[9,6]];
-const bubbleWave = up => stamp(DOTS.map(([x, y], i) => i === up ? [x, y - 1, '#'] : [x, y, up === 'all' ? '#' : ':']), BUBBLE);
+const bubbleWave = k => stamp(DOTS.map(([x, y], i) => { const p = k - i; return p === 1 ? [x, y - 1, '#'] : p === 0 || p === 2 ? [x, y, '#'] : [x, y, k === 'all' ? '#' : ':']; }), BUBBLE);
 
 /* reading: a page with a folded corner and three lines of text. A reading cursor runs along each line and the words it
-   has read light up; then the page turns over to a fresh one */
+   has read light up. It dwells on the first word of a line and quickens through the rest, the way eyes read. Then the
+   folded corner peels down across the page along a clean 45 degree fold, hiding the lines it passes, and a fresh page
+   is underneath */
 const PAGE = bm(
   '..######.....',
   '..#....##....',
@@ -623,10 +630,21 @@ const PAGE = bm(
 const TEXT = [[6, [4,5,6,7,8]], [8, [4,5,6,7,8]], [10, [4,5,6]]];
 const TEXT_CELLS = TEXT.flatMap(([y, xs]) => xs.map(x => [x, y]));
 const readUpTo = k => stamp([...TEXT_CELLS.map(([x, y], i) => [x, y, i < k ? '#' : ':']), ...(k < TEXT_CELLS.length ? [[...TEXT_CELLS[k], 'W']] : [])], PAGE);
+const LINE_START = new Set(TEXT.map(([y, xs]) => TEXT_CELLS.findIndex(([cx, cy]) => cy === y && cx === xs[0])));
+const LINE_END = new Set(TEXT.map(([y, xs]) => TEXT_CELLS.findIndex(([cx, cy]) => cy === y && cx === xs[xs.length - 1])));
+const readMs = k => LINE_START.has(k) ? 190 : LINE_END.has(k) ? 140 : 100;
+/* the page outline with its corner folded k cells deep: the fold line, and the flap lying over the page */
+const foldCells = k => [...Array.from({ length: N }, (_, y) => [2, y]), ...Array.from({ length: 9 }, (_, i) => [2 + i, 12]), ...Array.from({ length: 9 - k }, (_, i) => [2 + i, 0]),
+  ...Array.from({ length: N - k }, (_, i) => [10, k + i]), ...Array.from({ length: k + 1 }, (_, i) => [10 - k + i, i]), ...Array.from({ length: k + 1 }, (_, i) => [10 - k, i]), ...Array.from({ length: k + 1 }, (_, i) => [10 - k + i, k])];
+const peel = k => stamp([...foldCells(k).map(([x, y]) => [x, y, '#']), ...TEXT_CELLS.filter(([x, y]) => !(x >= 10 - k && y <= k)).map(([x, y]) => [x, y, '#'])]);
+const TURN = [5, 7, 8];
 
-/* analyzing: four bars rise one after another, a light runs across their tops, they hold, then drop and rise again */
+/* analyzing: four bars rise a beat apart. Each one eases out, overshoots its height by a cell and settles back, like a
+   spring. A light runs across their tops, they hold, then they drop away left to right, quickening as they fall */
 const BAR_X = [1, 4, 7, 10], BAR_H = [5, 8, 6, 11];
-const bars = (t, light = -1) => stamp(BAR_X.flatMap((x, i) => { const h = Math.max(0, Math.min(BAR_H[i], (t - i) * 3)); return Array.from({ length: h }, (_, k) => [[x, 12 - k, '#'], [x + 1, 12 - k, '#']]).flat().concat(i === light ? [[x, 12 - BAR_H[i], 'W'], [x + 1, 12 - BAR_H[i], 'W']] : []); }));
+const riseH = (H, p) => p <= 0 ? 0 : p >= 4 ? H : [0, Math.round(0.45 * H), Math.round(0.9 * H), H + 1][p];
+const fallH = (H, p) => p <= 0 ? H : p >= 3 ? 0 : [H, Math.round(0.6 * H), Math.round(0.2 * H)][p];
+const bars = (hs, light = -1) => stamp(BAR_X.flatMap((x, i) => Array.from({ length: hs[i] }, (_, k) => { const c = i === light && k === hs[i] - 1 ? 'W' : '#'; return [[x, 12 - k, c], [x + 1, 12 - k, c]]; }).flat()));
 
 /* searching: a magnifying glass, a round lens with a glint, a short collar and a solid handle at 45 degrees.
    The whole glass circles, the way the searching glass does on a Mac. */
@@ -644,18 +662,24 @@ const MAG = bm(
 const magAt = (dx, dy) => stamp(cellsOf(MAG, dx, dy));
 const MAG_PATH = [[2,1],[3,1],[3,2],[3,3],[2,3],[1,3],[1,2],[1,1]];
 
-/* generating: the sparkle pair everyone now reads as AI, a big four-point star and a small one twinkling in turn */
+/* generating: the sparkle pair everyone now reads as AI, a big four-point star and a small one. They pulse in opposite
+   phase, so one grows while the other shrinks. Each pops a cell past its size with a white-hot core and settles back,
+   and the big one gives a quarter-turn twinkle, a plus that flicks to an x and back, when it is smallest */
 const starCells = (cx, cy, r, core) => [...Array.from({ length: 2 * r + 1 }, (_, i) => [cx, cy - r + i, '#']), ...Array.from({ length: 2 * r + 1 }, (_, i) => [cx - r + i, cy, '#']), ...(core ? [[cx-1,cy-1,'#'],[cx+1,cy-1,'#'],[cx-1,cy+1,'#'],[cx+1,cy+1,'#']] : [])];
-const sparkle = (r, small, hot) => stamp([...starCells(5, 8, r, r >= 2), ...starCells(10, 2, small, small >= 2), ...(hot ? [[5, 8, 'W']] : [])]);
+const xStarCells = (cx, cy, r) => [[cx, cy, '#'], ...Array.from({ length: r }, (_, k) => [[cx - k - 1, cy - k - 1], [cx + k + 1, cy - k - 1], [cx - k - 1, cy + k + 1], [cx + k + 1, cy + k + 1]]).flat().map(([x, y]) => [x, y, '#'])];
+const BIG = [5, 8], SMALL = [10, 2];
+const sparkle = (r, small, hot) => stamp([...(r < 0 ? xStarCells(...BIG, -r) : starCells(...BIG, r, r >= 2)), ...starCells(...SMALL, small, small >= 2), ...(hot === 'big' ? [[...BIG, 'W']] : hot === 'small' ? [[...SMALL, 'W']] : [])]);
 
 /* writing: a pencil in two tones so it reads as a pencil: eraser, metal band, body, sharpened wood and a graphite point.
    The point traces a line of handwriting as the page slides under it: it rises and falls with every stroke, the ink leaves
-   the point bright and dries to a faint line, and the pencil lifts between words. */
+   the point bright and dries to a faint line, and the pencil lifts between words. Like a real hand it lingers where a
+   stroke turns and at the lift, and moves quickly through the middle of a stroke. */
 const PENCIL = [[-8,-8,'#'],[-7,-8,'#'],[-6,-8,'#'],[-7,-7,':'],[-6,-7,':'],[-5,-7,':'],
   [-6,-6,'#'],[-5,-6,'#'],[-4,-6,'#'],[-5,-5,'#'],[-4,-5,'#'],[-3,-5,'#'],[-4,-4,'#'],[-3,-4,'#'],[-2,-4,'#'],[-3,-3,'#'],[-2,-3,'#'],[-1,-3,'#'],
   [-2,-2,':'],[-1,-2,':'],[0,-2,':'],[-1,-1,':'],[0,-1,':'],[0,0,'W']];
 const HAND = [11,10,9,10,11,11,10,9,10,11,10,11,0,0];
 const TIP = 10;
+const handMs = t => { const y = HAND[(TIP + t) % HAND.length]; return y === 0 ? 170 : y === 10 ? 95 : 140; };
 const writeAt = t => {
   const W = x => HAND[((x + t) % HAND.length + HAND.length) % HAND.length];
   const ink = Array.from({ length: TIP }, (_, x) => W(x) ? [x, W(x), x >= TIP - 2 ? '#' : ':'] : null).filter(Boolean);
@@ -663,18 +687,28 @@ const writeAt = t => {
   return stamp(inGrid([...ink, ...PENCIL.map(([dx, dy, c]) => [TIP + dx, y + dy, c])]));
 };
 
-/* syncing: two lanes of arrows flowing past each other, right along the top and left along the bottom, without a pause */
+/* syncing: two arrows, right along the top and left along the bottom, taking turns like a handoff. One pulls back a cell,
+   then dashes off with dim speed lines streaming behind it, and its replacement slides in from the other side, overshoots
+   a cell and settles. While one lane moves the other holds, so there is always motion and always an arrow at rest */
 const arrowCells = (tip, cy, d) => [[tip, cy], [tip - d, cy - 1], [tip - d, cy], [tip - d, cy + 1], ...[-2, -1, 0, 1, 2].map(k => [tip - 2 * d, cy + k]), ...[3, 4, 5, 6].map(k => [tip - k * d, cy])].map(([x, y]) => [x, y, '#']);
-const SYNC_GAP = 10;
-const syncAt = t => stamp([-1, 0, 1, 2].flatMap(k => [...arrowCells(9 + t + k * SYNC_GAP, 3, 1), ...arrowCells(3 - t - k * SYNC_GAP, 9, -1)]));
+const streak = (tip, cy, d, len) => Array.from({ length: len }, (_, k) => [[tip - (3 + k) * d, cy - 2, ':'], [tip - (3 + k) * d, cy + 2, ':'], ...(k < len - 1 ? [[tip - (8 + k) * d, cy, ':']] : [])]).flat();
+/* one lane's handoff: [tip, speed-line length] per step, for the top lane; the bottom lane mirrors it */
+const DASH = [[9, 0], [8, 0], [12, 2], [17, 4], [2, 4], [7, 2], [10, 0], [9, 0]];
+const DASH_MS = [0, 150, 75, 60, 60, 75, 110, 150];
+const lane = (step, top) => { const [tip, len] = DASH[step]; return top ? [...arrowCells(tip, 3, 1), ...streak(tip, 3, 1, len)] : [...arrowCells(12 - tip, 9, -1), ...streak(12 - tip, 9, -1, len)]; };
+const syncAt = (topStep, bottomStep) => stamp([...lane(topStep, true), ...lane(bottomStep, false)]);
 
-/* connecting: the Wi-Fi fan, a dot and three arcs, filling from the dot outward */
+/* connecting: the Wi-Fi fan, searching the way iOS does it. The whole fan sits dim, so the glyph always reads, and a
+   lit wave with a short tail runs out from the white-hot dot across the arcs, twice. Then it connects: the whole fan
+   lights with the dot white-hot, holds, and dims again from the dot outward */
 const WIFI_DOT = [[6,10]];
 const WIFI_ARC = [
   [[5,7],[6,7],[7,7],[4,8],[8,8]],
   [[4,4],[5,4],[6,4],[7,4],[8,4],[3,5],[9,5],[2,6],[10,6]],
   [[4,1],[5,1],[6,1],[7,1],[8,1],[2,2],[3,2],[9,2],[10,2],[1,3],[11,3],[0,4],[12,4]]];
-const wifi = n => stamp([...WIFI_DOT, ...WIFI_ARC.slice(0, n).flat()].map(([x, y]) => [x, y, '#']));
+const WIFI = [WIFI_DOT, ...WIFI_ARC];
+const fan = tones => stamp(WIFI.flatMap((cs, e) => cs.map(([x, y]) => [x, y, tones[e]])));
+const wave = p => fan([0, 1, 2, 3].map(e => e === p ? (e === 0 ? 'W' : '#') : e === p - 1 && e > 0 ? '#' : ':'));
 
 /* uploading / downloading: arrows stream through a tray without stopping, a new arrow every twelve rows.
    Downloads land with a small squash of the tray walls instead of a flash. */
@@ -692,9 +726,11 @@ const strokeTo = (from, to, tip) => put(put(EMPTY, CHECK_PAIRS.slice(from, to).f
 const CHECK = strokeTo(0, CHECK_PAIRS.length, false);
 const glint = c => put(CHECK, CHECK_PAIRS.flat().filter(([x]) => x === c || x === c + 1), 'W');
 
-/* error: a warning triangle with a rounded top. The exclamation mark has a four-cell bar, a gap, a dot, and two clear rows
-   above the base. It flashes twice */
+/* error: a warning triangle with a rounded top, eleven cells wide so it has room to move. The exclamation mark has a
+   four-cell bar, a gap, a dot, and two clear rows above the base. It holds, then gives the shake a Mac gives a wrong
+   password, quick and settling, with the mark white-hot, and the mark blinks once more as it comes to rest */
 const TRI = bm(
+  '.............',
   '.....###.....',
   '.....#.#.....',
   '....#...#....',
@@ -705,10 +741,10 @@ const TRI = bm(
   '..#.......#..',
   '.#.........#.',
   '.#.........#.',
-  '#...........#',
-  '#...........#',
-  '#############');
-const BANG = [[6,4],[6,5],[6,6],[6,7],[6,9]];
+  '.###########.',
+  '.............');
+const BANG = [[6,3],[6,4],[6,5],[6,6],[6,8]];
+const alarm = (dx, hot) => shift(put(TRI, BANG, hot ? 'W' : '#'), dx, 0);
 
 /* building: a hammer seen from the side drives a real nail into a plank. The nail stands five cells tall and takes two blows,
    sparks flying on each. Then the plank slides along, the finished nail moves off with the others and a new one comes in. */
@@ -738,21 +774,29 @@ const antCells = pose => {
 const ANT_GAP = 14;
 const crawl = i => { const d = i - ANT_GAP / 2, pose = i % 2; return stamp([d - ANT_GAP, d, d + ANT_GAP].flatMap(k => antCells(pose).map(([x, y, c]) => [x + k, y - k, c]))); };
 
-/* heartbeat: three heart sizes on a lub-dub */
+/* heartbeat: three heart sizes on a lub-dub. On each beat the heart pops to full size and shrinks back inside a dim
+   outline of itself, a halo that lingers a moment and fades, the way a pulse ring spreads and dies */
 const HEART_L = bm('.............','..###...###..','.#####.#####.','#############','#############','#############','.###########.','..#########..','...#######...','....#####....','.....###.....','......#......','.............');
 const HEART_M = bm('.............','.............','...##...##...','..####.####..','.###########.','.###########.','..#########..','...#######...','....#####....','.....###.....','......#......','.............','.............');
 const HEART_S = bm('.............','.............','.............','....#...#....','...###.###...','...#######...','....#####....','.....###.....','......#......','.............','.............','.............','.............');
 
-/* scanning: a DNA double helix turning. The strand in front is bright, the one behind and the rungs are dim, so it has depth */
-function dna(phase) {
+const edgeOf = b => cellsOf(b).filter(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => (b[y + dy] || '')[x + dx] !== '#'));
+const halo = b => stamp(edgeOf(HEART_L).map(([x, y]) => [x, y, ':']), b);
+
+/* scanning: a DNA double helix turning. The strand in front is bright, the one behind and the rungs are dim, so it has depth.
+   A scan line glides down the helix and back, easing at each end: the row it crosses lights up strand to strand, and two
+   dim ticks at the edges mark where it is even when the strands cross */
+function dna(phase, scan = -1) {
   const g = EMPTY.map(r => r.split(''));
   for (let r = 0; r < N; r++) {
     const th = r * Math.PI / 6 + phase, s = Math.round(4 * Math.sin(th)), a = 6 + s, b = 6 - s, front = Math.cos(th) >= 0 ? a : b, back = front === a ? b : a;
+    if (r === scan) { for (let x = Math.min(a, b) + 1; x < Math.max(a, b); x++) g[r][x] = '#'; g[r][0] = g[r][12] = ':'; g[r][back] = 'W'; g[r][front] = 'W'; continue; }
     if (Math.abs(a - b) >= 4 && r % 2 === 0) for (let x = Math.min(a, b) + 1; x < Math.max(a, b); x++) g[r][x] = ':';
     g[r][back] = ':'; g[r][front] = '#';
   }
   return g.map(r => r.join(''));
 }
+const SCAN = Array.from({ length: 32 }, (_, k) => Math.round(6 - 6 * Math.cos(Math.PI * (k < 16 ? k : 32 - k) / 16)));
 
 /* breathing: lungs in three sizes; a breath of air travels down the windpipe on the inhale and back up on the exhale */
 const LUNG_L = bm('......#......','......#......','.....#.#.....','..###...###..','.####...####.','#####...#####','#####...#####','#####...#####','#####...#####','#####...#####','.####...####.','..###...###..','.............');
@@ -760,31 +804,35 @@ const LUNG_M = bm('......#......','......#......','.....#.#.....','...##...##...
 const LUNG_S = bm('......#......','......#......','.....#.#.....','.............','...##...##...','..###...###..','..###...###..','..###...###..','..###...###..','...##...##...','.............','.............','.............');
 const AIR_DOWN = [[6,0],[6,1],[6,2]], AIR_UP = [[6,2],[6,1],[6,0]];
 
-/* calculating: a sigma that draws itself; the equals sign blinks */
+/* calculating: a sigma laid down as a dim track. A white-hot head draws it end to end, slow off the mark, fast through
+   the middle and slow into the end; the equals sign pops in white and settles; the result holds; then the stroke erases
+   from where it began, the tail chasing the head */
 const SIGMA = bm('.............','#######......','.#...........','..#..........','...#.........','....#........','.....#.......','....#........','...#.........','..#..........','.#...........','#######......','.............');
 const SIGMA_PATH = [[0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[1,2],[2,3],[3,4],[4,5],[5,6],[4,7],[3,8],[2,9],[1,10],[0,11],[1,11],[2,11],[3,11],[4,11],[5,11],[6,11]];
 const EQ = [[9,5],[10,5],[11,5],[9,7],[10,7],[11,7]];
+const sigmaAt = (from, to, eq = '.') => stamp([...SIGMA_PATH.map(([x, y], i) => [x, y, i >= from && i < to ? (i === to - 1 && to < SIGMA_PATH.length ? 'W' : '#') : ':']), ...EQ.map(([x, y]) => [x, y, eq])]);
+const DRAW_MS = ease(SIGMA_PATH.length, 90, 32);
 
 const SPRITES = {
-  thinking: Object.assign(seq(F(bubbleWave(0), 230), F(bubbleWave(1), 230), F(bubbleWave(2), 230), F(bubbleWave(-1), 460)), { still: bubbleWave('all') }),
-  reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), 150)), F(readUpTo(TEXT_CELLS.length), 700)), { still: readUpTo(TEXT_CELLS.length) }),
-  analyzing: seq(...[1,2,3,4,5,6,7].map(t => F(bars(t), 110)), ...[0,1,2,3].map(i => F(bars(9, i), 150)), F(bars(9), 900), ...[6,3].map(t => F(bars(t), 90))),
+  thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
+  reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((k, i) => F(peel(k), [110, 80, 100][i]))), { still: readUpTo(TEXT_CELLS.length) }),
+  analyzing: restAtLongest(seq(...[1, 2, 3, 4, 5, 6, 7].map(f => F(bars(BAR_H.map((H, i) => riseH(H, f - i))), 95)), ...[0, 1, 2, 3].map(i => F(bars(BAR_H, i), 140)), F(bars(BAR_H), 900), ...[1, 2, 3, 4, 5, 6].map(f => F(bars(BAR_H.map((H, i) => fallH(H, f - i))), [90, 75, 65, 60, 60, 60][f - 1])), F(EMPTY, 180))),
   searching: Object.assign(seq(...MAG_PATH.map(([x, y]) => F(magAt(x, y), 150))), { still: magAt(2, 2), trail: 0.6 }),
-  generating: Object.assign(seq(F(sparkle(1, 2, false), 260), F(sparkle(2, 2, false), 160), F(sparkle(3, 1, false), 160), F(sparkle(4, 1, true), 520), F(sparkle(3, 1, false), 160), F(sparkle(2, 2, false), 160)), { still: sparkle(4, 2, false) }),
-  writing: Object.assign(seq(...HAND.map((_, t) => F(writeAt(t), 120))), { rest: 3, trail: 0.5 }),
-  syncing: Object.assign(seq(...Array.from({ length: SYNC_GAP }, (_, t) => F(syncAt(t), 110))), { still: syncAt(0), trail: 0.45 }),
-  connecting: Object.assign(seq(F(wifi(0), 300), F(wifi(1), 260), F(wifi(2), 260), F(wifi(3), 900), F(wifi(2), 130), F(wifi(1), 130)), { rest: 3 }),
+  generating: Object.assign(seq(F(sparkle(1, 2), 190), F(sparkle(2, 1), 105), F(sparkle(4, 0, 'big'), 125), F(sparkle(3, 0), 620), F(sparkle(3, 1), 110), F(sparkle(2, 2, 'small'), 125), F(sparkle(1, 2), 150), F(sparkle(-1, 2), 110)), { still: sparkle(4, 2) }),
+  writing: Object.assign(seq(...HAND.map((_, t) => F(writeAt(t), handMs(t)))), { rest: 3, trail: 0.5 }),
+  syncing: Object.assign(seq(F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(k, 0), DASH_MS[k])), F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(0, k), DASH_MS[k]))), { still: syncAt(0, 0), trail: 0.6 }),
+  connecting: restAtLongest(seq(...[0, 1].flatMap(() => [0, 1, 2, 3, 4, 5].map(p => F(wave(p), p === 5 ? 170 : 115))), F(fan('W###'), 120), F(fan('####'), 1100), F(fan(':###'), 90), F(fan('::##'), 90), F(fan(':::#'), 90), F(fan('::::'), 220))),
   uploading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, true), 100))), { rest: 10, trail: 0.45 }),
   downloading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, false), 100))), { rest: 9, trail: 0.45 }),
   done: restAtLongest(seq(...CHECK_PAIRS.map((_, k) => F(strokeTo(0, k + 1, true), [80,70,60,55,50,45,45,45,50,55,65,80][k])), F(CHECK, 520), ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 900), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 40)), F(EMPTY, 280))),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -7), 60), F(shift(CHECK, 0, -4), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[3], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 3), 60), F(shift(CHECK, 0, 7), 60), F(EMPTY, 320))),
-  error: Object.assign(seq(F(put(TRI, BANG, '#'), 1100), F(put(TRI, BANG, 'W'), 130), F(put(TRI, BANG, '#'), 130), F(put(TRI, BANG, 'W'), 130)), { rest: 0 }),
-  building: Object.assign(seq(F(workshop(0, 6), 420), F(workshop(1, 6), 90), F(workshop(3, 8, 0, true), 90), F(workshop(3, 8), 130), F(workshop(1, 8), 90), F(workshop(0, 8), 150), F(workshop(3, 8), 90), F(workshop(5, 10, 0, true), 90), F(workshop(5, 10), 150), F(workshop(3, 10), 90), F(workshop(1, 10), 90), F(workshop(0, 10), 120), ...[1, 2, 3, 4, 5].map(k => F(workshop(0, 10, k), 100))), { rest: 0 }),
+  error: Object.assign(seq(F(alarm(0), 1000), F(alarm(-1, true), 65), F(alarm(1, true), 65), F(alarm(-1, true), 75), F(alarm(1, true), 90), F(alarm(0, true), 130), F(alarm(0), 130), F(alarm(0, true), 130), F(alarm(0), 420)), { rest: 0, trail: 0.35 }),
+  building: Object.assign(seq(F(workshop(0, 6), 420), F(workshop(1, 6), 90), F(workshop(3, 8, 0, true), 90), F(workshop(3, 8), 130), F(workshop(1, 8), 90), F(workshop(0, 8), 150), F(workshop(3, 8), 90), F(workshop(5, 10, 0, true), 90), F(workshop(5, 10), 150), F(workshop(3, 10), 90), F(workshop(1, 10), 90), F(workshop(0, 10), 120), ...[1, 2, 3, 4, 5].map(k => F(workshop(0, 10, k), ease(5, 135, 80)[k - 1]))), { rest: 0 }),
   debugging: Object.assign(seq(...Array.from({ length: ANT_GAP }, (_, i) => F(crawl(i), 120))), { still: stamp(antCells('all')), trail: 0.5 }),
-  heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(HEART_M, 90), F(HEART_S, 140), F(HEART_L, 70), F(HEART_M, 80), F(HEART_S, 610)),
-  scanning: Object.assign(seq(...[0,1,2,3,4,5,6,7].map(k => F(dna(k * Math.PI / 4), 150))), { trail: 0.5 }),
+  heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(halo(HEART_M), 90), F(halo(HEART_S), 110), F(HEART_S, 40), F(HEART_L, 70), F(halo(HEART_M), 80), F(halo(HEART_S), 120), F(HEART_S, 560)),
+  scanning: Object.assign(seq(...SCAN.map((r, k) => F(dna(k * Math.PI / 8, r), 95))), { still: dna(0), trail: 0.5 }),
   breathing: seq(F(LUNG_S, 900), ...AIR_DOWN.map(c => F(put(LUNG_S, [c]), 110)), F(LUNG_M, 320), F(LUNG_L, 1700), ...AIR_UP.map(c => F(put(LUNG_L, [c]), 110)), F(LUNG_M, 320)),
-  calculating: seq(...SIGMA_PATH.map(c => F(put(SIGMA, [c]), 50)), F(put(SIGMA, EQ, '#'), 480), F(SIGMA, 200), F(put(SIGMA, EQ, '#'), 480), F(SIGMA, 200)),
+  calculating: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 for (const st of STATES) st.sprite = SPRITES[st.id];
 /* the frozen pose: late in the rest frame, once the previous frame's trail has faded */
