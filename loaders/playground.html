@@ -62,6 +62,7 @@ header h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.01em
 header p { margin: 0; color: var(--muted); max-width: 62ch; }
 
 .stage { min-width: 0; display: grid; gap: 28px; align-content: start; }
+.stage > section { min-width: 0; }
 section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
 
 .hero > * { min-width: 0; }
@@ -108,7 +109,7 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 @media (prefers-reduced-motion: reduce) { .loader.still svg { animation: none; } }
 
 .states { display: flex; flex-wrap: wrap; gap: 14px 10px; align-items: flex-start; }
-.state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; }
+.state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; min-width: 0; }
 .pair { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
 .pair .v { display: grid; gap: 6px; justify-items: start; max-width: 100%; min-width: 0; }
 .pair .v em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
