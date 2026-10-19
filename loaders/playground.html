@@ -236,6 +236,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .mr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 0.5rem; margin-bottom: 2rem; }
 .mr-cell { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.6rem 0.4rem 0.75rem; border-radius: 16px; border: 1px solid var(--hairline); background: var(--card); }
 .mr-cell canvas { width: 96px; height: 96px; image-rendering: pixelated; }
+.mr-props .mr-cell canvas { width: 100px; height: 100px; }
 .mr-cell span { font-size: 0.76rem; color: var(--muted); text-align: center; line-height: 1.3; }
 .mr-cell code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.7rem; color: var(--ink); }
 .mr-anatomy { display: grid; grid-template-columns: 256px minmax(0, 1fr); gap: 1.5rem; align-items: center; padding: 1.25rem; border-radius: 24px; border: 1px solid var(--hairline); background: var(--card); margin-bottom: 2rem; }
@@ -3263,18 +3264,19 @@ const fxMark = (x, y, kind = '!', tone = kind === '!' ? 'r' : 'l') => (kind === 
 
 /* ---------- scenes ---------- */
 
-/* Jamming: headphones on, eyes shut, lost in the music. The beat lands every 600 ms: the body dips a cell and the
+/* Jamming: headphones on (a padded band lit along its top, round cups with dark cushions against its head), eyes
+   shut, lost in the music. The beat lands every 600 ms: the body dips a cell and the
    headphones follow a beat behind, the way a loose band settles on a bobbing head; one foot taps; on every beat a note
    leaves a cup and floats up and out, slowing as it goes, and fades to a dot. Use it for: waiting in a queue, a
    long job that runs in the background, hold music. */
 const jamPhones = (bx, by) => mArt([
   '....UUUUUUUUU....',
-  '..UUuuuuuuuuuUU..',
-  '.Uu...........uU.',
-  'UuU...........UuU',
-  'Uul...........Uul',
-  'Uuu...........Uuu',
-  'UUU...........UUU'], bx - 2, by - 3);
+  '..UUuuuuuuullUU..',
+  '.Uuu.........luU.',
+  'UuG...........GlU',
+  'UuG...........GuU',
+  'UuG...........GuU',
+  '.UU...........UU.'], bx - 2, by - 3);
 const JAM_BEAT = 600;
 const jamBob = t => { const p = ((t % JAM_BEAT) + JAM_BEAT) % JAM_BEAT; return p < 70 ? 0 : p < 230 ? 1 : 0; };
 const jamNote = (t, k) => { /* the note born on beat k, from the right cup on even beats and the left on odd ones */
@@ -3321,23 +3323,29 @@ const maAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic
    lands. The pan catches it with a little give: the pancake squashes flat for two frames and a puff of steam rolls up.
    The reaction is a happy blink with a blush and a small hop. The rest of the loop is idle: a breath, a plain blink,
    a thin wisp of steam. The mascot stands 3 cells left so the pan has room on the right. */
-const MA_CX = 6;
+const MA_CX = 5;
+/* the toque: three puffs of starched cotton, each lit at its top right and shaded underneath, a crease where they meet
+   the band, and a pleated band. Cream with a smoke contour so it reads on a white page */
 const MA_CHEF = [
-  '...CCC.CCC...',
-  '.CCcwwCcwwCC.',
-  'CcwCcccccCwwC',
-  'CCcccccccccCC',
-  '.CCCCCCCCCCC.',
-  '..CccccccwC..',
-  '..CccccccwC..',
-  '..CCCCCCCCC..'];
-/* the pan from the side: a lit rim with a glint at its top right, a charcoal body, a short wooden handle on the left */
+  '...mmm..mmm....',
+  '..mcwwm.mcwwm..',
+  '.mcccwwmccwwwm.',
+  'mccccccccccwwwm',
+  'mCcccccccccccwm',
+  '.mCCcccccccccm.',
+  '..mmmmmmmmmmm..',
+  '..mcCcCcCcCwm..',
+  '..mcCcCcCcCwm..',
+  '..mmmmmmmmmmm..'];
+/* the skillet from the side: a rim lit along its top with a glint, a charcoal body that darkens to its base, a rivet
+   where the wooden handle joins */
 const MA_PAN = [
-  'BbGhhhhhwG',
-  '..GgggggGG',
-  '...GGGGGG.'];
+  '....Ghhhhwh',
+  'Bnbmggggggg',
+  '.....GggggG',
+  '......GGGG.'];
 /* the pan held at hand (hx, hy): its handle starts one cell right of the hand. tilt lifts (-1) or drops (+1) the far half */
-const maPan = (hx, hy, tilt = 0) => mArt(MA_PAN, hx + 1, hy).map(([x, y, c]) => [x, y + (x >= hx + 6 ? tilt : 0), c]);
+const maPan = (hx, hy, tilt = 0) => mArt(MA_PAN, hx + 1, hy - 1).map(([x, y, c]) => [x, y + (x >= hx + 8 ? tilt : 0), c]);
 /* right arm poses for the pan: held level, dipped, the toss (pan tilted up), and the peak it follows through to */
 const MA_ARM_HOLD = [[1, 0, 'o'], [2, 0, 'o'], [1, 1, 'O'], [2, 1, 'O']];
 const MA_ARM_DIP = [[1, 0, 'o'], [2, 1, 'o'], [1, 1, 'O'], [2, 2, 'O']];
@@ -3345,10 +3353,10 @@ const MA_ARM_TOSS = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
 const MA_ARM_PEAK = [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']];
 /* the pancake turning over in the air: side on, tipped, face on (a round disc), tipped back. Gold, lit top right */
 const MA_CAKE = [
-  ['yyyz', 'YYYY'],
-  ['.yyz', 'yyyY', 'YYY.'],
-  ['.yz.', 'yyyz', 'Yyyy', '.YY.'],
-  ['yyz.', 'Yyyy', '.YYY']];
+  ['yyyyz', 'YYYYY'],
+  ['..yyz', 'ybyyY', 'YYYY.'],
+  ['.yyz.', 'ybyyz', 'Yyyby', '.YYY.'],
+  ['yyz..', 'Yyyby', '.YYYY']];
 const maCake = (cx, cy, k) => { const a = MA_CAKE[k]; return mArt(a, cx - (a[0].length >> 1), cy - (a.length >> 1)); };
 const MA_COOK_T = 2600, MA_UP = 790, MA_DOWN = 1490;
 /* the pancake's centre in flight, p from 0 (leaves the pan) to 1 (back in it) */
@@ -3381,11 +3389,11 @@ function maCook(t) {
   L.push(puff(MA_DOWN + 30, 24, 600, true), puff(MA_DOWN + 90, 28, 560, true), puff(2150, 26, 600, false), puff(2150 - MA_COOK_T, 26, 600, false));
   L.push(mascot(o), maHat(MA_CHEF, o), maPan(hx, hy, tilt));
   /* the pancake: in the pan, in the air turning over, squashed flat on the catch */
-  const cy = hy - 1;
-  if (t < MA_UP) L.push(mArt(['yyyz'], hx + 4, cy));
+  const cy = hy - 2;
+  if (t < MA_UP) L.push(mArt(['yyyyz'], hx + 6, cy));
   else if (t < MA_DOWN) { const [x, yy] = maCakePos(t), k = Math.floor(((t - MA_UP) / (MA_DOWN - MA_UP)) * 4.6) % 4; L.push(maCake(x, yy, k)); }
-  else if (t < MA_DOWN + 100) L.push(mArt(['Yyyyyz'], hx + 3, cy));
-  else L.push(mArt(['yyyz'], hx + 4, cy));
+  else if (t < MA_DOWN + 100) L.push(mArt(['Yyyyyyz'], hx + 5, cy));
+  else L.push(mArt(['yyyyz'], hx + 6, cy));
   return L.map(maClip);
 }
 
@@ -3397,31 +3405,35 @@ function maCook(t) {
    throws off three specks. The reaction is happy eyes and a blush while the star twinkles and fades. The mascot
    stands 2 cells left so the wand and the star have room on the right. */
 const MA_MX = 7;
-/* the hat in two parts so its tip can swing: the cone, the gold band and the brim, then the bent tip on top */
+/* the hat in two parts so its tip can swing: the cone with a gold star on its front, lit down its right side, a gold
+   band, and a wide brim; then the bent tip on top, which lags, droops and lifts with the flick */
 const MA_WIZ = [
+  '......UlU......',
   '.....UuulU.....',
-  '....UuuuulU....',
-  '...YYyyyyyzY...',
-  '.UUuuuuuuuuulU.',
-  'UUUUUUUUUUUUUUU'];
+  '....UuuzulU....',
+  '...UuzwzuulU...',
+  '...UuuuzuulU...',
+  '..YYyyyyyyyzY..',
+  'UUuuuuuuuuuuulU',
+  '.UUUUUUUUUUUUU.'];
 const MA_WIZ_TIP = {
-  rest: ['..UUUU.........', '.UuuulUU.......', '.UU...UlU......'],
-  droop: ['...UUUU........', '..UuulUU.......', '.UuU...UlU.....', '.UU............'],
-  lift: ['.UUUUU.........', '.UuulUUU.......', '......UlU......'] };
-const maWizHat = (o, tip) => { const b = maBody(o); return [...mArt(MA_WIZ, b.cx - 7, b.by - 5), ...mArt(MA_WIZ_TIP[tip], b.cx - 7, b.by - 8)]; };
+  rest: ['..UUU..........', '.UuulUU........', '.UU..UulU......'],
+  droop: ['...............', '.UUUU..........', 'UuulUUUulU.....'],
+  lift: ['.UUU...........', '.UulUUU........', '.....UulU......'] };
+const maWizHat = (o, tip) => { const b = maBody(o); return [...mArt(MA_WIZ, b.cx - 7, b.by - 8), ...mArt(MA_WIZ_TIP[tip], b.cx - 7, b.by - 11)]; };
 /* arm poses for the wand: held up, raised high, snapped straight out, and pointing at the star */
 const MA_ARM_WAND = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
 const MA_ARM_BACK = M_ARMS.up;
 const MA_ARM_OUT = M_ARMS.out;
 const MA_ARM_POINT = [[1, 0, 'o'], [2, 0, 'o'], [3, -1, 'o'], [1, 1, 'O'], [2, 1, 'O'], [3, 0, 'O']];
-/* the wand from the hand: a dark grip, a brown shaft and a gold tip. Returns [cells, tip] */
+/* the wand from the hand: a dark wooden grip, a brown shaft lit toward the end, and a glowing gold tip. Returns [cells, tip] */
 const MA_WAND = {
-  up: [[1, -1, 'B'], [2, -2, 'b'], [3, -3, 'b'], [4, -4, 'y']],
-  back: [[0, -1, 'B'], [0, -2, 'b'], [0, -3, 'b'], [0, -4, 'y']],
-  out: [[1, 0, 'B'], [2, 0, 'b'], [3, -1, 'b'], [4, -1, 'y']],
+  up: [[1, -1, 'B'], [2, -2, 'b'], [3, -3, 'b'], [4, -4, 'n'], [5, -5, 'z']],
+  back: [[0, -1, 'B'], [0, -2, 'b'], [0, -3, 'b'], [0, -4, 'n'], [0, -5, 'z']],
+  out: [[1, 0, 'B'], [2, 0, 'b'], [3, -1, 'b'], [4, -1, 'n'], [5, -2, 'z']],
 };
 const maWand = (hx, hy, k, glint) => { const c = MA_WAND[k].map(([dx, dy, t]) => [hx + dx, hy + dy, t]), tip = c[c.length - 1];
-  if (glint) tip[2] = 'z'; return [c, [tip[0], tip[1]]]; };
+  if (glint) tip[2] = 'w'; return [c, [tip[0], tip[1]]]; };
 const MA_MAGIC_T = 2800, MA_FLICK = 900, MA_BLOOM = 1330;
 const MA_STAR = [25, 6];
 /* the spark's path from the wand tip to the bloom: a curve that swings out to the right */
@@ -3475,33 +3487,38 @@ function maMagic(t) {
    to the next nail and the board slides one nail along, so the loop ends where it began with one more nail done.
    The mascot stands 3 cells left to leave the board room. */
 const MA_BX = 6, MA_NAIL = 24, MA_GAP = 5;
+/* the hard hat: a gold dome with a raised ridge down its middle, lit on its right with a bright specular near the top,
+   and a brim that runs all the way round, lit on top and dark underneath */
 const MA_HARD = [
   '.....YYYYY.....',
-  '...YYyyzyzYY...',
-  '..YyyyyzyyzzY..',
-  '..YyyyyzyyyzY..',
-  'YYYYYYYYYYYYYYY'];
+  '...YYyyzwzzYY..',
+  '..YyyyyzyzzzzY.',
+  '..YyyyyzyyzzzY.',
+  'YyyyyyyzyyyyyzY',
+  '.YYYYYYYYYYYYY.'];
 /* a right arm from the shoulder to a hand cell, as a staircase one cell per column: clay on top, shade underneath.
    The hand may rise or drop at most one row per column, like the kit's own arms */
 const maArmTo = (o, hx, hy) => { const b = maBody(o), dx = hx - b.sx, dy = hy - b.sy, c = [];
   for (let i = 1; i <= dx; i++) { const yy = Math.round(dy * i / dx); c.push([i, yy, 'o'], [i, yy + 1, 'O']); }
   return c; };
-/* the hammer, one shape at three angles, always gripped by a fist at (hx, hy): a charcoal head lit at its top right,
-   so it never mixes with the steel of the nails, and a wooden handle running light to dark from the head to the fist.
+/* the hammer, one shape at three angles, always gripped by a fist at (hx, hy): a charcoal head lit at its top right
+   with a steel glint, so it never mixes with the nails, and a wooden handle running light to dark from the head down to
+   a red rubber grip at the fist.
    'strike': the handle level and the head standing on its end, face down. 'up': the handle upright over the fist and
    the head across its top, face toward the nail. 'swing': half way, handle and head at 45 degrees */
 const maHammer = (hx, hy, k) => {
   const fist = [[hx, hy, 'o'], [hx - 1, hy, 'o'], [hx, hy + 1, 'O'], [hx - 1, hy + 1, 'O']];
-  if (k === 'strike') return [[hx + 1, hy, 'B'], [hx + 2, hy, 'b'], [hx + 3, hy, 'n'], ...mArt(['.h', 'gh', 'gg', 'GG'], hx + 4, hy - 2), ...fist];
-  if (k === 'up') return [[hx, hy - 1, 'B'], [hx, hy - 2, 'b'], [hx, hy - 3, 'n'], ...mArt(['.ggh', 'GggG'], hx - 2, hy - 5), ...fist];
-  return [[hx + 1, hy - 1, 'B'], [hx + 2, hy - 2, 'b'], [hx + 3, hy - 3, 'n'], ...mArt(['..h', '.gg', 'gG.'], hx + 3, hy - 6), ...fist];
+  if (k === 'strike') return [[hx + 1, hy, 'R'], [hx + 2, hy, 'b'], [hx + 3, hy, 'b'], [hx + 4, hy, 'n'], ...mArt(['G.', 'Gh', 'gw', 'gh', 'GG'], hx + 5, hy - 3), ...fist];
+  if (k === 'up') return [[hx, hy - 1, 'R'], [hx, hy - 2, 'b'], [hx, hy - 3, 'b'], [hx, hy - 4, 'n'], ...mArt(['GGghw', '.GggG'], hx - 3, hy - 6), ...fist];
+  return [[hx + 1, hy - 1, 'R'], [hx + 2, hy - 2, 'b'], [hx + 3, hy - 3, 'b'], [hx + 4, hy - 4, 'n'], ...mArt(['.Gw', 'Ggh', '.gG'], hx + 4, hy - 7), ...fist];
 };
 /* a nail with its shank at x and its head on row r; it sinks as r grows, flush at row 22 */
-const maNail = (x, r) => [[x - 1, r, 'M'], [x, r, 'M'], [x + 1, r, 'm'], ...Array.from({ length: Math.max(0, 22 - r) }, (_, j) => [x, r + 1 + j, 'M'])];
-/* the board on the ground, rows 23 to 25, slid s cells left; dent drops its top a row under a blow at that x */
+const maNail = (x, r) => [[x - 1, r, 'M'], [x, r, 'm'], [x + 1, r, 'w'], ...Array.from({ length: Math.max(0, 22 - r) }, (_, j) => [x, r + 1 + j, 'M'])];
+/* the board on the ground, rows 23 to 25, slid s cells left: a lit top face, a grain line with knots, a dark edge.
+   dent drops its top a row under a blow at that x */
 const maPlank = (s, dent) => { const c = [];
   for (let x = 17; x <= 30; x++) { const u = ((x + s) % MA_GAP + MA_GAP) % MA_GAP, d = dent != null && Math.abs(x - dent) <= 1 ? 1 : 0;
-    c.push([x, 23 + d, 'B'], [x, 25, 'B'], [x, 26, 's']); if (!d) c.push([x, 24, u === 1 || u === 2 ? 'n' : 'b']); }
+    c.push([x, 25, 'B'], [x, 26, 's']); if (d) c.push([x, 24, 'B']); else c.push([x, 23, x === 17 ? 'B' : 'n'], [x, 24, u === 3 ? 'B' : 'b']); }
   return c; };
 const MA_BUILD_T = 2800, MA_HIT1 = 560, MA_HIT2 = 1180, MA_SLIDE = 2120;
 function maBuild(t) {
@@ -3527,7 +3544,7 @@ function maBuild(t) {
   const aimAt = t >= MA_SLIDE + 380 ? 20 : head;
   /* the fist: striking, the head's face sits on the nail head (or on it as it lands); raised, the hammer is up over the
      shoulder; swinging, half way between */
-  const b = maBody(o), hand = pose === 'aim' ? [MA_NAIL - 4, aimAt - 3 + (dent != null ? 1 : 0)] : pose === 'recoil' ? [MA_NAIL - 4, head - 4]
+  const b = maBody(o), hand = pose === 'aim' ? [MA_NAIL - 5, aimAt - 3 + (dent != null ? 1 : 0)] : pose === 'recoil' ? [MA_NAIL - 5, head - 4]
     : pose === 'up' || pose === 'proud' ? [b.sx + 3, b.sy - 2] : [b.sx + 3, b.sy - 1];
   const arm = maArmTo(o, hand[0] - 1, hand[1]);
   o.arms = ['rest', arm];
@@ -3584,8 +3601,8 @@ const mbHat = [
   'BB...........BB'];
 const mbHatAt = (x, y, sq = 0) => mArt(mbHat, mbBody(x, y, sq).bx - 1 + (sq > 0 ? 1 : sq < 0 ? -1 : 0), mbBody(x, y, sq).by - mbHat.length + 1);
 /* the glass over the right eye: a round charcoal rim, lit at the top right and dark at the bottom left, a pale lens
-   that shows the clay behind it lighter, a two-cell glint, and a short wooden handle leaving the bottom right where the
-   hand holds it. (cx, cy) is the centre of the lens */
+   that shows the clay behind it lighter, a two-cell glint, a steel collar, and a wooden handle leaving the bottom
+   right where the hand holds it. (cx, cy) is the centre of the lens */
 const MB_RIM = [
   '..ggh..',
   '.g...h.',
@@ -3599,7 +3616,7 @@ const mbGlass = (cx, cy, glint = 0) => {
   for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (Math.abs(x) + Math.abs(y) < 4) c.unshift([cx + x, cy + y, 'p']);
   c.push([cx + 1, cy - 2, 'w'], [cx + 2, cy - 1, 'w']);
   if (glint) c.push(...fxSparkle(cx + 4, cy - 4, glint));
-  c.push([cx + 3, cy + 3, 'n'], [cx + 4, cy + 4, 'b'], [cx + 5, cy + 5, 'B']);
+  c.push([cx + 3, cy + 3, 'm'], [cx + 4, cy + 4, 'n'], [cx + 5, cy + 5, 'b'], [cx + 6, cy + 6, 'B']);
   return c;
 };
 /* the eye seen through the glass, magnified: 'open' two wide and three tall with a catchlight, 'wide' a row taller,
@@ -3639,9 +3656,10 @@ const mbDetective = t => {
    dots and a question mark pops up as it looks right and left: nothing. It shuffles back in a huff, squinting the
    wrong way while the beetle wanders back in from the other side, which starts the hunt again. Debugging is a chase,
    and the joke is the near miss. */
-/* a five-cell beetle facing left: antenna, dark head, round green back, and legs that tick between two poses */
-const mbBugF = [['E.ee.', '.Eeee', '.E.E.'], ['E.ee.', '.Eeee', 'E.E.E']];
-const mbBug = (x, ph) => mArt(mbBugF[ph & 1], x, 23);
+/* a beetle facing left: a feeler, a dark head, a round green shell with its contour and a glint, and legs that tick
+   between two poses */
+const mbBugF = [['G..EE.', '.GEewE', '.GEeeE', '..G.G.'], ['G..EE.', '.GEewE', '.GEeeE', '.G.G.G']];
+const mbBug = (x, ph) => mArt(mbBugF[ph & 1], x, 22);
 /* where the bug is at time t: it scuttles in from the right edge with a pause, waits, then darts left in 50 ms hops */
 const MB_HUNT = 3200;
 const mbBugAt = t => {
@@ -3684,15 +3702,17 @@ const mbHunt = t => {
    stands on the spine, falls over to the left and lands with a puff of air. A happy nod follows: curved eyes, a blush
    and a sparkle. It is the wait while something is read, and the turned page is the progress. */
 /* the open book, 15 x 7, held up in both hands so only the eyes show over it: two pages with a dip at the spine, two
-   lines of text a page, the blue cover below. The hands grip its outer edges */
+   lines of text a page, the blue cover below, lit at its right corner, and a red ribbon bookmark hanging from the
+   spine. The hands grip its outer edges */
 const mbBookArt = [
   '.CCCCCC.CCCCCC.',
   'CwwwwwwCwwwwwwC',
   'CwMMMMwCwMMMMwC',
   'CwwwwwwCwwwwwwC',
   'CwMMMwwCwMMMwwC',
-  'UuuuuuuUuuuuuuU',
-  '.UUUUUUUUUUUUU.'];
+  'UuuuuuuUuuuuulU',
+  '.UUUUUUrUUUUUU.',
+  '.......R.......'];
 /* the lines in reading order, as [row, first column, length] in the book */
 const MB_LINES = [[2, 2, 4], [4, 2, 3], [2, 9, 4], [4, 9, 3]];
 /* the turning page, by stage: 1 its top corner peels up, 2 it lifts off the right page, curling, its shaded underside
@@ -3763,13 +3783,14 @@ const mtArms = o => { const bare = new Set(mascot({ ...o, arms: ['hide', 'hide']
    Use it for: writing, composing a reply, saving a draft. */
 const MT_KB_X = 7, MT_KB_Y = 21;
 const MT_KB = [
-  '.hhhhhhhhhhhhhhh.',
-  'gcccgcccgcccgcccg',
+  '.hhhhhhhhhhhhhhe.',
+  'gccwgccwgccwguulg',
   'ggggggggggggggggg',
-  'gccgcccccccccgccg',
+  'gcwgccccccccwgcwg',
   '.GGGGGGGGGGGGGGG.'];
-/* the key under each hand as it strikes, and the Enter key at the top right */
-const MT_KEY_L = [[1, 1], [2, 1], [3, 1], [1, 3]], MT_KEY_R = [[13, 1], [14, 1], [15, 1], [15, 3]];
+/* the keys: light caps bevelled bright on their right edge, a blue Enter key at the top right, a long space bar, and a
+   little green power light on the lip. The key flashed as each hand strikes, and the Enter key */
+const MT_KEY_L = [[1, 1], [2, 1], [3, 1], [2, 3]], MT_KEY_R = [[11, 1], [10, 1], [9, 1], [14, 3]];
 const MT_ENTER = [[13, 1], [14, 1], [15, 1]];
 const mtKeyboard = lit => { const k = mArt(MT_KB, MT_KB_X, MT_KB_Y); for (const [c, r] of lit) k.push([MT_KB_X + c, MT_KB_Y + r, 'y']); return k; };
 /* the typing hands (right arm, relative to the shoulder; the kit mirrors the left): 'press' is the nub dropped a row
@@ -3931,15 +3952,19 @@ const mdShadowAt = (o, lift = 0) => mShadow(lift, o.x ?? 9);
    fall and shrink away. It lands with a squash, eyes turned to happy arcs and a blush, and gives a second little hop
    for good measure before it settles. The big jump is the action, the second hop is the delight.
    ===================================================================================================================== */
+/* the party hat: a fluffy gold pom-pom, a red cone with gold stripes running round it, lit down its right side, and
+   a dark rim where it sits */
 const MD_HAT = [
-  '...z...',
-  '..Yyy..',
-  '..RrR..',
-  '..RyR..',
-  '.RrrrR.',
-  '.RrryR.',
-  'RRRRRRR'];
-const mdHat = o => { const b = mdBody(o); return mArt(MD_HAT, b.cx - 2, b.by - 7); };
+  '...zwz...',
+  '...Yyz...',
+  '....R....',
+  '...Rrp...',
+  '...yRrp..',
+  '..Rrryp..',
+  '..Ryrrrp.',
+  '.Rrrryrp.',
+  '.RRRRRRR.'];
+const mdHat = o => { const b = mdBody(o); return mArt(MD_HAT, b.cx - 3, b.by - 9); };
 
 const MD_PARTY_MS = 2800, MD_BURST = 1000;
 /* one confetti bit: it flies out of the burst with ease-out, then falls with a little sway, flipping between a flat
@@ -3986,12 +4011,13 @@ const mdPartyStill = () => { const o = { y: 12, legs: 'tuck', arms: ['up', 'up']
    Oops (something went wrong). It walks along carrying two cardboard boxes stacked on its right arm. Its eyes go wide
    a beat before its foot catches; it stumbles, the stack wobbles one way and the other, and then everything goes:
    the top box sails over its head to the left, the bottom box drops to the right, and the mascot lands flat in a
-   squash with 'x' eyes. A sweat drop, worried brows, a glance at each box. It shakes it off, crouches, grabs a box in
+   squash with 'x' eyes. A sweat drop and small dazed eyes glancing at each box. It shakes it off, crouches, grabs a box in
    each hand, and tosses the left one over its head back onto the stack, then gives a relieved happy blink and walks
    on. The toss and the happy eyes are the delight: the mishap is funny and it is fine.
    ===================================================================================================================== */
-const MD_BOX_A = ['BBBBBB', 'BbnnnB', 'BbbnnB', 'BBBBBB'];   /* the bottom box */
-const MD_BOX_B = ['BBBBB', 'BbnnB', 'BbbnB', 'BBBBB'];       /* the smaller top box */
+/* cardboard boxes in light tan, shaded down the left with a dark base, sealed with a strip of tape; the big one has a label */
+const MD_BOX_A = ['bnnCnn', 'bnnCnn', 'bnnCwn', 'BBBBBB'];   /* the bottom box */
+const MD_BOX_B = ['bnCnn', 'bnCnn', 'bnCnn', 'BBBBB'];       /* the smaller top box */
 const MD_OOPS_MS = 3200;
 /* a thrown thing: a parabola that rises h cells above the straight line; lead > 0 lets it cover ground sooner */
 const mdArc = (t, t0, t1, a, b, h, lead = 0) => { const p = Math.min(1, Math.max(0, (t - t0) / (t1 - t0))), q = p + lead * p * (1 - p);
@@ -4006,8 +4032,8 @@ const mdOopsPose = t => {
   else if (t >= 980 && t < 1060) Object.assign(o, { x: 9, y: 16, legs: 'crouch', arms: ['up', 'hold'] });
   else if (t >= 1060 && t < 1140) Object.assign(o, { x: 9, y: 15, legs: 'tuck', arms: ['out', 'reach'] }); /* it lets go */
   else if (t >= 1140 && t < 1230) Object.assign(o, { x: 9, y: 16, squash: 1, legs: 'crouch', arms: ['out', 'out'], eyes: 'x' });
-  else if (t >= 1230 && t < 1650) Object.assign(o, { x: 9, y: 16, legs: 'crouch', arms: ['down', 'down'], eyes: t < 1460 ? 'x' : 'open',
-    brows: t < 1460 ? null : 'worry', look: t < 1460 ? [0, 0] : t < 1560 ? [1, 1] : [-1, 1] });
+  else if (t >= 1230 && t < 1650) Object.assign(o, { x: 9, y: 16, legs: 'crouch', arms: ['down', 'down'], eyes: t < 1460 ? 'x' : 'dot',
+    look: t < 1460 ? [0, 0] : t < 1560 ? [1, 1] : [-1, 1] });
   else if (t >= 1650 && t < 1900) Object.assign(o, { x: [10, 8, 10, 9, 8][Math.floor((t - 1650) / 50)] ?? 8, legs: 'stand', arms: ['rest', 'rest'], eyes: 'closed' });
   else if (t >= 1900 && t < 2060) Object.assign(o, { arms: ['rest', 'rest'], look: [0, 1] });
   else if (t >= 2060 && t < 2200) Object.assign(o, { y: 16, legs: 'crouch', arms: ['down', 'down'], look: [0, 1] }); /* grab both */
@@ -4057,8 +4083,9 @@ const mdOops = t => { const o = mdOopsPose(t); return [mdShadowAt(o), mascot(o),
    it, then lands with a squash, happy eyes, a blush and a sparkle. The plane is drawn at two angles by hand and
    turned in quarter turns for the rest, so its fold stays on the outside of the loop like a real plane's belly.
    ===================================================================================================================== */
-const MD_PLANE_R = ['CCC......', 'CwwCCC...', '.CwwwwCCC', '..CcccCC.', '..CcCC...', '..CC.....'];
-const MD_PLANE_UR = ['......CC', '....CCwC', '..CCwwwC', 'CCwwwwC.', '.CCCwcC.', '...CccC.', '...CcC..', '...CC...'];
+/* a folded paper plane: bright wings, a shaded belly along the fold, and a smoke contour so it reads on a white page */
+const MD_PLANE_R = ['MMM......', 'MwwMMM...', '.MwwwwMMM', '..MCCCMM.', '..MCMM...', '..MM.....'];
+const MD_PLANE_UR = ['......MM', '....MMwM', '..MMwwwM', 'MMwwwwM.', '.MMMwCM.', '...MCCM.', '...MCM..', '...MM...'];
 /* the eight headings, counter-clockwise from right, each a quarter turn of the one two places before */
 const MD_PLANES = (() => { const a = [MD_PLANE_R, MD_PLANE_UR]; for (let i = 2; i < 8; i++) a.push(mdRotL(a[i - 2])); return a; })();
 const mdPlaneAt = (x, y, ang) => { const k = ((Math.round(-ang / (Math.PI / 4)) % 8) + 8) % 8; return mdAt(MD_PLANES[k], x, y); };
@@ -4129,6 +4156,27 @@ const MSC_D_META = {
   mascot_oops: ['Oops', 'Carrying a stack of boxes, it trips, the boxes scatter and it lands flat with x eyes and a sweat drop, then shakes it off, tosses the boxes back onto the stack and walks on.', 'Use it for: an error, a failed request, something that needs a retry.'],
   mascot_plane: ['Paper plane', 'It squints, aims and throws a paper plane that loops over its head trailing dashes, then hops up and catches it with happy eyes.', 'Use it for: uploading, sending, sharing, a message on its way.'],
 };
+
+/* ---------- props: what the mascot wears and holds, gathered for the design rules page. The mascot is plain on
+   purpose; its props carry the detail, and every one is drawn to the same standard ---------- */
+const MASCOT_PROPS = [
+  ['Chef hat', 'Puffs lit at the top right, a crease, a pleated band', () => mArt(MA_CHEF, 0, 0)],
+  ['Skillet', 'A lit rim with a glint, a rivet, a wooden handle', () => maPan(-1, 1)],
+  ['Wizard hat', 'A gold star and band, a curled tip that lags', () => [...mArt(MA_WIZ, 0, 3), ...mArt(MA_WIZ_TIP.rest, 0, 0)]],
+  ['Wand', 'A dark grip, a lit shaft, a glowing tip', () => maWand(0, 6, 'up', false)[0]],
+  ['Hard hat', 'A ridge, a specular, a brim lit on top', () => mArt(MA_HARD, 0, 0)],
+  ['Hammer', 'A steel head with a glint, wood, a red grip', () => maHammer(2, 6, 'up')],
+  ['Deerstalker', 'Tied ear flaps, a band, peaks front and back', () => mArt(mbHat, 0, 0)],
+  ['Magnifier', 'A rim lit and shaded, glass with a glint, a steel collar', () => mbGlass(3, 3, 0)],
+  ['Book', 'Ruled pages, a lit cover, a ribbon bookmark', () => mArt(mbBookArt, 0, 0)],
+  ['Keyboard', 'Bevelled keys, a blue Enter, a power light', () => mArt(MT_KB, 0, 0)],
+  ['Headphones', 'A padded band lit on top, dark cushions', () => jamPhones(2, 3)],
+  ['Party hat', 'Stripes round the cone, a fluffy pom-pom', () => mArt(MD_HAT, 0, 0)],
+  ['Boxes', 'Cardboard with a shaded side, tape and a label', () => [...mArt(MD_BOX_B, 1, 0), ...mArt(MD_BOX_A, 0, 4)]],
+  ['Paper plane', 'Bright wings, a shaded fold, a smoke contour', () => mArt(MD_PLANE_R, 0, 0)],
+  ['Beetle', 'A dark head and feeler, a shell with a glint', () => mArt(mbBugF[0], 0, 0)],
+  ['Thought bubble', 'A soft cloud lit at the top right', () => mArt(MT_CLOUD, 0, 0)],
+].map(([name, note, draw]) => [name, note, () => draw().filter(([, , c]) => c !== 'o' && c !== 'O' && c !== 'd')]);
 
 /* ---------- every scene, ready for the page: a sprite with its frames, its still pose and its loop length ---------- */
 const MASCOT_SPRITES = {};
@@ -4626,7 +4674,12 @@ function route() {
 function buildMascotRules() {
   const root = $('mascotView'); if (root.dataset.built) return; root.dataset.built = '1';
   const pic = (...layers) => mDone(layers.reduce((g, l) => mPut(g, l), mPic()));
-  const cell = (rows, label, code) => `<div class="mr-cell"><canvas width="${MN}" height="${MN}" data-rows="${esc(JSON.stringify(rows))}"></canvas><span>${esc(label)}${code ? `<br><code>${esc(code)}</code>` : ''}</span></div>`;
+  const cell = (rows, label, code) => `<div class="mr-cell"><canvas width="${rows.length}" height="${rows.length}" data-rows="${esc(JSON.stringify(rows))}"></canvas><span>${esc(label)}${code ? `<br><code>${esc(code)}</code>` : ''}</span></div>`;
+  /* a prop on its own, centred on a 20 by 20 grid */
+  const propRows = cells => { const xs = cells.map(c => c[0]), ys = cells.map(c => c[1]), n = 20, g = Array.from({ length: n }, () => Array(n).fill('.'));
+    const dx = Math.floor((n - (Math.max(...xs) - Math.min(...xs) + 1)) / 2) - Math.min(...xs), dy = Math.floor((n - (Math.max(...ys) - Math.min(...ys) + 1)) / 2) - Math.min(...ys);
+    for (const [x, y, c] of cells) { const X = x + dx, Y = y + dy; if (X >= 0 && X < n && Y >= 0 && Y < n) g[Y][X] = c; }
+    return g.map(r => r.join('')); };
   const grid = items => `<div class="mr-grid">${items.map(([o, label, code, extra = []]) => cell(pic(mShadow(0, o.x ?? 9), mascot(o), extra), label, code)).join('')}</div>`;
   const RAMPS = [['Clay, the body', 'oOd'], ['Ink, eyes and brows', 'k'], ['Blush', 'p'], ['Cream', 'wcC'], ['Charcoal', 'hgG'], ['Brown', 'nbB'], ['Blue', 'luU'], ['Gold', 'zyY'], ['Green', 'eE'], ['Red', 'rR'], ['Smoke and steel', 'cmM']];
   root.innerHTML = `<h1 class="hero"><span>Mascot/</span>Design rules</h1>
@@ -4649,9 +4702,12 @@ function buildMascotRules() {
     <h2>Effects</h2><p>One shared set, so a sparkle is the same sparkle everywhere. Effects spawn from their source, ease out, shrink to a dot and go, four at most at once, and never in ink, so they read on a light page and a dark one.</p>
     <div class="mr-grid">${[[fxSparkle(15, 15, 2), 'Sparkle', 'fxSparkle'], [fxNote(14, 18), 'Note', 'fxNote'], [fxPuff(15, 15, 3), 'Puff', 'fxPuff'], [fxSweat(15, 13), 'Sweat', 'fxSweat'],
       [fxHeart(15, 15), 'Heart', 'fxHeart'], [[...fxZ(11, 16), ...fxZ(16, 10, true)], 'Snooze', 'fxZ'], [fxMark(15, 12), 'Alarm', "fxMark '!'"], [[...fxDash(18, 15, 4), ...fxDash(18, 17, 3)], 'Motion', 'fxDash']].map(([c, l, code]) => cell(pic(c), l, code)).join('')}</div>
+    <h2>Props</h2><p>The mascot is plain on purpose: what it wears and holds makes the scene, so every prop is drawn with care and to one standard. A contour in its ramp's darkest tone, a base, a shade down its left and lower edges, a highlight at its top right, a glint on anything shiny, and one material cue: wood grain, a seam, tape, pleats, stitching, keys.</p>
+    <div class="mr-grid mr-props">${MASCOT_PROPS.map(([name, note, draw]) => cell(propRows(draw()), name, note)).join('')}</div>
     <h2>Rules</h2><ol class="mr-rules">
       <li><b>Never redraw the body.</b> Pose it with the kit: position, a one-cell bob, arm and leg poses, squash and stretch.</li>
       <li><b>Light from the top right.</b> Every object has a base and a shade on its left and lower edges.</li>
+      <li><b>Props carry the detail.</b> The mascot stays plain; every hat, tool and thing it holds is drawn with care: a contour, three tones, a highlight, a glint if it shines, and one material cue.</li>
       <li><b>Props have a contour</b> in their ramp's darkest tone, so they read on white and on black; a shiny one gets one or two cells of glint at its top right.</li>
       <li><b>A hat sits on the body's top row</b> and a held prop touches the end of an arm. Props move with the body every frame; nothing floats.</li>
       <li><b>Ink only on the body.</b> Anything off it is gold, blue, red, green or smoke.</li>
