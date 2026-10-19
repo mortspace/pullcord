@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Loaders Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a stage on the left (hero + frame strip + every state as a pill), a sticky control rail on the right; rail stacks under the stage on phones. */
+:root {
+  --bg: #0a0a0b;
+  --surface: #141416;
+  --surface-2: #1b1b1f;
+  --line: rgba(255,255,255,.07);
+  --fg: #ededf0;
+  --muted: #8a8a93;
+  --dot: rgba(255,255,255,.05);
+  --lit-l: .82;   /* oklch lightness of a lit cell */
+  --lit-c: .14;   /* oklch chroma of a lit cell */
+  --glow-mul: 1;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
+    --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07);
+    --lit-l: .6; --lit-c: .17; --glow-mul: .55; color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
+  --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07);
+  --lit-l: .6; --lit-c: .17; --glow-mul: .55; color-scheme: light;
+}
+:root[data-font="system"] { --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 32px; }
+@media (max-width: 880px) { .wrap { grid-template-columns: minmax(0,1fr); } }
+
+header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; }
+header h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+.stage { min-width: 0; display: grid; gap: 28px; align-content: start; }
+section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+
+/* hero */
+.hero > * { min-width: 0; }
+.hero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 36px 28px 28px; display: grid; gap: 22px; }
+.hero-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hero-meta { color: var(--muted); font-family: var(--font-mono); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+.hero-meta b { color: var(--fg); font-weight: 500; }
+
+/* frame strip */
+.strip { display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: thin; }
+.strip .f { flex: 0 0 auto; display: grid; justify-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.strip .f.on { color: var(--fg); }
+.strip .f .cell-box { width: 34px; height: 34px; }
+
+/* pills */
+.pill {
+  display: inline-flex; align-items: center; gap: .75em;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: .62em 1.05em .62em .8em;
+  font-weight: 600; letter-spacing: -.01em; line-height: 1;
+  position: relative; isolation: isolate;
+  color: var(--fg);
+}
+.pill .lbl { opacity: .92; }
+.pill.spill::after {
+  content: ""; position: absolute; inset: 40% -10% -60% -10%; z-index: -1; border-radius: 999px;
+  background: radial-gradient(closest-side, oklch(var(--lit-l) var(--lit-c) var(--h) / calc(.28 * var(--glow-mul))), transparent 70%);
+  filter: blur(14px); pointer-events: none;
+}
+.loader { display: inline-block; vertical-align: middle; width: var(--s, 20px); height: var(--s, 20px); flex: 0 0 auto;
+  color: oklch(var(--lit-l) var(--lit-c) var(--h)); }
+.loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.loader.still svg .main { animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: .72 } 50% { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .loader.still svg .main { animation: none; } }
+
+/* states grid */
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.state { background: transparent; border: 1px solid transparent; border-radius: 16px; padding: 14px 12px 10px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.state:hover { border-color: var(--line); }
+.state.sel { border-color: oklch(var(--lit-l) var(--lit-c) var(--h) / .5); background: var(--surface-2); }
+.state:focus-visible { outline: 2px solid oklch(var(--lit-l) var(--lit-c) var(--h)); outline-offset: 2px; }
+.state small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.state small i { font-style: normal; display: inline-flex; align-items: center; gap: 5px; }
+.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: oklch(var(--lit-l) var(--lit-c) var(--h)); }
+.group-title { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+/* contexts */
+.contexts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.ctx { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.ctx h3 { margin: 0; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ctx p { margin: 0; font-size: 15px; line-height: 1.6; }
+.ctx .inline-l { --s: 1em; margin: 0 .25em; position: relative; top: -.06em; }
+.ctx .card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); }
+.ctx .card .t { font-weight: 600; font-size: 15px; }
+.ctx .card .d { color: var(--muted); font-size: 12.5px; }
+.ctx .bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ctx .bar i { display: block; height: 100%; width: 38%; background: oklch(var(--lit-l) var(--lit-c) var(--h)); }
+
+/* rail */
+.rail { position: sticky; top: 16px; align-self: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 14px; display: grid; gap: 14px; }
+@media (max-width: 880px) { .rail { position: static; } }
+.rail h2 { margin: 0; }
+.ctl { display: grid; gap: 6px; }
+.ctl label, .ctl .lab { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.ctl label output, .ctl .lab output { font-family: var(--font-mono); color: var(--fg); }
+.seg { display: flex; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; padding: 6px 4px; border-radius: 7px; cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+input[type=range] { width: 100%; accent-color: oklch(var(--lit-l) var(--lit-c) var(--h, 300)); margin: 0; }
+.rail .note { font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.45; }
+.rail .copy { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 12px; font-weight: 500; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
+.rail .copy:focus-visible { outline: 2px solid var(--fg); }
+details.tokens pre { margin: 8px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; background: var(--surface-2); padding: 10px; border-radius: 9px; overflow-x: auto; }
+details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pixel Loaders Lab</h1>
+    <p>A fixed grid of cells that only change brightness, on a step clock with a fast rise and slow decay. Click any state to inspect its frames. Tune the rail until it feels right, then copy the tokens.</p>
+  </header>
+
+  <div class="stage">
+    <section>
+      <div class="hero" id="hero">
+        <div class="hero-row">
+          <div class="pill spill" id="heroPill" style="font-size: 30px;"><span class="loader" id="heroLoader" style="--s: 1.25em"></span><span class="lbl" id="heroLabel">Thinking</span></div>
+        </div>
+        <div class="hero-meta" id="heroMeta"></div>
+        <div>
+          <h2>Frames</h2>
+          <div class="strip" id="strip"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>States</h2>
+      <div class="states" id="states"></div>
+    </section>
+
+    <section>
+      <h2>In context</h2>
+      <div class="contexts">
+        <div class="ctx" id="ctxInline">
+          <h3>Inline, 3×3 at 1em</h3>
+          <p>Your results will be ready in a moment. We are<span class="loader inline-l" data-grid="3" data-state="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-grid="3" data-state="reading"></span>reading the attached report.</p>
+        </div>
+        <div class="ctx" id="ctxCard">
+          <h3>Card, 5×5 at 28px</h3>
+          <div class="card"><span class="loader" data-grid="5" data-state="heartbeat" style="--s: 28px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
+          <div class="bar" style="--h: 28"><i></i></div>
+        </div>
+        <div class="ctx" id="ctxStack">
+          <h3>Steps, 5×5 at 20px</h3>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="reading" style="--s: 20px"></span><div class="t" style="font-size:14px">Reading docs</div></div>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="generating" style="--s: 20px"></span><div class="t" style="font-size:14px">Generating draft</div></div>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="done" style="--s: 20px"></span><div class="t" style="font-size:14px">Done</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="rail" aria-label="Controls">
+    <h2>Controls</h2>
+    <div class="ctl"><span class="lab">Theme</span><div class="seg" data-set="theme"><button data-v="system">System</button><button data-v="dark">Dark</button><button data-v="light">Light</button></div></div>
+    <div class="ctl"><span class="lab">Label font</span><div class="seg" data-set="font"><button data-v="inter">Inter</button><button data-v="system">System</button></div></div>
+    <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
+    <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
+    <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="3">3×3</button><button data-v="5">5×5</button><button data-v="7">7×7</button></div></div>
+    <div class="ctl"><span class="lab">Pill size</span><div class="seg" data-set="size"><button data-v="16">16</button><button data-v="20">20</button><button data-v="24">24</button><button data-v="32">32</button><button data-v="48">48</button></div></div>
+    <div class="ctl"><label for="step">Step <output id="stepOut">180 ms</output></label><input type="range" id="step" min="80" max="400" step="10" value="180"></div>
+    <div class="ctl"><label for="rise">Rise <output id="riseOut">100 ms</output></label><input type="range" id="rise" min="30" max="300" step="10" value="100"></div>
+    <div class="ctl"><label for="decay">Decay <output id="decayOut">300 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="300"></div>
+    <div class="ctl"><label for="glow">Glow <output id="glowOut">0.50</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="ctl"><label for="bed">Bed <output id="bedOut">0.12</output></label><input type="range" id="bed" min="0" max="0.3" step="0.01" value="0.12"></div>
+    <div class="ctl"><span class="lab">Ambient spill</span><div class="seg" data-set="spill"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+    <div class="ctl"><span class="lab">Motion</span><div class="seg" data-set="motion"><button data-v="on">Animated</button><button data-v="reduced">Reduced</button></div></div>
+    <button class="copy" id="copyBtn">Copy tokens as JSON</button>
+    <details class="tokens"><summary>Current tokens</summary><pre id="tokensPre"></pre></details>
+    <p class="note">Reduced motion holds each state's first frame and breathes the whole glyph slowly. That first frame is also the state's static icon.</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- settings ---------- */
+const S = {
+  theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
+  grid: 5, size: 20, step: 180, rise: 100, decay: 300, glow: 0.5, bed: 0.12,
+  spill: 'on', motion: 'on',
+};
+const LEVELS = () => [S.bed, 0.35, 0.65, 1];
+
+/* ---------- helpers ---------- */
+const TAU = Math.PI * 2;
+function hash(x, y, t) {
+  let h = (x * 374761393 + y * 668265263 + t * 2246822519) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  h ^= h >>> 16;
+  return h / 4294967296;
+}
+const frame = (N, f) => { const a = new Array(N * N); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) a[y * N + x] = f(x, y); return a; };
+const cheb = (x, y, c) => Math.max(Math.abs(x - c), Math.abs(y - c));
+function ringCells(N) {
+  const r = [];
+  for (let x = 0; x < N; x++) r.push([x, 0]);
+  for (let y = 1; y < N; y++) r.push([N - 1, y]);
+  for (let x = N - 2; x >= 0; x--) r.push([x, N - 1]);
+  for (let y = N - 2; y >= 1; y--) r.push([0, y]);
+  return r;
+}
+
+/* ---------- pattern generators: (N) => { frames, stepMul } ---------- */
+const GEN = {
+  thinking(N) {
+    const L = 12, K = 4, per = L / K, fr = [];
+    for (let t = 0; t < L; t++) {
+      const k = Math.floor(t / per), u = (t % per) / per;
+      fr.push(frame(N, (x, y) => {
+        const wave = (Math.sin((x + y) * 0.8 - TAU * t / L) + 1) / 2;
+        const n = hash(x, y, k) * (1 - u) + hash(x, y, (k + 1) % K) * u;
+        const v = 0.55 * wave + 0.45 * n;
+        return v > 0.86 ? 3 : v > 0.72 ? 2 : v > 0.56 ? 1 : 0;
+      }));
+    }
+    return { frames: fr, stepMul: 1 };
+  },
+  reading(N) {
+    const fr = [];
+    for (let t = 0; t < N + 3; t++) fr.push(frame(N, (x, y) => {
+      if (t < N && y === t) return hash(x, y, 1) > 0.3 ? 3 : 2;
+      if (y === t - 1) return 1;
+      return 0;
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+  analyzing(N) {
+    const ring = ringCells(N), len = ring.length, half = len / 2, c = (N - 1) / 2, fr = [];
+    for (let t = 0; t < half; t++) {
+      const a = frame(N, (x, y) => (N >= 5 && x === c && y === c) ? 1 : 0);
+      for (const h of [t, t + half]) {
+        const lv = [3, 2, 1];
+        for (let k = 0; k < 3; k++) { const [x, y] = ring[((h - k) % len + len) % len]; a[y * N + x] = Math.max(a[y * N + x], lv[k]); }
+      }
+      fr.push(a);
+    }
+    return { frames: fr, stepMul: 1 };
+  },
+  searching(N) {
+    const L = 12, c = (N - 1) / 2, st = TAU / L, fr = [];
+    for (let t = 0; t < L; t++) fr.push(frame(N, (x, y) => {
+      if (x === c && y === c) return 1;
+      const th = Math.atan2(y - c, x - c), a = TAU * t / L;
+      const d = ((a - th) % TAU + TAU) % TAU;
+      return d < st * 0.75 ? 3 : d < st * 2 ? 2 : d < st * 3.5 ? 1 : 0;
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+  writing(N) {
+    const fr = [], total = N * N;
+    for (let k = 0; k <= total; k += 2) {
+      const kk = Math.min(k, total);
+      fr.push(frame(N, (x, y) => { const i = y * N + x; if (i < kk) return y === Math.floor((kk - 1) / N) ? 2 : 1; return i === kk ? 3 : 0; }));
+    }
+    fr.push(fr[fr.length - 1], fr[fr.length - 1]);
+    fr.push(frame(N, () => 1)); fr.push(frame(N, () => 0));
+    return { frames: fr, stepMul: 0.8 };
+  },
+  generating(N) {
+    const c = (N - 1) / 2, fr = [];
+    for (let t = 0; t <= c; t++) fr.push(frame(N, (x, y) => { const d = cheb(x, y, c); return d === t ? 3 : d < t ? 1 : 0; }));
+    fr.push(frame(N, () => 1));
+    for (let i = 1; i <= 3; i++) fr.push(frame(N, (x, y) => hash(x, y, 9) < 1 - i / 3 ? 1 : 0));
+    fr.push(frame(N, () => 0));
+    return { frames: fr, stepMul: 1.2 };
+  },
+  uploading(N) {
+    const L = N + 2, fr = [];
+    for (let t = 0; t < L; t++) fr.push(frame(N, (x, y) => {
+      const off = (x * 2) % L, p = (t - off + L) % L; if (p >= N) return 0;
+      const row = N - 1 - p; return y === row ? 3 : y === row + 1 ? 1 : 0;
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+  downloading(N) {
+    const L = N + 2, fr = [];
+    for (let t = 0; t < L; t++) fr.push(frame(N, (x, y) => {
+      const off = (x * 2) % L, p = (t - off + L) % L; if (p >= N) return 0;
+      return y === p ? 3 : y === p - 1 ? 1 : 0;
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+  syncing(N) {
+    const fr = [];
+    for (let t = 0; t < 2 * N; t++) fr.push(frame(N, (x) => {
+      if (t < N) return x === t ? 3 : x < t ? 1 : 0;
+      const xt = 2 * N - 1 - t; return x === xt ? 3 : x > xt ? 1 : 0;
+    }));
+    return { frames: fr, stepMul: 0.9 };
+  },
+  connecting(N) {
+    const c = (N - 1) / 2, fr = [];
+    for (let t = 0; t < 2 * c + 2; t++) {
+      const inward = t <= c, r = inward ? c - t : t - c - 1;
+      fr.push(frame(N, (x, y) => { const d = cheb(x, y, c); return d === r ? 3 : (inward ? d === r + 1 : d === r - 1) ? 1 : 0; }));
+    }
+    return { frames: fr, stepMul: 1.3 };
+  },
+  debugging(N) {
+    const fr = [];
+    for (let t = 0; t < 2; t++) fr.push(frame(N, (x, y) => ((Math.floor(x / 2) + Math.floor(y / 2) + t) % 2 === 0) ? 3 : 1));
+    return { frames: fr, stepMul: 2.4 };
+  },
+  building(N) {
+    const fr = [];
+    for (let t = 0; t < N; t++) fr.push(frame(N, (x, y) => y === N - 1 - t ? 3 : y > N - 1 - t ? 2 : 0));
+    fr.push(frame(N, () => 2)); fr.push(frame(N, () => 3)); fr.push(frame(N, () => 1)); fr.push(frame(N, () => 0));
+    return { frames: fr, stepMul: 1 };
+  },
+  done(N) {
+    const c = (N - 1) / 2, k = Math.floor(N / 3), path = [];
+    for (let i = 0; i <= k; i++) path.push([i, c + i]);
+    for (let i = k + 1; i < N; i++) path.push([i, c + k - (i - k)]);
+    const fr = [];
+    for (let t = 0; t < path.length; t++) {
+      const a = frame(N, () => 0);
+      path.forEach(([x, y], i) => { if (i <= t) a[y * N + x] = i === t ? 3 : 2; });
+      fr.push(a);
+    }
+    const hold = frame(N, () => 0); path.forEach(([x, y]) => hold[y * N + x] = 2);
+    for (let i = 0; i < 8; i++) fr.push(hold);
+    return { frames: fr, stepMul: 0.7, oneShot: true };
+  },
+  error(N) {
+    const c = (N - 1) / 2, X = frame(N, (x, y) => Math.abs(x - c) === Math.abs(y - c) ? 3 : 0), Xd = X.map(v => v ? 1 : 0), Z = frame(N, () => 0);
+    return { frames: [X, X, Xd, X, X, Z, Z, Z, Z, Z], stepMul: 1 };
+  },
+  heartbeat(N) {
+    const c = (N - 1) / 2, P = 12, base = [0, 0, 1, 0, -1, 2, -1, 0, 1, 0, 0, 0];
+    const s = base.map(v => Math.max(-c, Math.min(c, Math.round(v * c / 2))));
+    const fr = [];
+    for (let t = 0; t < P; t++) fr.push(frame(N, (x, y) => {
+      const i = (x + t) % P, v = s[i], pv = s[(i - 1 + P) % P];
+      const row = c - v, prow = c - pv;
+      if (y === row) return base[i] === 2 ? 3 : 2;
+      const lo = Math.min(row, prow), hi = Math.max(row, prow);
+      return (y > lo && y < hi) ? 1 : 0;
+    }));
+    return { frames: fr, stepMul: 0.75 };
+  },
+  scanning(N) {
+    const c = (N - 1) / 2, fr = [];
+    for (let t = 0; t < N + 2; t++) fr.push(frame(N, (x, y) => {
+      const plus = (x === c || y === c) ? (t === c ? 2 : 1) : 0;
+      const bar = x === t ? 3 : x === t - 1 ? 1 : 0;
+      return Math.max(plus, bar);
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+  breathing(N) {
+    const c = (N - 1) / 2, fr = [];
+    for (let t = 0; t < 2 * c + 2; t++) {
+      const r = t <= c ? t : 2 * c + 1 - t;
+      fr.push(frame(N, (x, y) => { const d = cheb(x, y, c); return d === r ? 3 : d < r ? 1 : 0; }));
+    }
+    return { frames: fr, stepMul: 2.6 };
+  },
+  calculating(N) {
+    const L = 12, fr = [];
+    for (let t = 0; t < L; t++) fr.push(frame(N, (x, y) => {
+      const h = Math.round(((Math.sin(x * 1.9 + TAU * t / L) + 1) / 2) * (N - 1));
+      return y === N - 1 - h ? 3 : y > N - 1 - h ? 2 : 0;
+    }));
+    return { frames: fr, stepMul: 1 };
+  },
+};
+
+/* ---------- states: verb pattern + domain hue ---------- */
+const STATES = [
+  { id: 'thinking',    label: 'Thinking',             hue: 300, hueName: 'violet', group: 'General' },
+  { id: 'reading',     label: 'Reading docs',         hue: 75,  hueName: 'amber',  group: 'General' },
+  { id: 'analyzing',   label: 'Analyzing',            hue: 205, hueName: 'cyan',   group: 'General' },
+  { id: 'searching',   label: 'Searching',            hue: 250, hueName: 'blue',   group: 'General' },
+  { id: 'generating',  label: 'Generating',           hue: 290, hueName: 'violet', group: 'General' },
+  { id: 'writing',     label: 'Writing',              hue: 350, hueName: 'pink',   group: 'General' },
+  { id: 'syncing',     label: 'Syncing',              hue: 150, hueName: 'green',  group: 'General' },
+  { id: 'connecting',  label: 'Connecting',           hue: 235, hueName: 'blue',   group: 'General' },
+  { id: 'uploading',   label: 'Uploading',            hue: 225, hueName: 'blue',   group: 'General' },
+  { id: 'downloading', label: 'Downloading',          hue: 215, hueName: 'blue',   group: 'General' },
+  { id: 'done',        label: 'Done',                 hue: 145, hueName: 'green',  group: 'General' },
+  { id: 'error',       label: 'Something went wrong', hue: 15,  hueName: 'red',    group: 'General' },
+  { id: 'building',    label: 'Building',             hue: 55,  hueName: 'orange', group: 'Code' },
+  { id: 'debugging',   label: 'Debugging',            hue: 45,  hueName: 'orange', group: 'Code' },
+  { id: 'heartbeat',   label: 'Reading your heartbeat', hue: 28, hueName: 'coral', group: 'Health' },
+  { id: 'scanning',    label: 'Scanning',             hue: 28,  hueName: 'coral',  group: 'Health' },
+  { id: 'breathing',   label: 'Breathe',              hue: 28,  hueName: 'coral',  group: 'Health' },
+  { id: 'calculating', label: 'Calculating',          hue: 160, hueName: 'green',  group: 'Finance' },
+];
+const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
+const patCache = new Map();
+const pattern = (id, N) => { const k = id + ':' + N; if (!patCache.has(k)) patCache.set(k, GEN[id](N)); return patCache.get(k); };
+
+/* ---------- renderer ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+let filterReady = false;
+function ensureFilter() {
+  if (filterReady) return; filterReady = true;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', 0); svg.setAttribute('height', 0); svg.style.position = 'absolute';
+  svg.innerHTML = '<defs><filter id="pxglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.8"/></filter></defs>';
+  document.body.appendChild(svg);
+}
+function buildSvg(N) {
+  const U = 3 * N - 1;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${U} ${U}`); svg.setAttribute('aria-hidden', 'true');
+  const glow = document.createElementNS(NS, 'g'); glow.setAttribute('class', 'glow'); glow.setAttribute('filter', 'url(#pxglow)');
+  const main = document.createElementNS(NS, 'g'); main.setAttribute('class', 'main');
+  const cells = [], gcells = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    for (const [g, arr] of [[glow, gcells], [main, cells]]) {
+      const r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', x * 3); r.setAttribute('y', y * 3); r.setAttribute('width', 2); r.setAttribute('height', 2); r.setAttribute('rx', 0.5); r.setAttribute('fill', 'currentColor');
+      g.appendChild(r); arr.push(r);
+    }
+  }
+  svg.appendChild(glow); svg.appendChild(main);
+  return { svg, cells, gcells, glow };
+}
+const easeOut = u => 1 - (1 - u) * (1 - u) * (1 - u);
+const easeIn = u => u * u;
+
+const loaders = [];
+class Loader {
+  constructor(el, stateId, N) {
+    this.el = el; this.stateId = stateId; this.N = N; this.visible = true;
+    this.build();
+    io.observe(el);
+    loaders.push(this);
+  }
+  build() {
+    this.el.innerHTML = '';
+    const b = buildSvg(this.N);
+    this.el.appendChild(b.svg);
+    this.rects = b.cells; this.grects = b.gcells; this.glowG = b.glow;
+    this.pat = pattern(this.stateId, this.N);
+    this.cur = new Float32Array(this.N * this.N).fill(S.bed);
+    this.from = new Float32Array(this.N * this.N).fill(S.bed);
+    this.target = new Float32Array(this.N * this.N).fill(S.bed);
+    this.t0 = new Float32Array(this.N * this.N);
+    this.dur = new Float32Array(this.N * this.N).fill(1);
+    this.lastIdx = -1;
+    this.applyHue();
+    this.paintStatic();
+  }
+  applyHue() { this.el.style.setProperty('--h', S.hueMode === 'brand' ? S.brandHue : byId[this.stateId].hue); }
+  set(stateId, N) { this.stateId = stateId; this.N = N; this.build(); }
+  paintStatic() {
+    const LV = LEVELS(), f = this.pat.frames[0];
+    for (let i = 0; i < f.length; i++) { this.cur[i] = this.target[i] = LV[f[i]]; this.paint(i); }
+  }
+  paint(i) {
+    const v = this.cur[i];
+    this.rects[i].setAttribute('opacity', v.toFixed(3));
+    const g = Math.max(0, (v - 0.35) / 0.65);
+    this.grects[i].setAttribute('opacity', (g * g).toFixed(3));
+  }
+  tick(now) {
+    if (!this.visible) return;
+    const LV = LEVELS(), fr = this.pat.frames, stepMs = S.step * this.pat.stepMul;
+    const idx = Math.floor(now / stepMs) % fr.length;
+    if (idx !== this.lastIdx) {
+      this.lastIdx = idx;
+      const f = fr[idx];
+      for (let i = 0; i < f.length; i++) {
+        const tg = LV[f[i]];
+        if (tg !== this.target[i]) { this.from[i] = this.cur[i]; this.target[i] = tg; this.t0[i] = now; this.dur[i] = tg > this.cur[i] ? S.rise : S.decay; }
+      }
+    }
+    for (let i = 0; i < this.cur.length; i++) {
+      const tg = this.target[i]; if (this.cur[i] === tg) continue;
+      const u = Math.min(1, (now - this.t0[i]) / this.dur[i]);
+      const e = tg > this.from[i] ? easeOut(u) : easeIn(u);
+      this.cur[i] = u >= 1 ? tg : this.from[i] + (tg - this.from[i]) * e;
+      this.paint(i);
+    }
+  }
+}
+const io = new IntersectionObserver(es => { for (const e of es) { const l = loaders.find(l => l.el === e.target); if (l) l.visible = e.isIntersecting; } }, { rootMargin: '80px' });
+
+/* ---------- static frame thumbnails ---------- */
+function staticSvg(N, f, hue) {
+  const b = buildSvg(N), LV = LEVELS();
+  for (let i = 0; i < f.length; i++) { const v = LV[f[i]]; b.cells[i].setAttribute('opacity', v.toFixed(3)); const g = Math.max(0, (v - 0.35) / 0.65); b.gcells[i].setAttribute('opacity', (g * g * S.glow * 0.8).toFixed(3)); }
+  const box = document.createElement('span'); box.className = 'loader cell-box'; box.style.setProperty('--h', hue); box.appendChild(b.svg);
+  return box;
+}
+
+/* ---------- page wiring ---------- */
+ensureFilter();
+let selected = 'thinking';
+const $ = id => document.getElementById(id);
+const heroLoader = new Loader($('heroLoader'), selected, S.grid);
+const stateEls = {};
+
+function buildStates() {
+  const root = $('states'); root.innerHTML = '';
+  let group = null;
+  for (const st of STATES) {
+    if (st.group !== group) { group = st.group; const g = document.createElement('div'); g.className = 'group-title'; g.textContent = group; root.appendChild(g); }
+    const b = document.createElement('button'); b.className = 'state'; b.type = 'button'; b.dataset.id = st.id;
+    b.style.setProperty('--h', st.hue);
+    const pill = document.createElement('span'); pill.className = 'pill' + (S.spill === 'on' ? ' spill' : ''); pill.style.fontSize = (S.size / 1.25) + 'px';
+    const l = document.createElement('span'); l.className = 'loader'; l.style.setProperty('--s', '1.25em');
+    const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
+    pill.append(l, lbl);
+    const p = pattern(st.id, S.grid);
+    const small = document.createElement('small'); small.innerHTML = `<i>${st.hueName} ${st.hue}</i><span>${p.frames.length} frames · ${Math.round(p.frames.length * S.step * p.stepMul)} ms</span>`;
+    b.append(pill, small);
+    b.addEventListener('click', () => select(st.id));
+    root.appendChild(b);
+    const ld = new Loader(l, st.id, S.grid);
+    stateEls[st.id] = { b, ld, pill, small };
+  }
+  markSelected();
+}
+function markSelected() { for (const id in stateEls) stateEls[id].b.classList.toggle('sel', id === selected); }
+
+function renderHero() {
+  const st = byId[selected], p = pattern(selected, S.grid);
+  $('heroLabel').textContent = st.label;
+  $('heroPill').style.setProperty('--h', S.hueMode === 'brand' ? S.brandHue : st.hue);
+  $('heroPill').classList.toggle('spill', S.spill === 'on');
+  $('heroMeta').innerHTML = `<span>pattern <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>frames <b>${p.frames.length}</b></span><span>step <b>${Math.round(S.step * p.stepMul)} ms</b></span><span>loop <b>${Math.round(p.frames.length * S.step * p.stepMul)} ms</b></span>${p.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
+  const strip = $('strip'); strip.innerHTML = '';
+  const hue = S.hueMode === 'brand' ? S.brandHue : st.hue;
+  p.frames.forEach((f, i) => {
+    const d = document.createElement('div'); d.className = 'f'; d.dataset.i = i;
+    d.appendChild(staticSvg(S.grid, f, hue));
+    const n = document.createElement('span'); n.textContent = i; d.appendChild(n);
+    strip.appendChild(d);
+  });
+}
+function select(id) { selected = id; heroLoader.set(id, S.grid); heroLoader.applyHue(); renderHero(); markSelected(); }
+
+/* contexts */
+const ctxLoaders = [];
+for (const el of document.querySelectorAll('.ctx .loader')) {
+  const id = el.dataset.state; el.style.setProperty('--h', byId[id].hue);
+  ctxLoaders.push(new Loader(el, id, +el.dataset.grid));
+}
+
+/* controls */
+function applyAll() {
+  document.documentElement.dataset.theme = S.theme === 'system' ? '' : S.theme;
+  if (S.theme === 'system') delete document.documentElement.dataset.theme;
+  document.documentElement.dataset.font = S.font;
+  $('brandCtl').hidden = S.hueMode !== 'brand';
+  for (const l of loaders) { l.applyHue(); if (l.el.classList.contains('inline-l') || l.el.closest('.ctx')) l.el.style.setProperty('--h', S.hueMode === 'brand' ? S.brandHue : byId[l.stateId].hue); }
+  const reduced = S.motion === 'reduced';
+  for (const l of loaders) { l.el.classList.toggle('still', reduced); l.glowG.style.opacity = S.glow * getComputedStyle(document.documentElement).getPropertyValue('--glow-mul'); if (reduced) l.paintStatic(); }
+  for (const id in stateEls) { const { pill, small } = stateEls[id]; pill.style.fontSize = (S.size / 1.25) + 'px'; pill.classList.toggle('spill', S.spill === 'on'); const p = pattern(id, S.grid); small.innerHTML = `<i>${byId[id].hueName} ${byId[id].hue}</i><span>${p.frames.length} frames · ${Math.round(p.frames.length * S.step * p.stepMul)} ms</span>`; }
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.classList.toggle('on', String(S[seg.dataset.set]) === b.dataset.v);
+  renderHero();
+  $('tokensPre').textContent = tokensJson();
+}
+function regrid() {
+  heroLoader.set(selected, S.grid);
+  for (const id in stateEls) stateEls[id].ld.set(id, S.grid);
+}
+for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const key = seg.dataset.set; const v = b.dataset.v; S[key] = isNaN(+v) ? v : +v;
+  if (key === 'grid') regrid();
+  applyAll();
+});
+const ranges = { brandHue: ['brandHueOut', v => v], step: ['stepOut', v => v + ' ms'], rise: ['riseOut', v => v + ' ms'], decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)] };
+for (const id in ranges) $(id).addEventListener('input', e => { S[id] = +e.target.value; $(ranges[id][0]).textContent = ranges[id][1](e.target.value); if (id === 'bed') for (const l of loaders) l.lastIdx = -1; applyAll(); });
+
+function tokensJson() {
+  return JSON.stringify({
+    grid: { cells: S.grid, cellUnits: 2, gapUnits: 1, radiusUnits: 0.5, viewBox: 3 * S.grid - 1 },
+    size: { pillGlyphPx: S.size, glyphToLabelEm: 1.25, gapEm: 0.75 },
+    levels: LEVELS(),
+    color: { space: 'oklch', dark: { l: 0.82, c: 0.14 }, light: { l: 0.6, c: 0.17 }, hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
+    motion: { stepMs: S.step, riseMs: S.rise, riseEase: 'cubic-out', decayMs: S.decay, decayEase: 'quad-in', stepMul: Object.fromEntries(STATES.map(s => [s.id, pattern(s.id, S.grid).stepMul])) },
+    glow: { opacity: S.glow, blurUnits: 1.8, spill: S.spill === 'on' },
+    type: { family: S.font === 'inter' ? 'Inter' : 'system-ui', weight: 600, letterSpacing: '-0.01em' },
+  }, null, 2);
+}
+$('copyBtn').addEventListener('click', async () => {
+  const txt = tokensJson(); const b = $('copyBtn');
+  try { await navigator.clipboard.writeText(txt); b.textContent = 'Copied'; }
+  catch { const pre = $('tokensPre'); pre.closest('details').open = true; const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Select and copy below'; }
+  setTimeout(() => b.textContent = 'Copy tokens as JSON', 1600);
+});
+const mq = matchMedia('(prefers-color-scheme: light)'); mq.addEventListener('change', applyAll);
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) S.motion = 'reduced';
+
+buildStates();
+applyAll();
+
+/* ---------- clock ---------- */
+function loop(now) {
+  if (S.motion !== 'reduced') for (const l of loaders) l.tick(now);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
