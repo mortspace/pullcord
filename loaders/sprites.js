@@ -178,33 +178,70 @@ const plugAt = (px, sx, { flow = -1, spark = false } = {}) => stamp([
   ...(spark ? [[sx, 1, 'W'], [sx, 11, 'W'], [sx - 1, 0, ':'], [sx + 1, 0, ':'], [sx - 1, 12, ':'], [sx + 1, 12, ':']] : [])]);
 const PLUG_LIT = plugAt(3, 7, { flow: 9 });
 
-/* uploading / downloading: arrows and a tray, and what the arrows carry piles up in it as layers of data.
-   Downloading: each arrow drops in, gathers speed like it has weight, and lands hard: the tray walls give, the arrowhead
-   squashes flat and spreads into a dim layer on the pile. Three arrows fill the tray; full, it lights up once and sinks
-   away, and the next download starts. Uploading runs it the other way: the tray starts full, the top layer gathers and
-   pinches up into an arrowhead, the tray dips as it launches, and it pulls its shaft out of the pile and speeds up as
-   it climbs. Empty, the tray fills again from the bottom. */
+/* connecting, Rise take: the Wi-Fi fan built by its own dot. The dot crouches, jumps, and where it peaks it spreads
+   sideways into an arc, slowing into the top of the jump; a fresh dot pops up at the base and jumps higher, three
+   times, until the fan is whole. Connected, the dot glows white; then the arcs fade from the outside in. */
+const WIFI_DOT = [6, 10];
+const WIFI_ARC = [
+  [[5,7],[6,7],[7,7],[4,8],[8,8]],
+  [[4,4],[5,4],[6,4],[7,4],[8,4],[3,5],[9,5],[2,6],[10,6]],
+  [[4,1],[5,1],[6,1],[7,1],[8,1],[2,2],[3,2],[9,2],[10,2],[1,3],[11,3],[0,4],[12,4]]];
+const ARC_TOP = [7, 4, 1];
+const fanCells = (arcs, tone = '#') => arcs.flatMap(k => WIFI_ARC[k].map(([x, y]) => [x, y, tone]));
+const splat = (k, stage) => stage >= 2 ? WIFI_ARC[k] : WIFI_ARC[k].filter(([x, y]) => y === ARC_TOP[k] && Math.abs(x - 6) <= (stage ? 2 : 1));
+const RISE_PATH = [[9, 8], [8, 6, 5], [8, 5, 3, 2]], RISE_MS = [[80, 90], [60, 70, 90], [55, 60, 70, 90]];
+const RISE = [F(stamp([[...WIFI_DOT, '#']]), 300), ...[0, 1, 2].flatMap(k => {
+  const built = Array.from({ length: k }, (_, i) => i);
+  return [F(stamp([...fanCells(built), [5, 10, '#'], [6, 10, '#'], [7, 10, '#']]), 100),
+    ...RISE_PATH[k].map((y, i) => F(stamp([...fanCells(built), [6, y, '#']]), RISE_MS[k][i])),
+    ...[0, 1, 2].map(st => F(stamp([...fanCells(built), ...splat(k, st).map(([x, y]) => [x, y, '#']), ...(st === 2 ? [[...WIFI_DOT, 'W']] : [])]), [60, 60, 110][st]))];
+}), F(stamp([...fanCells([0, 1, 2]), [...WIFI_DOT, 'W']]), 1000),
+  F(stamp([...fanCells([0, 1]), ...fanCells([2], ':'), [...WIFI_DOT, '#']]), 80), F(stamp([...fanCells([0]), ...fanCells([1], ':'), [...WIFI_DOT, '#']]), 80), F(stamp([...fanCells([0], ':'), [...WIFI_DOT, '#']]), 80)];
+
+/* connecting, Ripple take: a drop of signal falls onto the dot and the splash spreads out as the Wi-Fi arcs, each one
+   rising a beat after the last. Connected, the fan holds lit with the dot white, then drains back into the dot. */
+const RIPPLE = [F(stamp([[...WIFI_DOT, ':']]), 260), ...[0, 2, 4, 6, 8].map((y, i) => F(stamp([[6, y, '#'], ...(i > 1 ? [[6, y - 1, ':']] : []), [...WIFI_DOT, ':']]), [130, 95, 75, 65, 55][i])),
+  F(stamp([[...WIFI_DOT, 'W'], [5, 9, ':'], [7, 9, ':']]), 80), F(stamp([...fanCells([0]), [...WIFI_DOT, '#']]), 80), F(stamp([...fanCells([0, 1]), [...WIFI_DOT, '#']]), 85),
+  F(stamp([...fanCells([0, 1, 2]), [...WIFI_DOT, '#']]), 95), F(stamp([...fanCells([0, 1, 2]), [...WIFI_DOT, 'W']]), 1000),
+  F(stamp([...fanCells([0, 1]), ...fanCells([2], ':'), [...WIFI_DOT, '#']]), 80), F(stamp([...fanCells([0]), ...fanCells([1], ':'), [...WIFI_DOT, '#']]), 80), F(stamp([...fanCells([0], ':'), [...WIFI_DOT, '#']]), 90)];
+
+/* uploading / downloading, Stream take: arrows stream through a tray without stopping, a new arrow every twelve rows.
+   Downloads land with a small squash of the tray walls instead of a flash. */
 const TRAY = [[0,9],[0,10],[0,11],[12,9],[12,10],[12,11],...Array.from({ length: 13 }, (_, x) => [x, 12])];
 const TRAY_SQUASH = [[0,10],[0,11],[12,10],[12,11],...Array.from({ length: 13 }, (_, x) => [x, 12])];
 const ARROW_UP = [[6,0],[5,1],[6,1],[7,1],[4,2],[5,2],[6,2],[7,2],[8,2],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[6,4],[6,5],[6,6],[6,7]];
-const trayCells = squash => (squash ? TRAY_SQUASH : TRAY).map(([x, y]) => [x, y, '#']);
-const layerCells = (row, tone = ':', x0 = 1, x1 = 11) => Array.from({ length: x1 - x0 + 1 }, (_, i) => [x0 + i, row, tone]);
-const pile = (rows, tone = ':') => rows.flatMap(r => layerCells(r, tone));
-const arrowDown = tip => ARROW_UP.map(([x, y]) => [x, tip - y, '#']);
-const arrowUp = (tip, below = N) => ARROW_UP.map(([x, y]) => [x, tip + y, '#']).filter(([, y]) => y < below);
-/* each step is one row; the time a row takes falls the way it does under gravity, clamped so the slowest is readable */
-const gravityMs = s => Math.round(Math.max(45, Math.min(150, 280 * (Math.sqrt(s + 1) - Math.sqrt(s)))));
-const downloadFrames = () => [0, 1, 2].flatMap(f => {
-  const land = 11 - f, under = Array.from({ length: f }, (_, k) => 11 - k);
-  return [...Array.from({ length: land - 1 }, (_, s) => F(stamp([...trayCells(), ...pile(under), ...arrowDown(s + 1)]), gravityMs(s))),
-    F(stamp([...trayCells(true), ...pile(under), ...layerCells(land, '#', 2, 10), ...layerCells(land - 1, '#', 4, 8), [6, land - 2, '#'], [6, land - 3, '#']]), 90),
-    F(stamp([...trayCells(), ...pile(under), ...layerCells(land, '#'), [6, land - 1, '#']]), 80)];
-}).concat([F(stamp([...trayCells(), ...pile([9, 10, 11], '#')]), 140), F(stamp([...trayCells(), ...pile([10, 11])]), 90), F(stamp([...trayCells(), ...pile([11])]), 90), F(stamp(trayCells()), 140)]);
-const uploadFrames = () => [F(stamp([...trayCells(), ...pile([9, 10, 11])]), 260), ...[0, 1, 2].flatMap(f => {
-  const from = 9 + f, left = Array.from({ length: 2 - f }, (_, k) => 11 - k), rise = [];
-  for (let tip = from - 4, s = 0; tip > -8; tip -= s > 3 ? 2 : 1, s++) rise.push(F(stamp([...trayCells(), ...pile(left), ...arrowUp(tip, from)]), gravityMs(s)));
-  return [F(stamp([...trayCells(), ...pile(left), ...layerCells(from, '#', 2, 10)]), 110), F(stamp([...trayCells(true), ...pile(left), ...arrowUp(from - 3, from + 1)]), 100), ...rise];
-}), F(stamp(trayCells()), 160), F(stamp([...trayCells(), ...pile([11])]), 90), F(stamp([...trayCells(), ...pile([10, 11])]), 90)];
+const ARROW_GAP = 12;
+const arrowStream = (t, up) => { const cs = []; for (const k of [-1, 0, 1]) { const oy = (up ? 12 - t : t - 8) + ARROW_GAP * k; for (const [x, y] of ARROW_UP) { const yy = (up ? y : 7 - y) + oy; if (yy < 12) cs.push([x, yy, '#']); } } return cs; };
+const trayFrame = (t, up) => stamp([...(!up && t === 0 ? TRAY_SQUASH : TRAY).map(([x, y]) => [x, y, '#']), ...arrowStream(t, up)]);
+
+/* Cloud take: the iCloud picture. A cloud sits at the top; downloads come out of its underside and fall away below,
+   uploads rise into it and vanish inside. The arrows are smaller so a whole one fits under the cloud. */
+const CLOUD = ['......###....', '.....#...#...', '..###.....#..', '.#.........#.', '#...........#', '#...........#', '.###########.'];
+const SMALL_ARROW = [[2,0],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2],[4,2],[2,3],[2,4],[2,5]];
+const CLOUD_GAP = 7;
+const cloudFrame = (t, up) => stamp([...cellsOf(CLOUD), ...[-1, 0, 1, 2].flatMap(k => SMALL_ARROW.map(([x, y]) => {
+  const top = up ? N - t + CLOUD_GAP * k : 7 - CLOUD_GAP + t + CLOUD_GAP * k;
+  return [x + 4, up ? top + y : top + 5 - y, '#'];
+})).filter(([, y]) => y > 6)]);
+
+/* Dock take (downloading): each arrow comes down and eases to a stop on a progress line, never hitting it. Where its
+   point touches, the line lights, the filled part grows out from the middle, and the arrow melts into it. Three
+   arrows fill the line; a light runs along it and it empties for the next file. */
+const dockLine = (fill, hot) => Array.from({ length: 11 }, (_, i) => { const x = 1 + i, lit = Math.abs(x - 6) <= fill; return [x, 12, hot != null && Math.abs(x - hot) <= 0 ? 'W' : lit ? '#' : ':']; });
+const arrowDownAt = (tip, tone = '#') => ARROW_UP.map(([x, y]) => [x, tip - y, tone]);
+const DOCK = [0, 1, 2].flatMap(n => [-1, 3, 6, 8, 10, 11].map((tip, i) => F(stamp([...dockLine(n * 2 - 1), ...arrowDownAt(tip)]), [120, 80, 75, 85, 110, 150][i]))
+  .concat([F(stamp([...dockLine(n * 2 + 1), ...arrowDownAt(11, ':'), [6, 12, 'W']]), 110), F(stamp(dockLine(n * 2 + 1)), 90)]))
+  .concat([...[1, 3, 5, 7, 9, 11].map(x => F(stamp(dockLine(5, x)), 45)), F(stamp(dockLine(5)), 300), F(stamp(dockLine(-1)), 120)]);
+
+/* Launch take (uploading): the arrow stands on a pad like a rocket. It crouches a cell, its shaft compressing, puffs,
+   and lifts off slow then faster, a dim exhaust trailing under it, and is gone; the next arrow rises out of the pad
+   and settles. */
+const PAD = Array.from({ length: 7 }, (_, i) => [3 + i, 12, '#']);
+const arrowUpAt = (tip, below = 12) => ARROW_UP.map(([x, y]) => [x, tip + y, '#']).filter(([, y]) => y < below);
+const exhaust = (tip, n) => Array.from({ length: n }, (_, k) => [6, tip + 9 + k, ':']);
+const LAUNCH = [F(stamp([...PAD, ...arrowUpAt(4)]), 420), F(stamp([...PAD, ...arrowUpAt(5)]), 120), F(stamp([...PAD, ...arrowUpAt(5), [2, 11, ':'], [10, 11, ':']]), 90),
+  ...[[3, 1], [1, 2], [-2, 3], [-6, 3], [-11, 2]].map(([tip, n], i) => F(stamp([...PAD, ...arrowUpAt(tip), ...exhaust(tip, n)]), [110, 80, 65, 55, 60][i])),
+  ...[11, 9, 7, 5].map((tip, i) => F(stamp([...PAD, ...arrowUpAt(tip)]), [110, 90, 100, 130][i]))];
 
 /* done, Stroke and Spring takes: a two-cell check. Both arms are exact 45 degree diagonals, the short arm four steps,
    the long arm eight. */
@@ -230,6 +267,43 @@ const joined = n => stamp([...LANDED.flat(), ...pairCells(...Array.from({ length
 const MORPH_IN = [F(stamp(DOT_ROW.flatMap(r => DOT(r, ':'))), 220), ...[0, 1, 2].map(k => F(waveAt(k), 115)), F(flyAt(0), 120), F(stamp(DOT_ROW.flatMap(r => DOT([r[0], r[1] + 1]))), 90),
   F(flyAt(0.5), 70), F(flyAt(0.85), 60), F(landed(1), 75), F(landed(), 90), F(joined(2), 55), F(joined(4), 45), F(joined(6), 60)];
 const MORPH_OUT = [F(joined(4), 45), F(joined(1), 50), F(landed(), 70), F(flyAt(0.6), 70), F(flyAt(0.2), 80), F(flyAt(0), 110)];
+const GLINT_RUN = () => Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35));
+
+/* a polyline through float points, rasterised densely; unless thin, steep runs get a second cell to the right so the
+   weight matches the check's two-cell stroke. Thin lines step a whole cell at a time so 45 degree lines stay exact */
+const pathCells = (pts, thin) => {
+  const out = new Map();
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * (thin ? 1 : 4)) || 1, steep = !thin && Math.abs(y1 - y0) >= 0.7 * Math.abs(x1 - x0);
+    for (let k = 0; k <= n; k++) { const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n); out.set(x + ',' + y, [x, y]); if (steep && x + 1 < N) out.set((x + 1) + ',' + y, [x + 1, y]); }
+  }
+  return [...out.values()];
+};
+const lerp2 = (a, b, p) => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p];
+
+/* done, Bend take: progress becomes the check. A dim bar fills from the left like a progress bar; full, it bends: the
+   left part dips to make the vertex and the right end swings up to the tip, overshooting a cell, and settles as the
+   check. In a loop it straightens back into an empty bar. */
+const BAR_Y = 6, SPINE_FLAT = [[0, BAR_Y], [3.5, BAR_Y], [12, BAR_Y]], SPINE_CHECK = [[0.5, 7], [3.5, 10], [11.5, 2]];
+const barAt = fill => stamp(Array.from({ length: N }, (_, x) => [x, BAR_Y, x < fill ? '#' : ':']));
+const bendAt = p => stamp(pathCells(SPINE_FLAT.map((a, i) => lerp2(a, SPINE_CHECK[i], p))).map(([x, y]) => [x, y, '#']));
+const BEND = [F(barAt(0), 260), ...[2, 4, 7, 10, 13].map((k, i) => F(barAt(k), [150, 120, 110, 120, 160][i])), F(bendAt(0.3), 70), F(bendAt(0.65), 60), F(bendAt(1.15), 70), F(CHECK, 90),
+  ...GLINT_RUN(), F(CHECK, 1100), F(bendAt(0.6), 70), F(bendAt(0.25), 70), F(barAt(13), 90)];
+
+/* done, Skate take: a dot rides the check into being. It drops onto the end of the short arm, slides down gathering
+   speed and leaving the stroke behind it, squashes flat in the vertex, then rides up the long arm slowing as it climbs,
+   hops at the top, and lands as the tip. */
+const rider = k => { const [[x, y]] = CHECK_PAIRS[k]; return [[x, y - 1], [x + 1, y - 1]]; };
+const skateAt = (k, extra = []) => stamp([...CHECK_PAIRS.slice(0, k).flat().map(([x, y]) => [x, y, '#']), ...extra.map(([x, y]) => [x, y, '#'])]);
+const SKATE = [F(stamp([[0, 3, '#'], [1, 3, '#'], [0, 4, '#'], [1, 4, '#']]), 200), F(skateAt(0, [...rider(0), ...CHECK_PAIRS[0]]), 120),
+  ...[1, 2, 3].map((k, i) => F(skateAt(k, [...rider(k), ...CHECK_PAIRS[k]]), [90, 65, 50][i])), F(skateAt(4, [[2, 10], [5, 10]]), 80),
+  ...[4, 5, 6, 7, 8, 9, 10].map((k, i) => F(skateAt(k, [...rider(k), ...CHECK_PAIRS[k]]), [40, 40, 45, 50, 60, 75, 95][i])), F(skateAt(11, [[11, 0], [12, 0], [11, 1], [12, 1]]), 110), F(CHECK, 90),
+  ...GLINT_RUN(), F(CHECK, 1100), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 35))];
+
+/* done, Flip take: the check turns over like a coin. It arrives edge-on as a bright sliver, opens out to full width,
+   holds, and turns away again. */
+const flipAt = (w, tone = '#') => stamp(CHECK_PAIRS.flat().map(([x, y]) => [Math.round(6 + (x - 6) * w), y, tone]));
+const FLIP = [F(flipAt(0.08, 'W'), 120), F(flipAt(0.35), 80), F(flipAt(0.7), 70), F(CHECK, 100), F(flipAt(0.85), 60), F(CHECK, 90), ...GLINT_RUN(), F(CHECK, 1150), F(flipAt(0.6), 70), F(flipAt(0.25), 70)];
 
 /* error: a warning triangle with a rounded top, eleven cells wide so it has room to move. The exclamation mark has a
    four-cell bar, a gap, a dot, and two clear rows above the base. It holds, then gives the shake a Mac gives a wrong
@@ -250,6 +324,30 @@ const TRI = bm(
   '.............');
 const BANG = [[6,3],[6,4],[6,5],[6,6],[6,8]];
 const alarm = (dx, hot) => shift(put(TRI, BANG, hot ? 'W' : '#'), dx, 0);
+
+/* error, Glitch take: the sign breaks up like a bad signal. Bands of rows tear sideways, a row drops out to dim, a
+   few stray white cells flicker, and it snaps back whole; twice, irregularly, then it holds. */
+const SIGN = put(TRI, BANG, '#');
+const glitch = (bands, dim = [], noise = []) => stamp([...SIGN.flatMap((r, y) => { const band = bands.find(([a, b]) => y >= a && y <= b); const dx = band ? band[2] : 0;
+  return r.split('').map((c, x) => c === '.' ? null : [x + dx, y, dim.includes(y) ? ':' : c]).filter(Boolean); }), ...noise.map(([x, y]) => [x, y, 'W'])]);
+const GLITCH = [F(SIGN, 900), F(glitch([[2, 4, 2], [8, 9, -1]], [], [[0, 3], [12, 8]]), 55), F(glitch([[5, 7, -2]], [3]), 45), F(SIGN, 70), F(glitch([[1, 3, -1], [9, 11, 1]], [6], [[11, 2]]), 50),
+  F(glitch([[4, 8, 1]], [], [[1, 6], [2, 6]]), 40), F(SIGN, 600), F(glitch([[6, 8, 2]], [7]), 50), F(SIGN, 300)];
+
+/* error, Build take: the warning sign assembles itself. Both sides run down from the rounded top at once, the base
+   closes from the two corners to the middle, easing as it meets, then the mark pops in white, settles, and the sign
+   gives one small shake. In a loop it erases and builds again. */
+const TRI_LEFT = [[5,1],[5,2],[4,3],[4,4],[3,5],[3,6],[2,7],[2,8],[1,9],[1,10],[1,11]];
+const TRI_SIDES = k => [[6, 1], ...TRI_LEFT.slice(0, k).flatMap(([x, y]) => [[x, y], [12 - x, y]])];
+const TRI_BASE = k => Array.from({ length: k }, (_, i) => [[2 + i, 11], [10 - i, 11]]).flat();
+const buildAt = (k, b = 0, mark) => stamp([...[...TRI_SIDES(k), ...TRI_BASE(b)].map(([x, y]) => [x, y, '#']), ...(mark ? BANG.map(([x, y]) => [x, y, mark]) : [])]);
+const BUILD = [F(buildAt(0), 160), ...[2, 4, 6, 8, 10, 11].map((k, i) => F(buildAt(k), [80, 60, 50, 50, 60, 70][i])), ...[2, 4, 5].map((b, i) => F(buildAt(11, b), [55, 70, 90][i])),
+  F(buildAt(11, 5, 'W'), 110), F(alarm(0), 120), F(alarm(-1), 60), F(alarm(1), 70), F(alarm(0), 1100), F(buildAt(11, 5, ':'), 90), F(buildAt(6, 0), 70)];
+
+/* error, Pulse take: an alarm. The mark flashes white and a dim halo one cell outside the sign flashes with it and
+   fades, twice in quick succession, like a siren, then it holds. */
+const HALO_TRI = ['.....###.....', '.....#.#.....', '....#...#....', '....#...#....', '...#.....#...', '...#.....#...', '..#.......#..', '..#.......#..', '.#.........#.', '.#.........#.', '#...........#', '#...........#', '#############'];
+const pulseAt = (mark, halo) => stamp([...(halo ? cellsOf(HALO_TRI).map(([x, y]) => [x, y, ':']) : []), ...cellsOf(TRI).map(([x, y]) => [x, y, '#']), ...BANG.map(([x, y]) => [x, y, mark])]);
+const PULSE = [F(pulseAt('#'), 900), F(pulseAt('W', true), 110), F(pulseAt('#'), 120), F(pulseAt('W', true), 110), F(pulseAt('#'), 700)];
 
 /* building: a hammer seen from the side drives a real nail into a plank. The nail stands five cells tall and takes two blows,
    sparks flying on each. Then the plank slides along, the finished nail moves off with the others and a new one comes in. */
@@ -328,6 +426,33 @@ const EQ = [[9,5],[10,5],[11,5],[9,7],[10,7],[11,7]];
 const sigmaAt = (from, to, eq = '.') => stamp([...SIGMA_PATH.map(([x, y], i) => [x, y, i >= from && i < to ? (i === to - 1 && to < SIGMA_PATH.length ? 'W' : '#') : ':']), ...EQ.map(([x, y]) => [x, y, eq])]);
 const DRAW_MS = ease(SIGMA_PATH.length, 90, 32);
 
+/* calculating, Operators take: the four operators turn into one another, the way a calculator thinks. The plus pulls
+   its arms in and blooms out again on the diagonals as a times, overshooting a cell; the times folds flat into a minus, the minus throws its two dots out above and below into a
+   divide, overshooting and settling, the divide pulls the dots back and splits into an equals, and the equals closes up
+   and grows the plus again. */
+const opLines = lines => stamp(lines.flatMap(pts => pathCells(pts, true)).map(([x, y]) => [x, y, '#']).filter(([x, y]) => x >= 0 && x < N && y >= 0 && y < N));
+const plusR = r => opLines([[[6 - r, 6], [6 + r, 6]], [[6, 6 - r], [6, 6 + r]]]), timesR = r => opLines([[[6 - r, 6 - r], [6 + r, 6 + r]], [[6 - r, 6 + r], [6 + r, 6 - r]]]);
+const OP_PLUS = stamp([...Array.from({ length: 9 }, (_, i) => [[2 + i, 6, '#'], [6, 2 + i, '#']]).flat()]);
+const OP_MINUS = stamp(Array.from({ length: 9 }, (_, i) => [2 + i, 6, '#']));
+const flatX = h => opLines([[[2, 6 - h], [10, 6 + h]], [[2, 6 + h], [10, 6 - h]]]);
+const divideAt = d => stamp([...Array.from({ length: 9 }, (_, i) => [2 + i, 6, '#']), [6, 6 - d, '#'], [6, 6 + d, '#']]);
+const equalsAt = d => stamp(Array.from({ length: 9 }, (_, i) => [[2 + i, 6 - d, '#'], [2 + i, 6 + d, '#']]).flat());
+const OPERATORS = [F(OP_PLUS, 420), F(plusR(2), 60), F(plusR(1), 50), F(timesR(1), 50), F(timesR(3), 55), F(timesR(5), 60), F(timesR(4), 300),
+  F(flatX(2), 70), F(OP_MINUS, 260), F(divideAt(2), 60), F(divideAt(4), 60), F(divideAt(3), 300),
+  F(divideAt(1), 60), F(equalsAt(1), 60), F(equalsAt(2), 300), F(equalsAt(1), 60), F(stamp([...Array.from({ length: 9 }, (_, i) => [2 + i, 6, '#']), [6, 5, '#'], [6, 7, '#']]), 55),
+  F(stamp([...Array.from({ length: 9 }, (_, i) => [2 + i, 6, '#']), [6, 4, '#'], [6, 5, '#'], [6, 7, '#'], [6, 8, '#']]), 55)];
+
+/* calculating, Keypad take: a calculator. Nine keys sit dim under a display; keys press in a quick rhythm, each one
+   lighting white as it goes down, and every press adds a digit to the display. The equals key, bottom right, comes
+   last: the display flashes the answer, holds, and clears. */
+const KEY = (c, r) => [[c * 5, 5 + r * 3], [c * 5 + 1, 5 + r * 3], [c * 5 + 2, 5 + r * 3], [c * 5, 6 + r * 3], [c * 5 + 1, 6 + r * 3], [c * 5 + 2, 6 + r * 3]];
+const DISPLAY = [':::::::::::::', ':...........:', ':::::::::::::'];
+const padAt = (pressed, digits, flash) => stamp([...cellsOf(DISPLAY), ...Array.from({ length: digits }, (_, i) => [10 - i * 2, 1, flash ? 'W' : '#']),
+  ...[0, 1, 2].flatMap(r => [0, 1, 2].flatMap(c => KEY(c, r).map(([x, y]) => [x, y, pressed && pressed[0] === c && pressed[1] === r ? 'W' : ':'])))]);
+const PRESSES = [[0, 0], [1, 1], [2, 0], [0, 2]];
+const KEYPAD = [F(padAt(null, 0), 360), ...PRESSES.flatMap((k, i) => [F(padAt(k, i), 90), F(padAt(null, i + 1), [150, 120, 160, 200][i])]),
+  F(padAt([2, 2], 4), 110), F(padAt(null, 5, true), 140), F(padAt(null, 5), 900), F(padAt(null, 0), 200)];
+
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
@@ -336,19 +461,33 @@ const SPRITES = {
   generating: Object.assign(seq(F(sparkle(1, 2), 190), F(sparkle(2, 1), 105), F(sparkle(4, 0, 'big'), 125), F(sparkle(3, 0), 620), F(sparkle(3, 1), 110), F(sparkle(2, 2, 'small'), 125), F(sparkle(1, 2), 150), F(sparkle(-1, 2), 110)), { still: sparkle(4, 2) }),
   writing: Object.assign(seq(...HAND.flatMap((_, t) => t === I_AT ? [F(writeAt(t), handMs(t)), F(writeAt(t, 5), 120), F(writeAt(t, I_DOT_Y, true, true), 90), F(writeAt(t, 9, true), 100)] : [F(writeAt(t), handMs(t))])), { rest: 3, trail: 0.5 }),
   syncing: Object.assign(seq(F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(k, 0), DASH_MS[k])), F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(0, k), DASH_MS[k]))), { still: syncAt(0, 0), trail: 0.6 }),
-  connecting: Object.assign(seq(F(plugAt(1, 9), 420), F(plugAt(2, 8), 140), F(plugAt(3, 7), 100), F(plugAt(4, 7, { spark: true }), 80), F(plugAt(3, 7), 120),
+  connecting_plug: Object.assign(seq(F(plugAt(1, 9), 420), F(plugAt(2, 8), 140), F(plugAt(3, 7), 100), F(plugAt(4, 7, { spark: true }), 80), F(plugAt(3, 7), 120),
     ...[1, 2, 3].map(k => F(plugAt(3, 7, { flow: k }), 60)), F(PLUG_LIT, 1000), F(plugAt(3, 7), 140), F(plugAt(2, 8), 90)), { still: plugAt(2, 8), trail: 0.6 }),
-  uploading: Object.assign(seq(...uploadFrames()), { still: stamp([...trayCells(), ...pile([10, 11]), ...arrowUp(1)]), trail: 0.45 }),
-  downloading: Object.assign(seq(...downloadFrames()), { still: stamp([...trayCells(), ...pile([11]), ...arrowDown(7)]), trail: 0.45 }),
+  connecting: restAtLongest(seq(...RISE)),
+  connecting_ripple: restAtLongest(seq(...RIPPLE)),
+  uploading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, true), 100))), { rest: 10, trail: 0.45 }),
+  uploading_cloud: Object.assign(seq(...Array.from({ length: CLOUD_GAP }, (_, t) => F(cloudFrame(t, true), 110))), { rest: 3, trail: 0.45 }),
+  uploading_launch: Object.assign(seq(...LAUNCH), { rest: 0, trail: 0.5 }),
+  downloading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, false), 100))), { rest: 9, trail: 0.45 }),
+  downloading_cloud: Object.assign(seq(...Array.from({ length: CLOUD_GAP }, (_, t) => F(cloudFrame(t, false), 110))), { rest: 3, trail: 0.45 }),
+  downloading_dock: restAtLongest(seq(...DOCK)),
   done: restAtLongest(seq(...MORPH_IN, ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 1150), ...MORPH_OUT)),
+  done_bend: restAtLongest(seq(...BEND)),
+  done_skate: restAtLongest(seq(...SKATE)),
+  done_flip: restAtLongest(seq(...FLIP)),
   done_stroke: restAtLongest(seq(...CHECK_PAIRS.map((_, k) => F(strokeTo(0, k + 1, true), [80,70,60,55,50,45,45,45,50,55,65,80][k])), F(CHECK, 520), ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 900), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 40)), F(EMPTY, 280))),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -7), 60), F(shift(CHECK, 0, -4), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[3], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 3), 60), F(shift(CHECK, 0, 7), 60), F(EMPTY, 320))),
-  error: Object.assign(seq(F(alarm(0), 1000), F(alarm(-1, true), 65), F(alarm(1, true), 65), F(alarm(-1, true), 75), F(alarm(1, true), 90), F(alarm(0, true), 130), F(alarm(0), 130), F(alarm(0, true), 130), F(alarm(0), 420)), { rest: 0, trail: 0.35 }),
+  error_shake: Object.assign(seq(F(alarm(0), 1000), F(alarm(-1, true), 65), F(alarm(1, true), 65), F(alarm(-1, true), 75), F(alarm(1, true), 90), F(alarm(0, true), 130), F(alarm(0), 130), F(alarm(0, true), 130), F(alarm(0), 420)), { rest: 0, trail: 0.35 }),
+  error: Object.assign(seq(...GLITCH), { rest: 0, trail: 0.3 }),
+  error_build: restAtLongest(seq(...BUILD)),
+  error_pulse: Object.assign(seq(...PULSE), { rest: 0 }),
   building: Object.assign(seq(F(workshop(0, 6), 420), F(workshop(1, 6), 90), F(workshop(3, 8, 0, true), 90), F(workshop(3, 8), 130), F(workshop(1, 8), 90), F(workshop(0, 8), 150), F(workshop(3, 8), 90), F(workshop(5, 10, 0, true), 90), F(workshop(5, 10), 150), F(workshop(3, 10), 90), F(workshop(1, 10), 90), F(workshop(0, 10), 120), ...[1, 2, 3, 4, 5].map(k => F(workshop(0, 10, k), ease(5, 135, 80)[k - 1]))), { rest: 0 }),
   debugging: Object.assign(seq(...antLoop()), { still: stamp(antCells('all')), trail: 0.5 }),
   heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(halo(HEART_M), 90), F(halo(HEART_S), 110), F(HEART_S, 40), F(HEART_L, 70), F(halo(HEART_M), 80), F(halo(HEART_S), 120), F(HEART_S, 560)),
   scanning: Object.assign(seq(...SCAN.map((r, k) => F(dna(k * Math.PI / 8, r), 95))), { still: dna(0), trail: 0.5 }),
   breathing: seq(F(guide(LUNG_S), 900), ...AIR_DOWN.map(c => F(guide(put(LUNG_S, [c])), 110)), F(guide(LUNG_M), 320), F(LUNG_L, 1700), ...AIR_UP.map(c => F(put(LUNG_L, [c]), 110)), F(guide(LUNG_M), 320)),
-  calculating: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
+  calculating: restAtLongest(seq(...OPERATORS)),
+  calculating_keypad: restAtLongest(seq(...KEYPAD)),
+  calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
