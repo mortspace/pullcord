@@ -297,6 +297,11 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .canvas { background: var(--bg); border-radius: 14px; height: 120px; position: relative; overflow: hidden; }
 .toast { position: absolute; right: 14px; bottom: 14px; display: flex; align-items: center; gap: 0.6rem; background: var(--pill); color: var(--ink); border: 1px solid var(--pill-line); border-radius: 12px; padding: 0.6rem 0.9rem; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transform: translateY(24px); opacity: 0; transition: transform .35s cubic-bezier(.32,.72,0,1), opacity .25s ease; }
 .toast.on { transform: none; opacity: 1; }
+.canvas-pill { height: 112px; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 4%, var(--bg)); }
+.spill { display: flex; align-items: center; gap: 0.65rem; height: 44px; padding: 0 0.6rem 0 0.95rem; border-radius: 22px; background: #0b0b0d; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.06); }
+.spill .loader { --s: 22px; }
+.spill b { font-size: 0.95rem; font-weight: 600; white-space: nowrap; letter-spacing: -0.01em; }
+.spill-n { margin-left: 0.4rem; padding: 0.2rem 0.55rem; border-radius: 11px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); font: 500 0.72rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
 .canvas-tabs { height: auto; padding: 14px 14px 0; background: color-mix(in srgb, var(--ink) 5%, var(--bg)); }
 .tabs { display: flex; gap: 2px; min-width: 0; }
 .tab { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; min-width: 0; height: 36px; padding: 0 0.8rem; border-radius: 10px 10px 0 0; font-size: 0.8rem; color: var(--muted); }
@@ -356,7 +361,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
   <div id="overviewView">
     <h1 class="hero">Loading states,<span>drawn in pixels.</span></h1>
-    <p class="lede">Loaders that say what is happening, each a hand-drawn 13×13 pixel sprite: a heart that beats, a hammer that strikes, a page that turns. Every loop is continuous, every state comes in several takes, eighteen spinners cover the waits that need no story, and every state comes again as a 5×5 micro glyph for tabs and menu bars.</p>
+    <p class="lede">Loaders that say what is happening, each a hand-drawn 13×13 pixel sprite: a heart that beats, a hammer that strikes, a page that turns. Every loop is continuous, every state comes in several takes, eighteen spinners and twelve glow spinners cover the waits that need no story, and every state comes again as a 5×5 micro glyph for tabs and menu bars.</p>
     <div class="install"><code><b>$</b>npm install <i>pixel-loader</i></code><button type="button" class="copy" data-copy="npm install pixel-loader" aria-label="Copy the install command"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
     <div class="toolbar"><div class="seg" data-set="palette" role="group" aria-label="Palette"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button></div><div class="seg" data-set="motion" role="group" aria-label="Motion"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="on">Animated</button><button type="button" class="seg-item" data-v="reduced">Still</button></div></div>
     <div id="states"></div>
@@ -367,6 +372,12 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
   <section id="useSection" hidden>
     <h1 class="hero">In use,<span>in real products.</span></h1>
     <p class="lede">Where these go in a product. Every example runs on the same component, and the palette you picked applies.</p>
+
+    <div class="uc">
+      <p class="uc-k">Agent status pill</p>
+      <div class="canvas canvas-pill"><div class="spill" id="spill"><b id="spillLbl"></b><span class="spill-n" id="spillN"></span></div></div>
+      <p class="cap">A glow spinner as the heartbeat of a long agent job: one pill that stays put while the work moves on. Each step brings its own spinner and colour, and the counter keeps the place.</p>
+    </div>
 
     <div class="uc">
       <p class="uc-k">Browser tabs</p>
@@ -2153,6 +2164,64 @@ const OPTS_SP3 = {
   spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTile(shpR9(9)) }),
 };
 
+/* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
+   cells with a hairline seam, each flat pastel with a faint gradient and a tight, faint halo.
+   The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
+   renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
+const GL_PASTEL = { peach: '#FFC394', apricot: '#FFAA78', salmon: '#F7818F', pink: '#F59AC4', lilac: '#C6B2FF', sky: '#8DD0FF', aqua: '#7EDFD8', mint: '#97E9BC', butter: '#FFDC82' };
+const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
+const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.1, scale: 0.82, cycle: 7.5 }, opts);
+const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
+const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
+
+/* halo: a five-cell arc runs round the ring, a bright head and a fading tail */
+const glHaloAt = k => glCellsTo3([':', '#', '#', '#', 'W'].map((c, j) => [...GL_RING8[(k + j) % 8], c]));
+/* fold: the square folds like a sheet of paper, the top row over onto the middle, then the bottom up, to a single bright
+   line, which folds in to a point; then it unfolds the other way, sideways to a column and out to the full square */
+const GL_FOLD = [['#########', 260], [':::W#W###', 110], ['...######', 110], ['...###:::', 90], ['...W#W...', 160], ['...:#:...', 90], ['....W....', 220],
+  ['.:..#..:.', 90], ['.#..W..#.', 160], ['##:#W:##:', 100]];
+/* tide: a band of light washes across the square from one corner to the other and back, the water ahead of it shallow
+   and the sand behind it dark */
+const glTideAt = b => glCellsTo3(Array.from({ length: 9 }, (_, i) => { const x = i % 3, y = (i / 3) | 0, d = x + y - b; return [x, y, d === 0 ? 'W' : d === -1 || d === 1 ? '#' : d === 2 ? ':' : '.']; }));
+const GL_TIDE = [0, 1, 2, 3, 4, 3, 2, 1].map((b, i) => [glTideAt(b), [190, 120, 100, 120, 190, 120, 100, 120][i]]);
+/* twist: an S tumbles round an eighth of a turn at a time */
+const GL_TWIST = ['.##.#.##.', '#..###..#', '##..#..##', '..####W..'].map(b => [b, 230]);
+/* stairs: three columns trade heights like steps rolling forward */
+const glStairsAt = hs => glCellsTo3(hs.flatMap((hgt, x) => Array.from({ length: hgt }, (_, k) => [x, 2 - k, hgt === 3 && k === 2 ? 'W' : '#'])));
+/* pulse: the square breathes in from its centre and out again */
+const GL_PULSE = [['.........', 260], ['....#....', 140], ['.:.:#:.:.', 140], ['#########', 240], ['####W####', 280], [':::::::::', 220], ['....:....', 160]];
+/* bounce: a drop in the middle column springs up, stretching as it rises and falls, and squashes on landing */
+const glBounceAt = cells => glCellsTo3(cells.map(([y, c]) => [1, y, c || '#']));
+/* beads: a light passes along a row of three, the others resting half lit */
+const glBeadsAt = k => glCellsTo3([0, 1, 2].map(x => [x, 1, x === k ? 'W' : x === k - 1 ? '#' : ':']));
+/* worm: a three-cell worm wanders the grid row by row and turns back at the end */
+const GL_WORM_PATH = [[0,0],[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[1,2],[2,2]];
+const glWormAt = k => glCellsTo3([0, 1, 2].map(j => { const i = k - j; return i >= 0 && i < 9 ? [...GL_WORM_PATH[i], j === 0 ? 'W' : j === 1 ? '#' : ':'] : null; }).filter(Boolean));
+/* rain: drops fall down the three columns out of step, each with a short dim trail */
+const GL_RAIN_OFF = [0, 3, 1];
+const glRainAt = t => glCellsTo3(GL_RAIN_OFF.flatMap((o, x) => { const y = (t + o) % 5; return [[x, y, '#'], [x, y - 1, ':']]; }));
+/* spiral: the grid fills cell by cell, round and into the middle, holds, and empties the same way */
+const GL_SPIRAL = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1],[1,1]];
+const glSpiralAt = (from, to) => glCellsTo3(GL_SPIRAL.slice(from, to).map(([x, y], i) => [x, y, from === 0 && i === to - 1 && to < 9 ? 'W' : '#']));
+/* tumble: a two-by-two block rolls round the grid corner to corner */
+const GL_TUMBLE = [[0,0],[1,0],[1,1],[0,1]];
+const glTumbleAt = ([x0, y0], tone = '#') => glCellsTo3([[x0, y0], [x0 + 1, y0], [x0, y0 + 1], [x0 + 1, y0 + 1]].map(([x, y]) => [x, y, tone]));
+
+const GLOW_SPRITES = {
+  glow_halo: glGlow(Array.from({ length: 8 }, (_, k) => [glHaloAt(k), 125]), ['pink', 'peach', 'lilac']),
+  glow_fold: glGlow(GL_FOLD, ['salmon', 'pink', 'lilac']),
+  glow_tide: glGlow(GL_TIDE, ['peach', 'apricot', 'salmon']),
+  glow_twist: glGlow(GL_TWIST, ['sky', 'aqua', 'lilac']),
+  glow_stairs: glGlow([[1, 2, 3], [2, 3, 1], [3, 1, 2]].map(hs => [glStairsAt(hs), 310]), ['mint', 'aqua', 'sky']),
+  glow_pulse: glGlow(GL_PULSE, ['lilac', 'pink', 'peach'], { trail: 1.6, rise: 4 }),
+  glow_bounce: glGlow([[glBounceAt([[2]]), 150], [glBounceAt([[1], [2, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[0, 'W']]), 200], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[2], [1, ':']]), 70], [glCellsTo3([[0, 2, ':'], [1, 2, '#'], [2, 2, ':']]), 130]], ['peach', 'butter', 'apricot'], { trail: 0.9, rise: 1.5 }),
+  glow_beads: glGlow([0, 1, 2, 3].map(k => [glBeadsAt(k), 210]), ['sky', 'lilac', 'pink']),
+  glow_worm: glGlow([...Array.from({ length: 11 }, (_, k) => [glWormAt(k), 95])], ['aqua', 'mint', 'sky'], { trail: 0.8 }),
+  glow_rain: glGlow(Array.from({ length: 5 }, (_, t) => [glRainAt(t), 170]), ['sky', 'aqua', 'mint'], { trail: 0.8 }),
+  glow_spiral: glGlow([...Array.from({ length: 9 }, (_, k) => [glSpiralAt(0, k + 1), 85]), [glSpiralAt(0, 9), 260], ...Array.from({ length: 8 }, (_, k) => [glSpiralAt(k + 1, 9), 85]), ['.........', 200]], ['pink', 'lilac', 'sky']),
+  glow_tumble: glGlow(GL_TUMBLE.map(c => [glTumbleAt(c), 250]), ['apricot', 'salmon', 'pink'], { trail: 1.0 }),
+};
+
 /* ---------- micro: every state again as a 5x5 glyph, for places too small for 13x13: a browser tab, a menu bar, a
    status chip. Five cells cannot carry detail, so each keeps only its gesture: the dots of a reply, a check that forms
    from them, a heart that beats, a bug that crawls. They draw in soft light: big cells with a hairline seam, a faint
@@ -2284,7 +2353,7 @@ const SPRITES = {
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
-Object.assign(SPRITES, MICRO_SPRITES);
+Object.assign(SPRITES, GLOW_SPRITES, MICRO_SPRITES);
 
 /* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
    such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
@@ -2306,7 +2375,7 @@ function polishLoop(id, sp) {
   }
   sp.period = fr.reduce((a, f) => a + f.ms, 0) / 1000;
 }
-for (const [id, sp] of Object.entries(SPRITES)) if (!sp.micro) polishLoop(id, sp);
+for (const [id, sp] of Object.entries(SPRITES)) if (!sp.micro && !sp.colors) polishLoop(id, sp);
 /* spinners: loaders with no meaning, for any wait. They take a warm neutral, the way a system spinner takes the text colour */
 const SPINNERS = [
   ['spinner_ring', 'Ring', 'A comet runs a loop-the-loop on a dim ring: it creeps over the top, falls and whips round the bottom with its tail stretched long, and coasts back up.'],
@@ -2329,6 +2398,22 @@ const SPINNERS = [
   ['spinner_flip', 'Flip', 'A square tile tips over on its horizontal axis, goes edge-on as a bright line and lands on its dim shaded back, then turns on its vertical axis back to its face.'],
 ];
 for (const [id, label, idea] of SPINNERS) if (SPRITES[id]) STATES.push({ id, label, idea, group: 'Spinners', hue: 30, hueName: 'neutral', neutral: true, pillLabel: 'Loading', period: SPRITES[id].period });
+/* glow spinners: chunky cells in drifting pastels, for a wait that should feel alive */
+const GLOWS = [
+  ['glow_halo', 'Halo', 'A five-cell arc runs round the ring with a bright head and a fading tail, the colour drifting from pink to peach to lilac.'],
+  ['glow_fold', 'Fold', 'The square folds like a sheet of paper, top over middle, bottom up, to a line and then a point, and unfolds the other way.'],
+  ['glow_tide', 'Tide', 'A band of light washes across the square from one corner to the other and back, shallow ahead of it and dark behind.'],
+  ['glow_twist', 'Twist', 'An S tumbles round an eighth of a turn at a time, crossfading as it turns, in cool sky and aqua.'],
+  ['glow_stairs', 'Stairs', 'Three columns trade heights like steps rolling forward, the top of the tallest catching the light.'],
+  ['glow_pulse', 'Pulse', 'The square breathes in from its centre to full, glows, and fades out again, slowly.'],
+  ['glow_bounce', 'Bounce', 'A drop in the middle column springs up, stretching as it rises and falls, and squashes on landing.'],
+  ['glow_beads', 'Beads', 'A light passes along a row of three, the others resting half lit.'],
+  ['glow_worm', 'Worm', 'A three-cell worm wanders the grid row by row, a bright head and a fading tail.'],
+  ['glow_rain', 'Rain', 'Drops fall down the three columns out of step, each with a short trail, like a quiet data rain.'],
+  ['glow_spiral', 'Spiral', 'The grid fills cell by cell, round and into the middle, holds, and empties the same way.'],
+  ['glow_tumble', 'Tumble', 'A two-by-two block rolls round the grid from corner to corner.'],
+];
+for (const [id, label, idea] of GLOWS) if (SPRITES[id]) STATES.push({ id, label, idea, group: 'Glow', hue: 340, hueName: 'pastel', pillLabel: 'Loading', period: SPRITES[id].period });
 for (const st of STATES) st.sprite = SPRITES[st.id];
 /* the frozen pose: late in the rest frame, once the previous frame's trail has faded */
 function restTime(sp) { if (sp.rest != null) { let acc = 0; for (let i = 0; i < sp.rest; i++) acc += sp.frames[i].ms; return (acc + sp.frames[sp.rest].ms * 0.85) / 1000; } const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms * 0.85; } acc += f.ms; } return at / 1000; }
@@ -2402,14 +2487,21 @@ const mixRgb = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u,
 function hslRgb(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); return [f(0) * 255, f(8) * 255, f(4) * 255]; }
 function rgbHsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0, s = 0; if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return [h, s * 100, l * 100]; }
 const glowCache = new Map();
-/* the colours a micro glyph drifts through: its state's hue and a step either side of it, so it shimmers without leaving
-   its colour; under the iOS palette, the state's system colour */
-function glowPalette(hue, light, ink, iosHex) {
+/* the colours a soft-light glyph drifts through. A glow spinner brings its own pastels, deepened on a light page; under
+   the iOS palette it takes system colours and under one tint the brand hue and its neighbours. A micro glyph drifts a
+   step either side of its state's own hue, or holds its state's iOS colour */
+function glowPalette(sp, hue, light, ink, iosHex) {
   if (ink) return [hexRgb(ink.startsWith('#') ? ink : '#ffffff')];
-  if (iosHex) return [hexRgb(iosHex)];
-  const key = hue + (light ? 'l' : 'd');
+  if (!sp.colors && iosHex) return [hexRgb(iosHex)];
+  const key = (sp.colors ? sp.colors.join() + S.palette + S.hueMode + S.brandHue : 'h' + hue) + (light ? 'l' : 'd');
   if (glowCache.has(key)) return glowCache.get(key);
-  const pal = [-16, 0, 16].map(d => hslRgb((hue + d + 360) % 360, light ? 92 : 95, light ? 48 : 72));
+  let pal;
+  if (!sp.colors) pal = [-16, 0, 16].map(d => hslRgb((hue + d + 360) % 360, light ? 92 : 95, light ? 48 : 72));
+  else {
+    pal = S.hueMode === 'brand' ? [-24, 0, 24].map(d => hslRgb((S.brandHue + d + 360) % 360, 95, 76))
+      : S.palette === 'ios' ? ['pink', 'orange', 'purple'].map(n => hexRgb(IOS[n][light ? 1 : 0])) : sp.colors.map(hexRgb);
+    if (light && S.palette !== 'ios') pal = pal.map(c => { const [hh, ss, ll] = rgbHsl(c); return hslRgb(hh, Math.min(100, ss + 12), Math.max(34, ll - 24)); });
+  }
   glowCache.set(key, pal); return pal;
 }
 
@@ -2435,7 +2527,7 @@ class Matrix {
   build() {
     this.state = byId[this.exact ? this.stateId : resolveId(this.stateId)];
     /* a glow sprite brings its own coarse grid, cells that nearly touch, and a margin for its halo */
-    const sp = this.variant === 'pixels' && this.state.sprite, glowy = !!(sp && sp.micro);
+    const sp = this.variant === 'pixels' && this.state.sprite, glowy = !!(sp && (sp.micro || sp.colors));
     if (sp && sp.N) this.N = sp.N;
     const N = this.N, gap = glowy ? (sp.gap != null ? sp.gap : 0.08) : GAP, cw = PITCH - gap, U = PITCH * N - gap, pad = glowy ? U * (1 / (sp.scale || 1) - 1) / 2 : 0;
     this.el.innerHTML = '';
@@ -2461,7 +2553,7 @@ class Matrix {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
     this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][(isLight() && !this.forceDark) ? 1 : 0] : null;
-    this.accentCss = this.accent || (this.state.neutral && S.hueMode !== 'brand' ? 'hsl(30 12% 80%)' : `hsl(${hue} 100% 56%)`);
+    this.accentCss = this.accent || (this.state.sprite && this.state.sprite.colors && S.hueMode !== 'brand' ? this.state.sprite.colors[0] : this.state.neutral && S.hueMode !== 'brand' ? 'hsl(30 12% 80%)' : `hsl(${hue} 100% 56%)`);
     if (this.ink) this.inkColor = getComputedStyle(this.el).color;
   }
   get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
@@ -2486,7 +2578,7 @@ class Matrix {
   /* glow sprites: the colour drifts through the sprite's palette, each cell lighter at the top left and deeper at the
      bottom right, alpha follows the cell's light smoothly with no quantising, and the halo takes the cell's colour */
   paintGlow(sp) {
-    const light = isLight() && !this.forceDark, N = this.N, buf = this.buf, pal = glowPalette(this.hue, light, this.ink && this.inkColor, this.accent);
+    const light = isLight() && !this.forceDark, N = this.N, buf = this.buf, pal = glowPalette(sp, this.hue, light, this.ink && this.inkColor, this.accent);
     const ph = (performance.now() / 1000 / (sp.cycle || 7)) % 1 * pal.length, i0 = Math.floor(ph), f = ph - i0, sm = f * f * (3 - 2 * f);
     /* drift round the colour wheel, not through grey: blend hue, saturation and lightness */
     const A = rgbHsl(pal[i0 % pal.length]), B = rgbHsl(pal[(i0 + 1) % pal.length]); let dh = B[0] - A[0]; if (dh > 180) dh -= 360; if (dh < -180) dh += 360;
@@ -2504,7 +2596,7 @@ class Matrix {
     }
   }
   paint(o) {
-    const gsp = this.variant === 'pixels' && this.state.sprite; if (gsp && gsp.micro) { this.paintGlow(gsp); return; }
+    const gsp = this.variant === 'pixels' && this.state.sprite; if (gsp && (gsp.micro || gsp.colors)) { this.paintGlow(gsp); return; }
     const light = isLight() && !this.forceDark, bed = this.quiet ? 0 : S.bed, rp = this.ink ? rampInk(this.inkColor) : this.accent ? rampHex(this.accent, bed) : ramp(this.hue, light, bed, !!this.state.neutral && S.hueMode !== 'brand');
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
     const lv = S.levels, buf = this.buf, glow = this.ink ? 0 : S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1) * ((this.variant === 'pixels' && this.state.sprite && this.state.sprite.glow) || 1);
@@ -2659,7 +2751,7 @@ function buildNav() {
   for (const g of GROUPS) {
     root.appendChild(mkEl('p', 'nav-group', esc(g)));
     for (const st of STATES.filter(s => s.group === g)) {
-      const a = mkEl('a', 'nav-item', `<span class="sw" style="--h:${st.hue}"></span>${esc(st.label)}`); if (st.neutral) a.dataset.neutral = ''; a.href = '#/l/' + st.id; a.dataset.id = st.id;
+      const a = mkEl('a', 'nav-item', `<span class="sw" style="--h:${st.hue}"></span>${esc(st.label)}`); if (st.neutral) a.dataset.neutral = ''; if (st.sprite && st.sprite.colors) a.dataset.glow = st.sprite.colors.join(','); a.href = '#/l/' + st.id; a.dataset.id = st.id;
       a.dataset.find = [st.label, st.id, g, ...takesOf(st.id).map(t => t[1])].join(' ').toLowerCase();
       root.appendChild(a);
     }
@@ -2712,7 +2804,7 @@ function clearDetail() {
 }
 function codeFor(id, take) {
   const st = byId[id], t = takesOf(id), i = t.findIndex(x => x[0] === take), v = i > 0 ? ` variant="${variantName(t[i][1])}"` : '';
-  const what = st.group === 'Spinners' ? `spinner="${variantName(st.label)}"` : `state="${id}"`;
+  const what = st.group === 'Spinners' || st.group === 'Glow' ? `spinner="${variantName(st.label)}"` : `state="${id}"`;
   return `import { PixelLoader } from 'pixel-loader'\n\n<PixelLoader ${what}${v} size={${S.size}} label="${st.pillLabel || st.label}" />`;
 }
 function pickTake(take, initial = false) {
@@ -2878,6 +2970,13 @@ stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connect
 
 /* toast */
 (() => {
+  /* the agent pill steps through a job, one glow spinner per kind of step */
+  const SPILL = [['glow_tide', 'Planning the change'], ['glow_worm', 'Searching the codebase'], ['glow_fold', 'Drafting the patch'], ['glow_stairs', 'Running the test suite'], ['glow_rain', 'Reviewing the diff'], ['glow_spiral', 'Opening a pull request']];
+  const sm = glyph($('spill'), SPILL[0][0], { exact: true, forceDark: true }); $('spill').prepend(sm.el); let spillAt = -1;
+  UC.push({ tick(now) {
+    const k = Math.floor(phase(now, SPILL.length * 2.8) / 2.8); if (k === spillAt) return; spillAt = k;
+    sm.show(SPILL[k][0]); $('spillLbl').textContent = SPILL[k][1]; $('spillN').textContent = `${k + 1} / ${SPILL.length}`;
+  } });
   /* browser tabs: micro glyphs as tab icons, each tab working through its own job */
   const TABS = [['Deploy preview', [['building_micro', 4.2], ['done_micro', 3]]], ['Inbox', [['syncing_micro', 3.4], ['done_micro', 2.4]]], ['Uploading 4 photos', [['uploading_micro', 3.8], ['done_micro', 2.6]]], ['Heart rate', [['heartbeat_micro', 9]]]];
   const tabEls = TABS.map(([name, steps], i) => { const t = mk('div', 'tab' + (i === 0 ? ' on' : '')); $('tabs').appendChild(t); const m = glyph(t, steps[0][0], { exact: true }); t.appendChild(mk('span', '', name)); return { t, m }; });
@@ -2943,7 +3042,7 @@ function applyAll() {
   for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = String(S[seg.dataset.set]) === b.dataset.v;
   $('brandHue').disabled = S.palette === 'ios'; $('brandHueOut').textContent = S.palette === 'ios' ? 'systemBlue' : S.brandHue;
   $('rulingTable').innerHTML = rulingHtml();
-  for (const a of document.querySelectorAll('.nav-item[data-id]')) { const sw = a.querySelector('.sw'); sw.style.background = S.palette === 'ios' ? IOS[iosName(a.dataset.id)][isLight() ? 1 : 0] : 'neutral' in a.dataset ? (isLight() ? 'hsl(30 8% 40%)' : 'hsl(30 12% 78%)') : ''; }
+  for (const a of document.querySelectorAll('.nav-item[data-id]')) { const sw = a.querySelector('.sw'); sw.style.background = a.dataset.glow ? `linear-gradient(135deg, ${a.dataset.glow})` : S.palette === 'ios' ? IOS[iosName(a.dataset.id)][isLight() ? 1 : 0] : 'neutral' in a.dataset ? (isLight() ? 'hsl(30 8% 40%)' : 'hsl(30 12% 78%)') : ''; }
   if (detail && $('detailCode')) $('detailCode').textContent = codeFor(detail.id, detail.take);
   placeThumbs();
 }
