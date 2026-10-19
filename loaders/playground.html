@@ -162,8 +162,8 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <section>
       <div class="hero" id="hero">
         <div class="hero-row">
-          <div class="v"><em>B · PIXELS ONLY</em><div class="pill fixed" id="heroPillB" style="--g: 48px"><span class="loader" id="heroLoaderB"></span><span class="lbl" id="heroLabelB">Thinking</span></div></div>
-          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 48px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
+          <div class="v"><em>B · PIXELS ONLY</em><div class="pill fixed" id="heroPillB" style="--g: 32px"><span class="loader" id="heroLoaderB"></span><span class="lbl" id="heroLabelB">Thinking</span></div></div>
+          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 32px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
         </div>
         <p class="hero-idea" id="heroIdea"></p>
         <div class="hero-meta" id="heroMeta"></div>
@@ -247,7 +247,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 /* ---------- settings ---------- */
 const S = {
   theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
-  grid: 9, size: 48, levels: 2, step: 0, rise: 30, decay: 140, glow: 0.75, bed: 0.16,
+  grid: 9, size: 32, levels: 2, step: 0, rise: 30, decay: 140, glow: 0.75, bed: 0.16,
   variant: 'pixels', hot: 'on', width: 'fixed', motion: 'on',
 };
 
@@ -298,11 +298,11 @@ const tray = [[0,6],[0,8],[8,8],[8,6]];
 const tri = [[4,0],[6,4],[8,8],[4,8],[0,8],[2,4],[4,0]];
 
 const STATES = [
-{ id: 'thinking', label: 'Thinking', hue: 268, hueName: 'violet', group: 'General', period: 3.4,
+{ id: 'thinking', label: 'Thinking', hue: 270, hueName: 'violet', group: 'General', period: 3.4,
   idea: 'A light bulb. The glass closes as a string, the filament sits inside as a V. Alive, the filament runs hot and rays blink on around it.',
   frames: [{ s: [bulb, [[3,5],[4,3],[5,5]]], d: [[0,0],[8,0]] }, { s: [bulb, [[3,5],[4,3],[5,5]]], d: [[0,0],[8,0],[0,4],[8,4]] }],
   hold(u, H) { H.frame = frac(u * 2) < 0.5 ? 0 : 1; H.hotStroke = 1; } },
-{ id: 'reading', label: 'Reading docs', hue: 40, hueName: 'amber', group: 'General', period: 3.6,
+{ id: 'reading', label: 'Reading docs', hue: 48, hueName: 'amber', group: 'General', period: 3.6,
   idea: 'An open book: spine down the middle, two pages, four words as loose pixels. Alive, the words light up one at a time in reading order.',
   frames: [{ s: [[[4,1],[2,1],[0,2],[0,7],[2,7],[4,8]], [[4,1],[6,1],[8,2],[8,7],[6,7],[4,8]], [[4,1],[4,8]]], d: [[2,3],[2,5],[6,3],[6,5]] }],
   hold(u, H) { H.readDot = Math.floor(u * 4.99); } },
@@ -310,11 +310,11 @@ const STATES = [
   idea: 'A bar chart of pixels with a trend line stitched over the tops, ending in an arrow. Alive, a spark climbs the trend.',
   frames: [{ s: [[[1,5],[3,4],[5,3],[7,1]], [[5,1],[7,1],[7,3]], [[0,8],[8,8]]], d: [[1,7],[1,6],[3,7],[3,6],[3,5],[5,7],[5,6],[5,5],[5,4],[7,7],[7,6],[7,5],[7,4],[7,3]] }],
   hold(u, H) { H.spark = frac(u * 1.5); H.sparkStroke = 0; } },
-{ id: 'searching', label: 'Searching', hue: 214, hueName: 'blue', group: 'General', period: 3.4,
+{ id: 'searching', label: 'Searching', hue: 205, hueName: 'azure', group: 'General', period: 3.4,
   idea: 'A magnifying glass with a glint on the lens. Alive, it shifts across the grid as if looking, and the glint blinks.',
   frames: [{ s: [lens, [[6,6],[7,7],[8,8]]], d: [[2,2]] }, { s: [lens.map(([c, r]) => [c + 1, r + 1]), [[7,7],[8,8]]], d: [[3,3]] }],
   hold(u, H) { H.frame = frac(u * 1.5) < 0.5 ? 0 : 1; H.twinkle = u; } },
-{ id: 'generating', label: 'Generating', hue: 275, hueName: 'violet', group: 'General', period: 3.4,
+{ id: 'generating', label: 'Generating', hue: 295, hueName: 'purple', group: 'General', period: 3.4,
   idea: 'A four-point sparkle, the mark of something new. Alive, it turns between upright and diagonal, with small sparks blinking around it.',
   frames: [{ s: [star], d: [[7,1],[1,7]] }, { s: [starX], d: [[4,1],[7,4],[1,4],[4,7]] }],
   hold(u, H) { H.frame = frac(u * 2) < 0.5 ? 0 : 1; H.twinkle = u; } },
@@ -322,39 +322,39 @@ const STATES = [
   idea: 'A quill: the shaft runs corner to corner, the vane closes over it, barbs stitch across. Alive, ink flows down the shaft to the nib and leaves a dot.',
   frames: [{ s: quill, d: [] }, { s: quill, d: [[2,8]] }],
   hold(u, H) { H.frame = u > 0.35 ? 1 : 0; H.spark = 1 - frac(u * 2); H.sparkStroke = 0; } },
-{ id: 'syncing', label: 'Syncing', hue: 138, hueName: 'green', group: 'General', period: 3.6,
+{ id: 'syncing', label: 'Syncing', hue: 110, hueName: 'green', group: 'General', period: 3.6,
   idea: 'Two arrows chasing each other around a circle. Alive, the pair turns a quarter at a time.',
   frames: [
     { s: [[[0,4],[0,3],[1,2],[2,1],[3,0],[4,0],[5,0],[6,1],[7,2]], [[5,2],[7,2],[7,0]], [[8,4],[8,5],[7,6],[6,7],[5,8],[4,8],[3,8],[2,7],[1,6]], [[3,6],[1,6],[1,8]]], d: [] },
     { s: [[[4,0],[5,0],[6,1],[7,2],[8,3],[8,4],[8,5],[7,6],[6,7]], [[6,5],[6,7],[8,7]], [[4,8],[3,8],[2,7],[1,6],[0,5],[0,4],[0,3],[1,2],[2,1]], [[2,3],[2,1],[0,1]]], d: [] }],
   hold(u, H) { H.frame = Math.floor(u * 4) % 2; } },
-{ id: 'connecting', label: 'Connecting', hue: 206, hueName: 'blue', group: 'General', period: 3.4,
+{ id: 'connecting', label: 'Connecting', hue: 180, hueName: 'teal', group: 'General', period: 3.4,
   idea: 'A plug: two prongs, a body, a cord trailing off. Alive, it pushes up into the socket and current runs down the cord.',
   frames: [
     { s: [[[2,1],[2,3]], [[5,1],[5,3]], [[1,3],[6,3],[6,5],[5,6],[2,6],[1,5],[1,3]], [[3,6],[3,7],[2,8],[0,8]]], d: [] },
     { s: [[[2,0],[2,2]], [[5,0],[5,2]], [[1,2],[6,2],[6,4],[5,5],[2,5],[1,4],[1,2]], [[3,5],[3,7],[2,8],[0,8]]], d: [] }],
   hold(u, H) { H.frame = u > 0.4 ? 1 : 0; if (u > 0.45) { H.spark = 1 - frac((u - 0.45) * 3); H.sparkStroke = 3; } } },
-{ id: 'uploading', label: 'Uploading', hue: 214, hueName: 'blue', group: 'General', period: 3.2,
+{ id: 'uploading', label: 'Uploading', hue: 225, hueName: 'blue', group: 'General', period: 3.2,
   idea: 'An arrow rising out of a tray. Alive, pixels keep climbing the shaft and leaving through the head.',
   frames: [{ s: [[[4,0],[4,5]], [[2,2],[4,0],[6,2]], tray], d: [] }],
   hold(u, H) { H.runner = [4, 6 - Math.floor(frac(u * 2.5) * 7)]; } },
-{ id: 'downloading', label: 'Downloading', hue: 214, hueName: 'blue', group: 'General', period: 3.2,
+{ id: 'downloading', label: 'Downloading', hue: 255, hueName: 'indigo', group: 'General', period: 3.2,
   idea: 'An arrow dropping into a tray. Alive, pixels fall down the shaft and land.',
   frames: [{ s: [[[4,0],[4,5]], [[2,3],[4,5],[6,3]], tray], d: [] }],
   hold(u, H) { H.runner = [4, Math.floor(frac(u * 2.5) * 7)]; } },
-{ id: 'done', label: 'Done', hue: 135, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
+{ id: 'done', label: 'Done', hue: 130, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
   idea: 'Nine pixels fly in and the string stitches them into a tick that spans the whole grid. A spark runs it once, then it rests. In a product this one stops here and stays.',
   frames: [{ s: [[[0,4],[1,5],[2,6],[3,7],[4,6],[5,5],[6,4],[7,3],[8,2]]], d: [] }],
   hold(u, H) { if (u < 0.45) H.spark = u / 0.45; } },
-{ id: 'error', label: 'Something went wrong', hue: 0, hueName: 'red', group: 'General', period: 3.2,
+{ id: 'error', label: 'Something went wrong', hue: 10, hueName: 'red', group: 'General', period: 3.2,
   idea: 'A warning triangle: three corner pixels, three mid-edge pixels, strings for the edges, and an exclamation mark inside. Alive, the mark blinks.',
   frames: [{ s: [tri], d: [[4,3],[4,4],[4,5],[4,7]] }, { s: [tri], d: [[4,3],[4,4],[4,5]] }],
   hold(u, H) { H.frame = frac(u * 3) < 0.6 ? 0 : 1; H.blink = frac(u * 3) < 0.6; } },
-{ id: 'building', label: 'Building', hue: 28, hueName: 'orange', group: 'Code', period: 3.4,
+{ id: 'building', label: 'Building', hue: 30, hueName: 'orange', group: 'Code', period: 3.4,
   idea: 'A hammer, head up. Alive, it swings down to the corner and throws two sparks on the strike.',
   frames: [{ s: [[[1,2],[7,2],[7,5],[1,5],[1,2]], [[4,5],[4,8]]], d: [] }, { s: [[[4,0],[8,4],[6,6],[2,2],[4,0]], [[4,4],[0,8]]], d: [[8,1],[8,7]] }],
   hold(u, H) { const b = frac(u * 2); H.frame = b > 0.4 && b < 0.65 ? 1 : 0; } },
-{ id: 'debugging', label: 'Debugging', hue: 22, hueName: 'orange', group: 'Code', period: 3.6,
+{ id: 'debugging', label: 'Debugging', hue: 70, hueName: 'yellow', group: 'Code', period: 3.6,
   idea: 'A bug: body, head, antennae, six legs. Alive, the legs step.',
   frames: [
     { s: [bugBody, [[4,1],[3,0]], [[4,1],[5,0]], [[4,3],[4,6]], [[2,3],[0,2]], [[2,5],[0,5]], [[2,6],[0,8]], [[6,3],[8,2]], [[6,5],[8,5]], [[6,6],[8,8]]], d: [[4,1]] },
@@ -364,11 +364,11 @@ const STATES = [
   idea: 'A pixel heart with the ECG trace through it. Alive, it beats with a real lub-dub, swelling a row on each beat, and a spark runs the trace.',
   frames: [{ s: [heart, ecg], d: [] }, { s: [heartBig, ecg], d: [] }],
   hold(u, H) { const b = frac(u * 2); H.frame = (b < 0.12 || (b > 0.22 && b < 0.32)) ? 1 : 0; H.spark = b; H.sparkStroke = 1; } },
-{ id: 'scanning', label: 'Scanning', hue: 352, hueName: 'red', group: 'Health', period: 3.6,
+{ id: 'scanning', label: 'Scanning', hue: 310, hueName: 'magenta', group: 'Health', period: 3.6,
   idea: 'A strand of DNA: two strings crossing twice with three pixel rungs. Alive, the rungs light one after another, bottom to top.',
   frames: [{ s: [strandA, strandB, [[2,1],[6,1]], [[1,4],[7,4]], [[2,7],[6,7]]], d: [] }],
   hold(u, H) { H.hotStroke = 4 - Math.floor(frac(u * 1.5) * 2.99); } },
-{ id: 'breathing', label: 'Breathe', hue: 352, hueName: 'red', group: 'Health', period: 4.4,
+{ id: 'breathing', label: 'Breathe', hue: 160, hueName: 'mint', group: 'Health', period: 4.4,
   idea: 'Lungs: trachea, bronchi, two lobes. Alive, the lobes swell on the inhale and settle on the exhale.',
   frames: [{ s: [[[4,0],[4,2]], [[4,2],[3,3]], [[4,2],[5,3]], lungL, mir(lungL)], d: [] }, { s: [[[4,0],[4,2]], [[4,2],[3,3]], [[4,2],[5,3]], lungLBig, mir(lungLBig)], d: [] }],
   hold(u, H) { H.frame = u > 0.3 && u < 0.7 ? 1 : 0; } },
@@ -439,6 +439,7 @@ const EMPTY = bm('.........','.........','.........','.........','.........','..
 const shift = (b, dx, dy) => b.map((_, r) => Array.from({ length: 9 }, (__, c) => { const sr = r - dy, sc = c - dx; return (sr >= 0 && sr < 9 && sc >= 0 && sc < 9) ? b[sr][sc] : '.'; }).join(''));
 const over = (...bs) => bs[0].map((_, r) => Array.from({ length: 9 }, (__, c) => { let v = '.'; for (const b of bs) { const ch = b[r][c]; if (ch === 'W') v = 'W'; else if (ch === '#' && v === '.') v = '#'; } return v; }).join(''));
 const hot = b => b.map(r => r.replace(/#/g, 'W'));
+const wrapX = (b, dx) => b.map(r => { const d = ((dx % 9) + 9) % 9; return r.slice(9 - d) + r.slice(0, 9 - d); });
 const rowsUpTo = (b, k) => b.map((r, i) => i < k ? r : '.........');
 const colsUpTo = (b, k) => b.map(r => r.slice(0, k) + '.'.repeat(9 - k));
 const put = (b, cells, ch = 'W') => b.map((r, i) => r.split('').map((v, c) => cells.some(([x, y]) => x === c && y === i) ? ch : v).join(''));
@@ -456,49 +457,58 @@ const TICK = bm(
   '##.##....',
   '.###.....',
   '..#......');
-/* building: a hammer that pivots at the bottom-left grip */
-const HAM_90 = bm(
-  '#####....',
-  '#####....',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......');
-const HAM_45 = bm(
+/* building: a solid hammer, grip at the bottom-left, swinging from raised to strike */
+const HAM_UP = bm(
+  '.....####',
+  '....#####',
+  '...######',
+  '...####..',
+  '..###....',
+  '.###.....',
+  '###......',
+  '##.......',
+  '#........');
+const HAM_MID = bm(
+  '.........',
+  '.........',
   '......###',
   '.....####',
   '....#####',
-  '...##.##.',
-  '..##.....',
-  '.##......',
-  '##.......',
-  '#........',
-  '.........');
-const HAM_0 = bm(
-  '.........',
-  '.........',
-  '.........',
-  '.........',
-  '.........',
-  '......###',
-  '......###',
-  '#########',
-  '......###');
-/* syncing: a closed ring with two arrowheads; two runners travel it */
-const RING = bm(
   '...####..',
-  '..#....#.',
-  '.#......#',
-  '.#....###',
-  '.#.....#.',
-  '###....#.',
-  '#......#.',
-  '.#....#..',
-  '..####...');
-const RING_PATH = [[3,0],[4,0],[5,0],[6,0],[7,1],[8,2],[8,3],[7,4],[7,5],[7,6],[6,7],[5,8],[4,8],[3,8],[2,8],[1,7],[0,6],[0,5],[1,4],[1,3],[1,2],[2,1]];
+  '.####....',
+  '###......',
+  '#........');
+const HAM_HIT = bm(
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.....####',
+  '.....####',
+  '.....####',
+  '#########',
+  '#########');
+/* syncing: two arrows exchanging, the top one slides right and the bottom one slides left, wrapping */
+const ARROW_R = bm(
+  '.........',
+  '.....#...',
+  '#######..',
+  '.....#...',
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.........');
+const ARROW_L = bm(
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '...#.....',
+  '..#######',
+  '...#.....',
+  '.........');
 /* searching: a magnifier that stays put while a scan line sweeps the glass */
 const LENS = bm(
   '..###....',
@@ -569,9 +579,19 @@ const TRI = bm(
   '#.......#',
   '#########');
 const BANG = [[4,3],[4,4],[4,5],[4,7]];
-/* debugging: a bug whose legs alternate */
-const BUG_A = bm('.#.....#.','..#...#..','..#####..','.#.###.#.','#.#####.#','..#####..','#.#####.#','.#.###.#.','..#...#..');
-const BUG_B = bm('.#.....#.','..#...#..','..#####..','#..###..#','.######.#','..#####..','.######.#','#..###..#','..#...#..');
+/* debugging: a bug with a fixed body; only the legs step */
+const BUG_BODY = bm(
+  '..#...#..',
+  '...###...',
+  '...###...',
+  '..##.##..',
+  '..##.##..',
+  '..##.##..',
+  '..##.##..',
+  '...###...',
+  '.........');
+const LEGS_A = [[0,2],[1,2],[7,2],[8,2],[0,4],[1,4],[7,4],[8,4],[0,6],[1,6],[7,6],[8,6]];
+const LEGS_B = [[0,3],[1,3],[7,3],[8,3],[0,5],[1,5],[7,5],[8,5],[0,7],[1,7],[7,7],[8,7]];
 /* heartbeat: three heart sizes on a lub-dub */
 const HEART_S = bm('.........','..##.##..','.#######.','.#######.','..#####..','...###...','....#....','.........','.........');
 const HEART_M = bm('.........','.##...##.','#########','#########','.#######.','..#####..','...###...','....#....','.........');
@@ -595,8 +615,8 @@ function bars(t) {
 }
 const SPRITES = {
   done: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(colsUpTo(TICK, k), 70)), F(hot(TICK), 130), F(TICK, 1800), F(EMPTY, 300)),
-  building: seq(F(HAM_90, 560), F(HAM_45, 110), F(put(HAM_0, [[5,8],[8,4]]), 120), F(HAM_0, 160), F(HAM_45, 140)),
-  syncing: seq(...RING_PATH.map((_, k) => F(put(RING, [RING_PATH[k], RING_PATH[(k + 11) % 22]]), 90))),
+  building: seq(F(HAM_UP, 520), F(HAM_MID, 100), F(put(HAM_HIT, [[4,3],[8,3]]), 110), F(HAM_HIT, 160), F(HAM_MID, 130)),
+  syncing: seq(...[0,1,2,3,4,5,6,7,8].map(k => F(over(wrapX(ARROW_R, k), wrapX(ARROW_L, -k)), 130))),
   searching: seq(F(LENS, 420), ...[1,2,3,4,5].map(x => F(put(LENS, LENS_COL(x)), 150)), F(LENS, 200), F(put(LENS, [[2,2]]), 180)),
   analyzing: seq(...[0,1,2,3,4,5,6].map(t => F(bars(t), 110)), ...[[1,5],[3,3],[5,4],[7,1]].map(c => F(put(bars(9), [c]), 130)), F(bars(9), 900), F(EMPTY, 260)),
   thinking: seq(F(BULB, 520), F(put(BULB, FIL), 420), F(put(hot(BULB), [[0,0],[8,0]]), 120), F(put(BULB, FIL), 300)),
@@ -607,14 +627,14 @@ const SPRITES = {
   uploading: seq(...[2,1,0,-1,-2,-3].map(dy => F(over(TRAY, shift(ARR_UP, 0, dy)), 140)), F(TRAY, 380)),
   downloading: seq(...[-3,-2,-1,0,1,2].map(dy => F(over(TRAY, shift(ARR_DN, 0, dy)), 140)), F(hot(TRAY), 110), F(TRAY, 300)),
   error: seq(F(put(TRI, BANG, '#'), 900), F(TRI, 220), F(put(TRI, BANG, '#'), 900), F(shift(put(TRI, BANG, '#'), 1, 0), 70), F(shift(put(TRI, BANG, '#'), -1, 0), 70), F(shift(put(TRI, BANG, '#'), 1, 0), 70)),
-  debugging: seq(F(BUG_A, 300), F(BUG_B, 300)),
+  debugging: seq(F(put(BUG_BODY, LEGS_A, '#'), 260), F(put(BUG_BODY, LEGS_B, '#'), 260)),
   heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(HEART_M, 90), F(HEART_S, 140), F(HEART_L, 70), F(HEART_M, 80), F(HEART_S, 610)),
   scanning: seq(...[0,1,2,3,4,5,6,7].map(k => F(dna(k * Math.PI / 4), 150))),
   breathing: seq(F(LUNG_S, 1000), F(LUNG_M, 350), F(LUNG_L, 1800), F(LUNG_M, 350)),
   calculating: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(rowsUpTo(SIGMA, k), 70)), F(put(SIGMA, EQ, '#'), 520), F(SIGMA, 220), F(put(SIGMA, EQ, '#'), 520), F(SIGMA, 220), F(EMPTY, 260)),
 };
 for (const st of STATES) st.sprite = SPRITES[st.id];
-function restTime(sp) { const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) >= mx * 0.8 && f.ms > best) { best = f.ms; at = acc + f.ms / 2; } acc += f.ms; } return at / 1000; }
+function restTime(sp) { const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms / 2; } acc += f.ms; } return at / 1000; }
 function spriteScene(st, t, c, o) {
   const sp = st.sprite, off = (c.N - ART) / 2; let ms = (t * 1000) % (sp.period * 1000), fr = sp.frames[sp.frames.length - 1];
   for (const f of sp.frames) { if (ms < f.ms) { fr = f; break; } ms -= f.ms; }

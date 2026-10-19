@@ -5,6 +5,7 @@ const EMPTY = bm('.........','.........','.........','.........','.........','..
 const shift = (b, dx, dy) => b.map((_, r) => Array.from({ length: 9 }, (__, c) => { const sr = r - dy, sc = c - dx; return (sr >= 0 && sr < 9 && sc >= 0 && sc < 9) ? b[sr][sc] : '.'; }).join(''));
 const over = (...bs) => bs[0].map((_, r) => Array.from({ length: 9 }, (__, c) => { let v = '.'; for (const b of bs) { const ch = b[r][c]; if (ch === 'W') v = 'W'; else if (ch === '#' && v === '.') v = '#'; } return v; }).join(''));
 const hot = b => b.map(r => r.replace(/#/g, 'W'));
+const wrapX = (b, dx) => b.map(r => { const d = ((dx % 9) + 9) % 9; return r.slice(9 - d) + r.slice(0, 9 - d); });
 const rowsUpTo = (b, k) => b.map((r, i) => i < k ? r : '.........');
 const colsUpTo = (b, k) => b.map(r => r.slice(0, k) + '.'.repeat(9 - k));
 const put = (b, cells, ch = 'W') => b.map((r, i) => r.split('').map((v, c) => cells.some(([x, y]) => x === c && y === i) ? ch : v).join(''));
@@ -22,49 +23,58 @@ const TICK = bm(
   '##.##....',
   '.###.....',
   '..#......');
-/* building: a hammer that pivots at the bottom-left grip */
-const HAM_90 = bm(
-  '#####....',
-  '#####....',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......',
-  '..#......');
-const HAM_45 = bm(
+/* building: a solid hammer, grip at the bottom-left, swinging from raised to strike */
+const HAM_UP = bm(
+  '.....####',
+  '....#####',
+  '...######',
+  '...####..',
+  '..###....',
+  '.###.....',
+  '###......',
+  '##.......',
+  '#........');
+const HAM_MID = bm(
+  '.........',
+  '.........',
   '......###',
   '.....####',
   '....#####',
-  '...##.##.',
-  '..##.....',
-  '.##......',
-  '##.......',
-  '#........',
-  '.........');
-const HAM_0 = bm(
-  '.........',
-  '.........',
-  '.........',
-  '.........',
-  '.........',
-  '......###',
-  '......###',
-  '#########',
-  '......###');
-/* syncing: a closed ring with two arrowheads; two runners travel it */
-const RING = bm(
   '...####..',
-  '..#....#.',
-  '.#......#',
-  '.#....###',
-  '.#.....#.',
-  '###....#.',
-  '#......#.',
-  '.#....#..',
-  '..####...');
-const RING_PATH = [[3,0],[4,0],[5,0],[6,0],[7,1],[8,2],[8,3],[7,4],[7,5],[7,6],[6,7],[5,8],[4,8],[3,8],[2,8],[1,7],[0,6],[0,5],[1,4],[1,3],[1,2],[2,1]];
+  '.####....',
+  '###......',
+  '#........');
+const HAM_HIT = bm(
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.....####',
+  '.....####',
+  '.....####',
+  '#########',
+  '#########');
+/* syncing: two arrows exchanging, the top one slides right and the bottom one slides left, wrapping */
+const ARROW_R = bm(
+  '.........',
+  '.....#...',
+  '#######..',
+  '.....#...',
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.........');
+const ARROW_L = bm(
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '.........',
+  '...#.....',
+  '..#######',
+  '...#.....',
+  '.........');
 /* searching: a magnifier that stays put while a scan line sweeps the glass */
 const LENS = bm(
   '..###....',
@@ -135,9 +145,19 @@ const TRI = bm(
   '#.......#',
   '#########');
 const BANG = [[4,3],[4,4],[4,5],[4,7]];
-/* debugging: a bug whose legs alternate */
-const BUG_A = bm('.#.....#.','..#...#..','..#####..','.#.###.#.','#.#####.#','..#####..','#.#####.#','.#.###.#.','..#...#..');
-const BUG_B = bm('.#.....#.','..#...#..','..#####..','#..###..#','.######.#','..#####..','.######.#','#..###..#','..#...#..');
+/* debugging: a bug with a fixed body; only the legs step */
+const BUG_BODY = bm(
+  '..#...#..',
+  '...###...',
+  '...###...',
+  '..##.##..',
+  '..##.##..',
+  '..##.##..',
+  '..##.##..',
+  '...###...',
+  '.........');
+const LEGS_A = [[0,2],[1,2],[7,2],[8,2],[0,4],[1,4],[7,4],[8,4],[0,6],[1,6],[7,6],[8,6]];
+const LEGS_B = [[0,3],[1,3],[7,3],[8,3],[0,5],[1,5],[7,5],[8,5],[0,7],[1,7],[7,7],[8,7]];
 /* heartbeat: three heart sizes on a lub-dub */
 const HEART_S = bm('.........','..##.##..','.#######.','.#######.','..#####..','...###...','....#....','.........','.........');
 const HEART_M = bm('.........','.##...##.','#########','#########','.#######.','..#####..','...###...','....#....','.........');
@@ -161,8 +181,8 @@ function bars(t) {
 }
 const SPRITES = {
   done: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(colsUpTo(TICK, k), 70)), F(hot(TICK), 130), F(TICK, 1800), F(EMPTY, 300)),
-  building: seq(F(HAM_90, 560), F(HAM_45, 110), F(put(HAM_0, [[5,8],[8,4]]), 120), F(HAM_0, 160), F(HAM_45, 140)),
-  syncing: seq(...RING_PATH.map((_, k) => F(put(RING, [RING_PATH[k], RING_PATH[(k + 11) % 22]]), 90))),
+  building: seq(F(HAM_UP, 520), F(HAM_MID, 100), F(put(HAM_HIT, [[4,3],[8,3]]), 110), F(HAM_HIT, 160), F(HAM_MID, 130)),
+  syncing: seq(...[0,1,2,3,4,5,6,7,8].map(k => F(over(wrapX(ARROW_R, k), wrapX(ARROW_L, -k)), 130))),
   searching: seq(F(LENS, 420), ...[1,2,3,4,5].map(x => F(put(LENS, LENS_COL(x)), 150)), F(LENS, 200), F(put(LENS, [[2,2]]), 180)),
   analyzing: seq(...[0,1,2,3,4,5,6].map(t => F(bars(t), 110)), ...[[1,5],[3,3],[5,4],[7,1]].map(c => F(put(bars(9), [c]), 130)), F(bars(9), 900), F(EMPTY, 260)),
   thinking: seq(F(BULB, 520), F(put(BULB, FIL), 420), F(put(hot(BULB), [[0,0],[8,0]]), 120), F(put(BULB, FIL), 300)),
@@ -173,7 +193,7 @@ const SPRITES = {
   uploading: seq(...[2,1,0,-1,-2,-3].map(dy => F(over(TRAY, shift(ARR_UP, 0, dy)), 140)), F(TRAY, 380)),
   downloading: seq(...[-3,-2,-1,0,1,2].map(dy => F(over(TRAY, shift(ARR_DN, 0, dy)), 140)), F(hot(TRAY), 110), F(TRAY, 300)),
   error: seq(F(put(TRI, BANG, '#'), 900), F(TRI, 220), F(put(TRI, BANG, '#'), 900), F(shift(put(TRI, BANG, '#'), 1, 0), 70), F(shift(put(TRI, BANG, '#'), -1, 0), 70), F(shift(put(TRI, BANG, '#'), 1, 0), 70)),
-  debugging: seq(F(BUG_A, 300), F(BUG_B, 300)),
+  debugging: seq(F(put(BUG_BODY, LEGS_A, '#'), 260), F(put(BUG_BODY, LEGS_B, '#'), 260)),
   heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(HEART_M, 90), F(HEART_S, 140), F(HEART_L, 70), F(HEART_M, 80), F(HEART_S, 610)),
   scanning: seq(...[0,1,2,3,4,5,6,7].map(k => F(dna(k * Math.PI / 4), 150))),
   breathing: seq(F(LUNG_S, 1000), F(LUNG_M, 350), F(LUNG_L, 1800), F(LUNG_M, 350)),
