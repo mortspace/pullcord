@@ -99,7 +99,8 @@ const bars = (hs, light = -1) => stamp(BAR_X.flatMap((x, i) => Array.from({ leng
 /* searching: a magnifying glass, a round lens with a glint, a short collar and a solid handle at 45 degrees.
    The whole glass circles, the way the searching glass does on a Mac. It looks around rather than spins: it lingers at
    the top and the bottom of the circle and sweeps quickly through the sides, and the glint on the lens catches the
-   light at the top */
+   light at the top. It reads like a real magnifier: there is a page of fine print under it, too small to see, and only
+   through the lens do the lines show, dim, sliding past as the glass moves */
 const MAG = bm(
   '..###.....',
   '.#...#....',
@@ -115,6 +116,10 @@ const magAt = (dx, dy) => stamp(cellsOf(MAG, dx, dy));
 const MAG_PATH = [[2,1],[3,1],[3,2],[3,3],[2,3],[1,3],[1,2],[1,1]];
 const MAG_MS = [190, 120, 100, 120, 190, 120, 100, 120];
 const GLINT = [[2,2],[1,3]];
+const FINE_PRINT = ['.............', '.###.##.####.', '.............', '##.####.###..', '.............', '.####.##.###.', '.............', '###.##.####..', '.............', '.##.###.##.##', '.............', '.............', '.............'];
+const LENS = [[2,1],[3,1],[4,1],[1,2],[3,2],[4,2],[5,2],[2,3],[3,3],[4,3],[5,3],[1,4],[2,4],[3,4],[4,4],[5,4],[2,5],[3,5],[4,5]];
+const searchAt = (dx, dy, glint) => stamp([...cellsOf(MAG, dx, dy), ...LENS.map(([x, y]) => [x + dx, y + dy]).filter(([x, y]) => FINE_PRINT[y] && FINE_PRINT[y][x] === '#').map(([x, y]) => [x, y, ':']),
+  ...(glint ? GLINT.map(([x, y]) => [x + dx, y + dy, 'W']) : [])]);
 
 /* generating: the sparkle pair everyone now reads as AI, a big four-point star and a small one. They pulse in opposite
    phase, so one grows while the other shrinks. Each pops a cell past its size with a white-hot core and settles back,
@@ -127,18 +132,24 @@ const sparkle = (r, small, hot) => stamp([...(r < 0 ? xStarCells(...BIG, -r) : s
 /* writing: a pencil in two tones so it reads as a pencil: eraser, metal band, body, sharpened wood and a graphite point.
    The point traces a line of handwriting as the page slides under it: it rises and falls with every stroke, the ink leaves
    the point bright and dries to a faint line, and the pencil lifts between words. Like a real hand it lingers where a
-   stroke turns and at the lift, and moves quickly through the middle of a stroke. */
+   stroke turns and at the lift, and moves quickly through the middle of a stroke. Halfway through the word it writes
+   an i: at the top of the stroke the page stops, the pencil lifts high, taps a dot above the stroke, and carries on. */
 const PENCIL = [[-8,-8,'#'],[-7,-8,'#'],[-6,-8,'#'],[-7,-7,':'],[-6,-7,':'],[-5,-7,':'],
   [-6,-6,'#'],[-5,-6,'#'],[-4,-6,'#'],[-5,-5,'#'],[-4,-5,'#'],[-3,-5,'#'],[-4,-4,'#'],[-3,-4,'#'],[-2,-4,'#'],[-3,-3,'#'],[-2,-3,'#'],[-1,-3,'#'],
   [-2,-2,':'],[-1,-2,':'],[0,-2,':'],[-1,-1,':'],[0,-1,':'],[0,0,'W']];
 const HAND = [11,10,9,10,11,11,10,9,10,11,10,11,0,0];
 const TIP = 10;
 const handMs = t => { const y = HAND[(TIP + t) % HAND.length]; return y === 0 ? 170 : y === 10 ? 95 : 140; };
-const writeAt = t => {
+/* the i: the stroke at HAND[I_STEM] peaks at row 9 and gets its dot two rows above. tipY overrides where the point is;
+   dotted says the dot at the point has been tapped */
+const I_STEM = 7, I_DOT_Y = 7, I_AT = (I_STEM - TIP + HAND.length) % HAND.length;
+const writeAt = (t, tipY, dotted, tapping) => {
   const W = x => HAND[((x + t) % HAND.length + HAND.length) % HAND.length];
   const ink = Array.from({ length: TIP }, (_, x) => W(x) ? [x, W(x), x >= TIP - 2 ? '#' : ':'] : null).filter(Boolean);
-  const y = W(TIP) || 8;
-  return stamp(inGrid([...ink, ...PENCIL.map(([dx, dy, c]) => [TIP + dx, y + dy, c])]));
+  const dotX = ((I_STEM - t) % HAND.length + HAND.length) % HAND.length;
+  const dot = dotX < TIP ? [[dotX, I_DOT_Y, dotX >= TIP - 2 ? '#' : ':']] : dotX === TIP && dotted ? [[TIP, I_DOT_Y, tapping ? 'W' : '#']] : [];
+  const y = tipY != null ? tipY : W(TIP) || 8;
+  return stamp(inGrid([...ink, ...dot, ...PENCIL.map(([dx, dy, c]) => [TIP + dx, y + dy, c])]));
 };
 
 /* syncing: two arrows, right along the top and left along the bottom, taking turns like a handoff. One pulls back a cell,
@@ -152,30 +163,48 @@ const DASH_MS = [0, 150, 75, 60, 60, 75, 110, 150];
 const lane = (step, top) => { const [tip, len] = DASH[step]; return top ? [...arrowCells(tip, 3, 1), ...streak(tip, 3, 1, len)] : [...arrowCells(12 - tip, 9, -1), ...streak(12 - tip, 9, -1, len)]; };
 const syncAt = (topStep, bottomStep) => stamp([...lane(topStep, true), ...lane(bottomStep, false)]);
 
-/* connecting: the Wi-Fi fan, searching the way iOS does it. The whole fan sits dim, so the glyph always reads, and a
-   lit wave with a short tail runs out from the white-hot dot across the arcs, twice. Then it connects: the whole fan
-   lights with the dot white-hot, holds, and dims again from the dot outward */
-const WIFI_DOT = [[6,10]];
-const WIFI_ARC = [
-  [[5,7],[6,7],[7,7],[4,8],[8,8]],
-  [[4,4],[5,4],[6,4],[7,4],[8,4],[3,5],[9,5],[2,6],[10,6]],
-  [[4,1],[5,1],[6,1],[7,1],[8,1],[2,2],[3,2],[9,2],[10,2],[1,3],[11,3],[0,4],[12,4]]];
-const WIFI = [WIFI_DOT, ...WIFI_ARC];
-const fan = tones => stamp(WIFI.flatMap((cs, e) => cs.map(([x, y]) => [x, y, tones[e]])));
-const wave = p => fan([0, 1, 2, 3].map(e => e === p ? (e === 0 ? 'W' : '#') : e === p - 1 && e > 0 ? '#' : ':'));
+/* connecting: a plug and a socket, the way two cables join. Apart, the cables are dim: no power. The two halves ease
+   toward each other and meet in the middle, the prongs slide into the slots, and the plug pushes home with a click,
+   sparks at the seam, then settles back so the prongs show as a seam between the halves. Power flows: light runs out
+   from the seam along both cables and they stay lit. Then the power drops and the halves pull apart again. */
+const PLUG = ['###..', '###..', '#####', '###..', '#####', '###..', '###..'];
+const SOCKET = ['###', '###', ':##', '###', ':##', '###', '###'];
+/* plug body at px, socket at sx; cables dim, or lit out to `flow` cells from the bodies with a white head. A prong in
+   its slot fills it */
+const plugAt = (px, sx, { flow = -1, spark = false } = {}) => stamp([
+  ...Array.from({ length: px }, (_, x) => [x, 6, flow < 0 ? ':' : x === px - flow ? 'W' : x > px - flow ? '#' : ':']),
+  ...Array.from({ length: N - sx - 3 }, (_, i) => { const x = sx + 3 + i; return [x, 6, flow < 0 ? ':' : i === flow - 1 ? 'W' : i < flow - 1 ? '#' : ':']; }),
+  ...cellsOf(SOCKET, sx, 3), ...cellsOf(PLUG, px, 3).filter(([x]) => x < sx), ...(px + 4 >= sx ? [[sx, 5, '#'], [sx, 7, '#']] : []),
+  ...(spark ? [[sx, 1, 'W'], [sx, 11, 'W'], [sx - 1, 0, ':'], [sx + 1, 0, ':'], [sx - 1, 12, ':'], [sx + 1, 12, ':']] : [])]);
+const PLUG_LIT = plugAt(3, 7, { flow: 9 });
 
-/* uploading / downloading: arrows stream through a tray without stopping, a new arrow every twelve rows. The tray walls
-   give a little each time an arrow leaves or lands. Uploads launch: the tray dips, the arrow eases out of it and
-   speeds up as it climbs. Downloads fall: each arrow drops in slowly, gathers speed like it has weight and lands hard. */
+/* uploading / downloading: arrows and a tray, and what the arrows carry piles up in it as layers of data.
+   Downloading: each arrow drops in, gathers speed like it has weight, and lands hard: the tray walls give, the arrowhead
+   squashes flat and spreads into a dim layer on the pile. Three arrows fill the tray; full, it lights up once and sinks
+   away, and the next download starts. Uploading runs it the other way: the tray starts full, the top layer gathers and
+   pinches up into an arrowhead, the tray dips as it launches, and it pulls its shaft out of the pile and speeds up as
+   it climbs. Empty, the tray fills again from the bottom. */
 const TRAY = [[0,9],[0,10],[0,11],[12,9],[12,10],[12,11],...Array.from({ length: 13 }, (_, x) => [x, 12])];
 const TRAY_SQUASH = [[0,10],[0,11],[12,10],[12,11],...Array.from({ length: 13 }, (_, x) => [x, 12])];
 const ARROW_UP = [[6,0],[5,1],[6,1],[7,1],[4,2],[5,2],[6,2],[7,2],[8,2],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[6,4],[6,5],[6,6],[6,7]];
-const ARROW_GAP = 12;
-const arrowStream = (t, up) => { const cs = []; for (const k of [-1, 0, 1]) { const oy = (up ? 12 - t : t - 8) + ARROW_GAP * k; for (const [x, y] of ARROW_UP) { const yy = (up ? y : 7 - y) + oy; if (yy < 12) cs.push([x, yy, '#']); } } return cs; };
-const trayFrame = (t, up) => stamp([...(t === 0 ? TRAY_SQUASH : TRAY).map(([x, y]) => [x, y, '#']), ...arrowStream(t, up)]);
+const trayCells = squash => (squash ? TRAY_SQUASH : TRAY).map(([x, y]) => [x, y, '#']);
+const layerCells = (row, tone = ':', x0 = 1, x1 = 11) => Array.from({ length: x1 - x0 + 1 }, (_, i) => [x0 + i, row, tone]);
+const pile = (rows, tone = ':') => rows.flatMap(r => layerCells(r, tone));
+const arrowDown = tip => ARROW_UP.map(([x, y]) => [x, tip - y, '#']);
+const arrowUp = (tip, below = N) => ARROW_UP.map(([x, y]) => [x, tip + y, '#']).filter(([, y]) => y < below);
 /* each step is one row; the time a row takes falls the way it does under gravity, clamped so the slowest is readable */
-const GRAVITY_MS = Array.from({ length: ARROW_GAP - 1 }, (_, s) => Math.round(Math.max(45, Math.min(160, 300 * (Math.sqrt(s + 1) - Math.sqrt(s))))));
-const streamMs = t => t === 0 ? 150 : GRAVITY_MS[t - 1];
+const gravityMs = s => Math.round(Math.max(45, Math.min(150, 280 * (Math.sqrt(s + 1) - Math.sqrt(s)))));
+const downloadFrames = () => [0, 1, 2].flatMap(f => {
+  const land = 11 - f, under = Array.from({ length: f }, (_, k) => 11 - k);
+  return [...Array.from({ length: land - 1 }, (_, s) => F(stamp([...trayCells(), ...pile(under), ...arrowDown(s + 1)]), gravityMs(s))),
+    F(stamp([...trayCells(true), ...pile(under), ...layerCells(land, '#', 2, 10), ...layerCells(land - 1, '#', 4, 8), [6, land - 2, '#'], [6, land - 3, '#']]), 90),
+    F(stamp([...trayCells(), ...pile(under), ...layerCells(land, '#'), [6, land - 1, '#']]), 80)];
+}).concat([F(stamp([...trayCells(), ...pile([9, 10, 11], '#')]), 140), F(stamp([...trayCells(), ...pile([10, 11])]), 90), F(stamp([...trayCells(), ...pile([11])]), 90), F(stamp(trayCells()), 140)]);
+const uploadFrames = () => [F(stamp([...trayCells(), ...pile([9, 10, 11])]), 260), ...[0, 1, 2].flatMap(f => {
+  const from = 9 + f, left = Array.from({ length: 2 - f }, (_, k) => 11 - k), rise = [];
+  for (let tip = from - 4, s = 0; tip > -8; tip -= s > 3 ? 2 : 1, s++) rise.push(F(stamp([...trayCells(), ...pile(left), ...arrowUp(tip, from)]), gravityMs(s)));
+  return [F(stamp([...trayCells(), ...pile(left), ...layerCells(from, '#', 2, 10)]), 110), F(stamp([...trayCells(true), ...pile(left), ...arrowUp(from - 3, from + 1)]), 100), ...rise];
+}), F(stamp(trayCells()), 160), F(stamp([...trayCells(), ...pile([11])]), 90), F(stamp([...trayCells(), ...pile([10, 11])]), 90)];
 
 /* done, Stroke and Spring takes: a two-cell check. Both arms are exact 45 degree diagonals, the short arm four steps,
    the long arm eight. */
@@ -234,25 +263,28 @@ const workshop = (top, headY, slide = 0, spark = false) => stamp(inGrid([
   ...(spark ? [[0, headY - 1, 'W'], [4, headY - 1, 'W']] : []),
 ]));
 
-/* debugging: an ant seen from above, crawling diagonally with its head to the top-right. The body is bright: a round head,
-   a thorax, a pinched waist and a big abdomen. Legs and antennae are dim, so they read as fine detail and never clutter
-   the body. Three legs step at a time. Like a real ant it moves in bursts: it slows to a stop in the middle, its
-   antennae twitch as it checks the spot, then it hurries off and the next ant comes in from the bottom-left. */
-const ellipseCells = (cx, cy, a, b) => { const out = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const al = ((x - cx) - (y - cy)) / Math.SQRT2, ac = ((x - cx) + (y - cy)) / Math.SQRT2; if ((al / a) ** 2 + (ac / b) ** 2 <= 1) out.push([x, y]); } return out; };
-const ANT_BODY = [...ellipseCells(3, 9, 3.3, 2.1), ...ellipseCells(7.5, 4.5, 1.2, 0.9), [6, 6], ...ellipseCells(9.5, 2.5, 1.2, 1.2)];
-const mirrorAxis = cs => cs.map(([x, y]) => [12 - y, 12 - x]);
-const LEGS_L = { reach: [[[7,3],[7,2],[6,1]], [[6,4],[5,4],[4,3]], [[6,5],[5,5],[4,5]]], tuck: [[[7,3],[6,2]], [[6,4],[5,3]], [[6,5],[5,6]]] };
-const ANTENNAE = [[10,1],[10,0],[11,2],[12,2]], ANTENNAE_TWITCH = [[10,1],[11,0],[11,2],[12,3]];
-const antCells = (pose, twitch) => {
+/* debugging: an ant seen from above, crawling diagonally with its head to the top-right, drawn cute: a big round head
+   with two bright eyes, a small thorax, and a round abdomen no bigger than the head, pinched at the neck and the waist
+   by single diagonal joints. Short dim legs step three at a time and two bobble antennae lead. Like a real ant it moves
+   in bursts: it slows to a stop in the middle, its antennae twitch and it blinks as it checks the spot, then it hurries
+   off and the next ant comes in from the bottom-left. */
+const blob4 = (x0, y0, keep) => cellsOf(['.##.', '####', '####', '.##.'], x0, y0).map(([x, y]) => [x, y]).concat([keep]);
+const ANT_BODY = [...blob4(7, 2, [7, 5]), [5, 6], [6, 6], [5, 7], [6, 7], ...blob4(1, 8, [4, 8])];
+const ANT_EYES = [[8, 3], [9, 4]];
+const mirrorAxis = cs => cs.map(([x, y, ...r]) => [12 - y, 12 - x, ...r]);
+const LEGS_L = { reach: [[[5,5],[5,4]], [[4,5],[3,4]], [[4,6],[3,6]]], tuck: [[[5,5],[6,4]], [[4,5],[4,4]], [[4,6],[3,7]]] };
+const ANTENNAE = [[7,1,':'],[6,0,'#']], ANTENNAE_TWITCH = [[8,1,':'],[8,0,'#']];
+const antCells = (pose, twitch, blink) => {
   const legs = [0, 1, 2].flatMap(k => { const leftReach = pose === 'all' || (k + pose) % 2 === 0, rightReach = pose === 'all' || (k + pose) % 2 === 1;
     return [...(leftReach ? LEGS_L.reach : LEGS_L.tuck)[k], ...mirrorAxis((rightReach ? LEGS_L.reach : LEGS_L.tuck)[k])]; });
-  return [...ANT_BODY.map(([x, y]) => [x, y, '#']), ...[...legs, ...(twitch ? ANTENNAE_TWITCH : ANTENNAE)].map(([x, y]) => [x, y, ':'])];
+  const an = twitch ? ANTENNAE_TWITCH : ANTENNAE;
+  return [...ANT_BODY.map(([x, y]) => [x, y, '#']), ...ANT_EYES.map(([x, y]) => [x, y, blink ? '#' : 'W']), ...legs.map(([x, y]) => [x, y, ':']), ...an, ...mirrorAxis(an)];
 };
 const ANT_GAP = 14;
-const crawl = (i, twitch) => { const d = i - ANT_GAP / 2, pose = i % 2; return stamp([d - ANT_GAP, d, d + ANT_GAP].flatMap(k => antCells(pose, twitch && k === d).map(([x, y, c]) => [x + k, y - k, c]))); };
+const crawl = (i, twitch, blink) => { const d = i - ANT_GAP / 2, pose = i % 2; return stamp([d - ANT_GAP, d, d + ANT_GAP].flatMap(k => antCells(pose, twitch && k === d, blink && k === d).map(([x, y, c]) => [x + k, y - k, c]))); };
 /* one loop from the stop in the middle: the twitching pause, then thirteen steps that speed up and slow down again */
 const CRAWL_MS = ease(ANT_GAP - 1, 170, 60);
-const antLoop = () => [F(crawl(7), 170), F(crawl(7, true), 110), F(crawl(7), 110), F(crawl(7, true), 110), ...CRAWL_MS.map((ms, s) => F(crawl((8 + s) % ANT_GAP), ms))];
+const antLoop = () => [F(crawl(7), 170), F(crawl(7, true), 110), F(crawl(7, false, true), 90), F(crawl(7), 110), F(crawl(7, true), 110), ...CRAWL_MS.map((ms, s) => F(crawl((8 + s) % ANT_GAP), ms))];
 
 /* heartbeat: three heart sizes on a lub-dub. On each beat the heart pops to full size and shrinks back inside a dim
    outline of itself, a halo that lingers a moment and fades, the way a pulse ring spreads and dies */
@@ -300,13 +332,14 @@ const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
   analyzing: restAtLongest(seq(...[1, 2, 3, 4, 5, 6, 7].map(f => F(bars(BAR_H.map((H, i) => riseH(H, f - i))), 95)), ...[0, 1, 2, 3].map(i => F(bars(BAR_H, i), 140)), F(bars(BAR_H), 900), ...[1, 2, 3, 4, 5, 6].map(f => F(bars(BAR_H.map((H, i) => fallH(H, f - i))), [90, 75, 65, 60, 60, 60][f - 1])), F(EMPTY, 180))),
-  searching: Object.assign(seq(...MAG_PATH.map(([x, y], i) => F(i === 0 ? put(magAt(x, y), GLINT.map(([gx, gy]) => [gx + x, gy + y])) : magAt(x, y), MAG_MS[i]))), { still: magAt(2, 2), trail: 0.6 }),
+  searching: Object.assign(seq(...MAG_PATH.map(([x, y], i) => F(searchAt(x, y, i === 0), MAG_MS[i]))), { still: searchAt(2, 2), trail: 0.6 }),
   generating: Object.assign(seq(F(sparkle(1, 2), 190), F(sparkle(2, 1), 105), F(sparkle(4, 0, 'big'), 125), F(sparkle(3, 0), 620), F(sparkle(3, 1), 110), F(sparkle(2, 2, 'small'), 125), F(sparkle(1, 2), 150), F(sparkle(-1, 2), 110)), { still: sparkle(4, 2) }),
-  writing: Object.assign(seq(...HAND.map((_, t) => F(writeAt(t), handMs(t)))), { rest: 3, trail: 0.5 }),
+  writing: Object.assign(seq(...HAND.flatMap((_, t) => t === I_AT ? [F(writeAt(t), handMs(t)), F(writeAt(t, 5), 120), F(writeAt(t, I_DOT_Y, true, true), 90), F(writeAt(t, 9, true), 100)] : [F(writeAt(t), handMs(t))])), { rest: 3, trail: 0.5 }),
   syncing: Object.assign(seq(F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(k, 0), DASH_MS[k])), F(syncAt(0, 0), 260), ...[1, 2, 3, 4, 5, 6, 7].map(k => F(syncAt(0, k), DASH_MS[k]))), { still: syncAt(0, 0), trail: 0.6 }),
-  connecting: restAtLongest(seq(...[0, 1].flatMap(() => [0, 1, 2, 3, 4, 5].map(p => F(wave(p), p === 5 ? 170 : 115))), F(fan('W###'), 120), F(fan('####'), 1100), F(fan(':###'), 90), F(fan('::##'), 90), F(fan(':::#'), 90), F(fan('::::'), 220))),
-  uploading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, true), streamMs(t)))), { rest: 10, trail: 0.45 }),
-  downloading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, false), streamMs(t)))), { rest: 9, trail: 0.45 }),
+  connecting: Object.assign(seq(F(plugAt(1, 9), 420), F(plugAt(2, 8), 140), F(plugAt(3, 7), 100), F(plugAt(4, 7, { spark: true }), 80), F(plugAt(3, 7), 120),
+    ...[1, 2, 3].map(k => F(plugAt(3, 7, { flow: k }), 60)), F(PLUG_LIT, 1000), F(plugAt(3, 7), 140), F(plugAt(2, 8), 90)), { still: plugAt(2, 8), trail: 0.6 }),
+  uploading: Object.assign(seq(...uploadFrames()), { still: stamp([...trayCells(), ...pile([10, 11]), ...arrowUp(1)]), trail: 0.45 }),
+  downloading: Object.assign(seq(...downloadFrames()), { still: stamp([...trayCells(), ...pile([11]), ...arrowDown(7)]), trail: 0.45 }),
   done: restAtLongest(seq(...MORPH_IN, ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 1150), ...MORPH_OUT)),
   done_stroke: restAtLongest(seq(...CHECK_PAIRS.map((_, k) => F(strokeTo(0, k + 1, true), [80,70,60,55,50,45,45,45,50,55,65,80][k])), F(CHECK, 520), ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 900), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 40)), F(EMPTY, 280))),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -7), 60), F(shift(CHECK, 0, -4), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[3], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 3), 60), F(shift(CHECK, 0, 7), 60), F(EMPTY, 320))),
