@@ -351,12 +351,12 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
   <section>
     <h2>Usage</h2>
-    <p>One component, one prop that names the state. Color follows the state unless you pass a tint. <code>done</code> and <code>error</code> stop on their final frame.</p>
+    <p>One component, one prop that names the state, and an optional <code>variant</code> that picks one of its takes from the Options above. Color follows the state unless you pass a tint. <code>done</code> and <code>error</code> stop on their final frame.</p>
     <div class="code"><pre>import { PixelLoader } from 'pixel-loader'
 import 'pixel-loader/pixel-loader.css'
 
 &lt;PixelLoader state="heartbeat" size={32} label="Reading your heartbeat" /&gt;
-&lt;PixelLoader state="done" size={32} label="Done" /&gt;
+&lt;PixelLoader state="done" variant="bend" size={32} label="Done" /&gt;
 &lt;PixelLoader state="building" palette="ios" tint="systemBlue" /&gt;</pre></div>
   </section>
 
@@ -366,6 +366,7 @@ import 'pixel-loader/pixel-loader.css'
       <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>state</code></td><td><code>StateName</code></td><td><code>'thinking'</code></td><td>Which sprite to play. One of the eighteen below.</td></tr>
+        <tr><td><code>variant</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Which take of the state to play, by its name in Options, such as <code>'bend'</code> for done. Omit it for the default.</td></tr>
         <tr><td><code>label</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Text beside the glyph. Omit it for a bare glyph.</td></tr>
         <tr><td><code>size</code></td><td><code>24 | 32 | 48 | 64</code></td><td><code>32</code></td><td>Glyph size G. Everything else derives from it.</td></tr>
         <tr><td><code>palette</code></td><td><code>'vivid' | 'ios'</code></td><td><code>'vivid'</code></td><td>Saturated hues, or Apple system colors.</td></tr>
