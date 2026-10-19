@@ -66,7 +66,18 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 
 .hero > * { min-width: 0; }
 .hero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 36px 28px 28px; display: grid; gap: 22px; }
-.hero-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hero-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+.hero-row .v { display: grid; gap: 8px; max-width: 100%; min-width: 0; }
+.hero-row .v em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+.ruling { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; display: grid; gap: 14px; }
+.ruling p { margin: 0; color: var(--muted); max-width: 72ch; }
+.ruling .tbl { overflow-x: auto; }
+.ruling table { border-collapse: collapse; font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
+.ruling th, .ruling td { text-align: left; padding: 7px 14px 7px 0; border-bottom: 1px solid var(--line); font-weight: 500; }
+.ruling th { color: var(--muted); font-weight: 500; }
+.ruling td.k { color: var(--muted); }
+.ruling ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 4px; }
+.ruling ul b { color: var(--fg); font-weight: 500; }
 .hero-meta { color: var(--muted); font-family: var(--font-mono); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 .hero-meta b { color: var(--fg); font-weight: 500; }
 .hero-idea { margin: 0; color: var(--muted); max-width: 70ch; }
@@ -75,15 +86,21 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .strip .f { flex: 0 0 auto; display: grid; justify-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
 .strip .f .loader { width: 38px; height: 38px; }
 
+/* Ruling: every dimension of a button derives from the glyph size G (--g). */
 .pill {
-  display: inline-flex; align-items: center; gap: .7em;
-  background: var(--pill); border: 1px solid var(--pill-line); border-radius: 1.15em;
-  padding: .8em 1.2em .8em .95em;
-  font-weight: 600; letter-spacing: -.015em; line-height: 1;
-  color: var(--fg);
+  --g: 48px;
+  display: inline-flex; align-items: center; box-sizing: border-box;
+  gap: calc(var(--g) * .4);
+  height: calc(var(--g) * 1.6);
+  padding: 0 calc(var(--g) * .6) 0 calc(var(--g) * .45);
+  border-radius: calc(var(--g) * .5);
+  font-size: calc(var(--g) * .52); font-weight: 600; letter-spacing: -.015em; line-height: 1;
+  background: var(--pill); border: 1px solid var(--pill-line); color: var(--fg);
+  max-width: 100%;
 }
-.pill .lbl { white-space: nowrap; }
-.pill .loader { --s: 1.45em; }
+.pill.fixed { width: min(calc(var(--g) * 8.5), 100%); }
+.pill .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pill .loader { --s: var(--g); }
 .loader { display: inline-block; vertical-align: middle; width: var(--s, 20px); height: var(--s, 20px); flex: 0 0 auto; }
 .loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .loader.still svg { animation: breathe 2.8s ease-in-out infinite; }
@@ -92,8 +109,9 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 
 .states { display: flex; flex-wrap: wrap; gap: 14px 10px; align-items: flex-start; }
 .state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; }
-.state .pill { max-width: 100%; }
-.state .pill .lbl { white-space: normal; text-wrap: balance; }
+.pair { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
+.pair .v { display: grid; gap: 6px; justify-items: start; max-width: 100%; min-width: 0; }
+.pair .v em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
 .state:hover { border-color: var(--line); }
 .state.sel { border-color: hsl(var(--h) 90% 55% / .55); background: var(--surface-2); }
 .state:focus-visible { outline: 2px solid hsl(var(--h) 90% 55%); outline-offset: 2px; }
@@ -142,7 +160,8 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <section>
       <div class="hero" id="hero">
         <div class="hero-row">
-          <div class="pill" id="heroPill" style="font-size: 34px;"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div>
+          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 48px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
+          <div class="v"><em>B · PIXELS ONLY</em><div class="pill fixed" id="heroPillB" style="--g: 48px"><span class="loader" id="heroLoaderB"></span><span class="lbl" id="heroLabelB">Thinking</span></div></div>
         </div>
         <p class="hero-idea" id="heroIdea"></p>
         <div class="hero-meta" id="heroMeta"></div>
@@ -150,6 +169,21 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
           <h2>Across one loop: gather, form, live, dissolve</h2>
           <div class="strip" id="strip"></div>
         </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ruling</h2>
+      <div class="ruling">
+        <p>One number rules a button: the glyph size G. Everything else is a fixed multiple of it, so every button in a tier is the same height, radius and width, and the label sits in the same place.</p>
+        <div class="tbl"><table id="rulingTable"></table></div>
+        <ul>
+          <li><b>Grid.</b> Art is always 9×9 cells. Cell pitch is G ÷ 9, the gap is 26% of a cell, cell radius is 15% of a cell. Bigger grids only add padding around the same art.</li>
+          <li><b>Glyph.</b> A G×G box, flush left inside the button, vertically centered.</li>
+          <li><b>Label.</b> Inter 600, size 0.52 G, line-height 1, letter-spacing −1.5%, left-aligned, vertically centered on the glyph. One line; it never wraps.</li>
+          <li><b>Button.</b> Height 1.6 G. Left padding 0.45 G, gap to label 0.4 G, right padding 0.6 G. Radius 0.5 G. Width is fixed at 8.5 G so a row of buttons lines up and a 22-character label fits; switch to Fit for natural width.</li>
+          <li><b>Color.</b> Three stops per hue: bed at 16% alpha, lit at full saturation, white-hot. Button fill is pure black in dark mode and pure white in light mode.</li>
+        </ul>
       </div>
     </section>
 
@@ -162,16 +196,16 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
       <h2>In context</h2>
       <div class="contexts">
         <div class="ctx" id="ctxInline">
-          <h3>Inline, 9×9 at 1.2em</h3>
+          <h3>Inline, G = 1.2em</h3>
           <p>Your results will be ready in a moment. We are<span class="loader inline-l" data-grid="9" data-state="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-grid="9" data-state="reading"></span>reading the attached report.</p>
         </div>
         <div class="ctx" id="ctxCard">
-          <h3>Card, 9×9 at 36px</h3>
+          <h3>Card, G = 36</h3>
           <div class="card"><span class="loader" data-grid="9" data-state="heartbeat" style="--s: 36px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
           <div class="bar" style="--h: 352"><i></i></div>
         </div>
         <div class="ctx" id="ctxStack">
-          <h3>Steps, 9×9 at 24px</h3>
+          <h3>Steps, G = 24</h3>
           <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="reading" style="--s: 22px"></span><div class="t" style="font-size:14px">Reading docs</div></div>
           <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="building" style="--s: 24px"></span><div class="t" style="font-size:14px">Building</div></div>
           <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="done" style="--s: 24px"></span><div class="t" style="font-size:14px">Done</div></div>
@@ -187,14 +221,16 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
     <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
     <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="9">9×9</button><button data-v="11">11×11</button><button data-v="13">13×13</button></div></div>
-    <div class="ctl"><span class="lab">Glyph size</span><div class="seg" data-set="size"><button data-v="20">20</button><button data-v="24">24</button><button data-v="32">32</button><button data-v="48">48</button><button data-v="64">64</button></div></div>
+    <div class="ctl"><span class="lab">Variant</span><div class="seg" data-set="variant"><button data-v="strings">A strings</button><button data-v="pixels">B pixels</button><button data-v="both">Both</button></div></div>
+    <div class="ctl"><span class="lab">White-hot pixels</span><div class="seg" data-set="hot"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+    <div class="ctl"><span class="lab">Size (G)</span><div class="seg" data-set="size"><button data-v="24">S 24</button><button data-v="32">M 32</button><button data-v="48">L 48</button><button data-v="64">XL 64</button></div></div>
+    <div class="ctl"><span class="lab">Button width</span><div class="seg" data-set="width"><button data-v="fixed">Fixed 8.5G</button><button data-v="fit">Fit</button></div></div>
     <div class="ctl"><span class="lab">Palette</span><div class="seg" data-set="levels"><button data-v="2">3 colors</button><button data-v="3">4</button><button data-v="4">5</button><button data-v="0">Smooth</button></div></div>
     <div class="ctl"><label for="step">Time step <output id="stepOut">smooth</output></label><input type="range" id="step" min="0" max="240" step="10" value="0"></div>
     <div class="ctl"><label for="rise">Rise <output id="riseMsOut">60 ms</output></label><input type="range" id="rise" min="10" max="300" step="10" value="60"></div>
     <div class="ctl"><label for="decay">Trail <output id="decayOut">260 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="260"></div>
     <div class="ctl"><label for="glow">Bloom <output id="glowOut">0.75</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.75"></div>
     <div class="ctl"><label for="bed">Bed <output id="bedOut">0.16</output></label><input type="range" id="bed" min="0" max="0.5" step="0.01" value="0.16"></div>
-    <div class="ctl"><span class="lab">Vector edges</span><div class="seg" data-set="vectors"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
     <div class="ctl"><span class="lab">Motion</span><div class="seg" data-set="motion"><button data-v="on">Animated</button><button data-v="reduced">Reduced</button></div></div>
     <button class="copy" id="copyBtn">Copy tokens as JSON</button>
     <details class="tokens"><summary>Current tokens</summary><pre id="tokensPre"></pre></details>
@@ -209,8 +245,8 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 /* ---------- settings ---------- */
 const S = {
   theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
-  grid: 9, size: 32, levels: 2, step: 0, rise: 40, decay: 220, glow: 0.75, bed: 0.16,
-  vectors: 'on', motion: 'on',
+  grid: 9, size: 48, levels: 2, step: 0, rise: 40, decay: 220, glow: 0.75, bed: 0.16,
+  variant: 'both', hot: 'on', width: 'fixed', motion: 'on',
 };
 
 /* ---------- math ---------- */
@@ -429,7 +465,7 @@ const io = new IntersectionObserver(es => { for (const e of es) { const m = live
 
 class Matrix {
   constructor(el, stateId, N, opts = {}) {
-    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static;
+    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings';
     this.hue = null; this.build();
     if (!this.static) { io.observe(el); live.push(this); }
   }
@@ -453,6 +489,7 @@ class Matrix {
     this.applyHue();
     if (!this.static) this.snapshot(this.state.still);
   }
+  destroy() { io.unobserve(this.el); const i = live.indexOf(this); if (i >= 0) live.splice(i, 1); this.el.innerHTML = ''; }
   applyHue() {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
@@ -475,11 +512,11 @@ class Matrix {
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
     const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1);
     for (let i = 0; i < buf.length; i++) {
-      let v = buf[i]; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
+      let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
       if (idx !== this.lastIdx[i]) { this.lastIdx[i] = idx; this.rects[i].setAttribute('fill', rp.fills[idx]); this.rects[i].setAttribute('opacity', rp.alphas[idx]); this.brects[i].setAttribute('fill', rp.fills[idx]); const g = clamp((v / 1.3 - 0.3) / 0.3, 0, 1); this.brects[i].setAttribute('opacity', (g * glow).toFixed(3)); }
     }
-    const lines = S.vectors === 'on' ? o.lines : [], R = this.ctx.R, toU = v => (v + R) * PITCH + CELL / 2;
+    const lines = this.variant === 'strings' ? o.lines : [], R = this.ctx.R, toU = v => (v + R) * PITCH + CELL / 2;
     while (this.linePool.length < lines.length) { for (const [g, pool, w] of [[this.gEdgeGlow, this.glinePool, 0.8], [this.gEdge, this.linePool, 0.3]]) { const l = document.createElementNS(NS, 'line'); l.setAttribute('stroke-width', w); l.setAttribute('stroke-linecap', 'round'); g.appendChild(l); pool.push(l); } }
     for (let k = 0; k < this.linePool.length; k++) {
       const l = this.linePool[k], g = this.glinePool[k];
@@ -507,38 +544,60 @@ class Matrix {
 ensureFilters();
 let selected = 'thinking';
 const $ = id => document.getElementById(id);
-const heroLoader = new Matrix($('heroLoader'), selected, S.grid);
+const heroLoader = new Matrix($('heroLoader'), selected, S.grid, { variant: 'strings' });
+const heroLoaderB = new Matrix($('heroLoaderB'), selected, S.grid, { variant: 'pixels' });
 const stateEls = {};
 const stripMats = [];
 
 function captionFor(id) { const st = byId[id]; return `<i>${st.hueName} ${st.hue}</i><span>${st.period.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
 function buildStates() {
-  const root = $('states'); root.innerHTML = '';
+  const root = $('states');
+  for (const id in stateEls) for (const m of stateEls[id].ms) m.destroy();
+  for (const k in stateEls) delete stateEls[k];
+  root.innerHTML = '';
+  const variants = S.variant === 'both' ? ['strings', 'pixels'] : [S.variant];
   let group = null;
   for (const st of STATES) {
     if (st.group !== group) { group = st.group; const g = document.createElement('div'); g.className = 'group-title'; g.textContent = group; root.appendChild(g); }
     const b = document.createElement('button'); b.className = 'state'; b.type = 'button'; b.dataset.id = st.id;
-    const pill = document.createElement('span'); pill.className = 'pill'; pill.style.fontSize = (S.size / 1.45) + 'px';
-    const l = document.createElement('span'); l.className = 'loader';
-    const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
-    pill.append(l, lbl);
+    const pair = document.createElement('div'); pair.className = 'pair';
+    const ms = [], pills = [];
+    for (const v of variants) {
+      const wrap = document.createElement('div'); wrap.className = 'v';
+      if (variants.length > 1) { const em = document.createElement('em'); em.textContent = v === 'strings' ? 'A' : 'B'; wrap.appendChild(em); }
+      const pill = document.createElement('span'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
+      const l = document.createElement('span'); l.className = 'loader';
+      const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
+      pill.append(l, lbl); wrap.appendChild(pill); pair.appendChild(wrap);
+      const m = new Matrix(l, st.id, S.grid, { variant: v }); ms.push(m); pills.push(pill);
+      pill.style.setProperty('--h', m.hue);
+    }
     const small = document.createElement('small'); small.innerHTML = captionFor(st.id);
-    b.append(pill, small);
+    b.append(pair, small);
+    b.style.setProperty('--h', ms[0].hue);
     b.addEventListener('click', () => select(st.id));
     root.appendChild(b);
-    const m = new Matrix(l, st.id, S.grid);
-    b.style.setProperty('--h', m.hue); pill.style.setProperty('--h', m.hue);
-    stateEls[st.id] = { b, m, pill, small };
+    stateEls[st.id] = { b, ms, pills, small };
   }
   markSelected();
+}
+function rulingHtml() {
+  const tiers = [['S', 24], ['M', 32], ['L', 48], ['XL', 64]];
+  const r = (v) => Math.round(v * 10) / 10;
+  const rows = [
+    ['Glyph G', g => g + ' px'], ['Cell pitch', g => r(g / 9) + ' px'], ['Cell', g => r(g / 9 * (CELL / PITCH)) + ' px'], ['Gap', g => r(g / 9 * (GAP / PITCH)) + ' px'],
+    ['Label size', g => r(g * .52) + ' px'], ['Button height', g => r(g * 1.6) + ' px'], ['Pad left', g => r(g * .45) + ' px'], ['Glyph → label', g => r(g * .4) + ' px'], ['Pad right', g => r(g * .6) + ' px'],
+    ['Radius', g => r(g * .5) + ' px'], ['Width (fixed)', g => r(g * 8.5) + ' px'], ['Use', g => ({ 24: 'inline status, lists', 32: 'cards, toasts', 48: 'panels, empty states', 64: 'hero, full-screen' })[g]],
+  ];
+  return '<tr><th></th>' + tiers.map(t => `<th>${t[0]}</th>`).join('') + '</tr>' + rows.map(([k, f]) => `<tr><td class="k">${k}</td>` + tiers.map(t => `<td>${f(t[1])}</td>`).join('') + '</tr>').join('');
 }
 function markSelected() { for (const id in stateEls) stateEls[id].b.classList.toggle('sel', id === selected); }
 
 function renderHero() {
   const st = byId[selected];
-  $('heroLabel').textContent = st.label;
+  $('heroLabel').textContent = st.label; $('heroLabelB').textContent = st.label;
   $('heroIdea').textContent = st.idea;
-  $('heroPill').style.setProperty('--h', heroLoader.hue);
+  $('heroPill').style.setProperty('--h', heroLoader.hue); $('heroPillB').style.setProperty('--h', heroLoaderB.hue);
   $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${st.period.toFixed(1)} s</b></span><span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
   const strip = $('strip'); strip.innerHTML = ''; stripMats.length = 0;
   const K = 14;
@@ -547,13 +606,13 @@ function renderHero() {
     const box = document.createElement('span'); box.className = 'loader'; d.appendChild(box);
     const n = document.createElement('span'); n.textContent = (st.period * k / K).toFixed(1) + 's'; d.appendChild(n);
     strip.appendChild(d);
-    const m = new Matrix(box, selected, S.grid, { static: true }); m.snapshot(st.period * k / K); stripMats.push(m);
+    const m = new Matrix(box, selected, S.grid, { static: true, variant: 'strings' }); m.snapshot(st.period * k / K); stripMats.push(m);
   }
 }
-function select(id) { selected = id; heroLoader.set(id, S.grid); renderHero(); markSelected(); }
+function select(id) { selected = id; heroLoader.set(id, S.grid); heroLoaderB.set(id, S.grid); renderHero(); markSelected(); }
 
 const ctxMats = [];
-for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid));
+for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid, { variant: 'strings' }));
 
 function applyAll() {
   if (S.theme === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = S.theme;
@@ -563,16 +622,19 @@ function applyAll() {
   for (const m of live) m.applyHue();
   const reduced = S.motion === 'reduced';
   for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.state.still); }
-  for (const id in stateEls) { const { b, m, pill, small } = stateEls[id]; pill.style.fontSize = (S.size / 1.45) + 'px'; b.style.setProperty('--h', m.hue); pill.style.setProperty('--h', m.hue); small.innerHTML = captionFor(id); }
+  for (const id in stateEls) { const { b, ms, pills, small } = stateEls[id]; pills.forEach((pill, i) => { pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.style.setProperty('--h', ms[i].hue); }); b.style.setProperty('--h', ms[0].hue); small.innerHTML = captionFor(id); }
+  for (const id of ['heroPill', 'heroPillB']) $(id).classList.toggle('fixed', S.width === 'fixed');
+  $('rulingTable').innerHTML = rulingHtml();
   for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.classList.toggle('on', String(S[seg.dataset.set]) === b.dataset.v);
   renderHero();
   $('tokensPre').textContent = tokensJson();
 }
-function regrid() { heroLoader.set(selected, S.grid); for (const id in stateEls) stateEls[id].m.set(id, S.grid); }
+function regrid() { heroLoader.set(selected, S.grid); heroLoaderB.set(selected, S.grid); buildStates(); }
 for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const key = seg.dataset.set, v = b.dataset.v; S[key] = isNaN(+v) ? v : +v;
   if (key === 'grid') regrid();
+  if (key === 'variant') buildStates();
   applyAll();
 });
 const ranges = { brandHue: ['brandHueOut', v => v], step: ['stepOut', v => +v ? v + ' ms' : 'smooth'], rise: ['riseMsOut', v => v + ' ms'], decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)] };
@@ -581,12 +643,13 @@ for (const id in ranges) $(id).addEventListener('input', e => { S[id] = +e.targe
 function tokensJson() {
   return JSON.stringify({
     grid: { cells: S.grid, cellUnits: CELL, gapUnits: GAP, radiusUnits: 0.55 },
-    size: { pillGlyphPx: S.size, glyphToLabelEm: 1.45, gapEm: 0.7, pillRadiusEm: 1.15 },
+    ruling: { G: S.size, cellPitch: 'G/9', gapOfCell: 0.26, cellRadiusOfCell: 0.15, labelSize: '0.52G', labelWeight: 600, labelLetterSpacing: '-0.015em', buttonHeight: '1.6G', padLeft: '0.45G', glyphToLabel: '0.4G', padRight: '0.6G', radius: '0.5G', width: S.width === 'fixed' ? '8.5G' : 'fit', tiers: { S: 24, M: 32, L: 48, XL: 64 } },
+    variant: S.variant, whiteHot: S.hot === 'on',
     render: { artGrid: ART, pixels: 'hand-drawn cells', strings: 'vector lines between consecutive path cells', palette: S.levels ? S.levels + 1 + ' colors' : 'smooth', timeStepMs: S.step || 'smooth' },
     ramp: { space: 'hsl', dark: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 56%)', hot: 'hsl(h 100% 97%)' }, light: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 46%)', hot: 'hsl(h 100% 22%)' }, bed: S.bed },
     color: { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
     motion: { riseMs: S.rise, trailMs: S.decay, trailMul: Object.fromEntries(STATES.filter(s => s.decayMul).map(s => [s.id, s.decayMul])), periodS: Object.fromEntries(STATES.map(s => [s.id, s.period])) },
-    glow: { bloom: S.glow, bloomBlurUnits: 2.6, edgeBlurUnits: 1.1, vectorEdges: S.vectors === 'on', edgeWidthUnits: 0.3 },
+    glow: { bloom: S.glow, bloomBlurUnits: 2.6, edgeBlurUnits: 1.1, edgeWidthUnits: 0.3 },
     type: { family: S.font === 'inter' ? 'Inter' : 'system-ui', weight: 600, letterSpacing: '-0.01em' },
   }, null, 2);
 }
