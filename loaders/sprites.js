@@ -453,6 +453,494 @@ const PRESSES = [[0, 0], [1, 1], [2, 0], [0, 2]];
 const KEYPAD = [F(padAt(null, 0), 360), ...PRESSES.flatMap((k, i) => [F(padAt(k, i), 90), F(padAt(null, i + 1), [150, 120, 160, 200][i])]),
   F(padAt([2, 2], 4), 110), F(padAt(null, 5, true), 140), F(padAt(null, 5), 900), F(padAt(null, 0), 200)];
 
+/* ---------- more takes: each state comes in several options. The ids are <state>_<take> and the playground lists them
+   under Options. ---------- */
+/* New options for thinking, reading and analyzing. Every name here carries its state's prefix: thk, rdg, anl. */
+
+/* thinking, Bulb take: the idea lighting up. A light bulb with a round glass, a neck, a banded screw base and a tall
+   filament standing on two stems out of the base. It starts cold, the filament dim. It warms up the way an old bulb
+   strikes: it catches, drops out, catches again a little longer, drops out, then holds, and its tip goes white-hot.
+   The light spreads from the tip until the whole glass glows, and rays fan out around it, the top one first, then the
+   diagonals, then the sides. It holds lit, then the rays go, the glow pulls back into the filament and it cools. */
+const thkGLASS = cellsOf([
+  '.............',
+  '.............',
+  '....#####....',
+  '...#.....#...',
+  '..#.......#..',
+  '..#.......#..',
+  '..#.......#..',
+  '...#.....#...',
+  '....#...#....',
+  '....#####....',
+  '.............',
+  '....#####....',
+  '.....###.....']);
+const thkFIL = [[6, 4], [5, 5], [7, 5], [5, 6], [7, 6], [5, 7], [7, 7], [5, 8], [7, 8]], thkTIP = [6, 4];
+const thkGLOW = cellsOf([
+  '.............',
+  '.............',
+  '.............',
+  '....:::::....',
+  '...:::::::...',
+  '...:::::::...',
+  '...:::::::...',
+  '....:::::....',
+  '.....:::.....']);
+const thkRAYS = [[6, 0], [2, 1], [10, 1], [0, 5], [12, 5]];
+/* fil: the filament's tone; hot: white tip; glow: how far the light has spread from the tip; rays: a tone per ray */
+const thkBulb = (fil, { hot = false, glow = 0, rays = [] } = {}) => stamp([...thkGLASS, ...thkFIL.map(([x, y]) => [x, y, fil]), ...(hot ? [[...thkTIP, 'W']] : []),
+  ...thkGLOW.filter(([x, y]) => Math.hypot(x - 6, y - 4.5) <= glow), ...rays.map((t, k) => t ? [...thkRAYS[k], t] : null).filter(Boolean)]);
+const thkLIT = { hot: true, glow: 9 };
+const thkBULB = [
+  F(thkBulb(':'), 450), F(thkBulb('#'), 70), F(thkBulb(':'), 110), F(thkBulb('#'), 60), F(thkBulb(':'), 180), F(thkBulb('#'), 100),
+  F(thkBulb('#', { hot: true }), 90), F(thkBulb('#', { hot: true, glow: 1.6 }), 60), F(thkBulb('#', { hot: true, glow: 2.6, rays: [':'] }), 60),
+  F(thkBulb('#', { ...thkLIT, rays: ['#', ':', ':'] }), 70), F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', ':', ':'] }), 70),
+  F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', '#', '#'] }), 1000),
+  F(thkBulb('#', { ...thkLIT, rays: [':', ':', ':', ':', ':'] }), 110), F(thkBulb('#', { hot: true, glow: 2.6 }), 90), F(thkBulb('#', { glow: 1.6 }), 90), F(thkBulb('#'), 120)];
+
+/* thinking, Cloud take: a thought cloud with its trail of bubbles, the one from comic strips. Thoughts rise: the
+   bubble by the cloud floats up into it and through its edge, and goes on inside as a bright point to the middle, while
+   the small bubble below moves up and grows to take its place and a new one appears at the bottom. The first thought
+   leaves a glowing point in the middle of the cloud. The second one meets it and they spark into an idea: a white-hot
+   twinkle that flares out sideways, settles, holds and fades away. */
+const thkCLOUD = cellsOf([
+  '...###.......',
+  '..#...#.###..',
+  '.#.....#...#.',
+  '#...........#',
+  '#...........#',
+  '#...........#',
+  '.#.........#.',
+  '..#########..']);
+const thkBub = (x, y, big, t = '#') => big ? [[x, y, t], [x + 1, y, t], [x, y + 1, t], [x + 1, y + 1, t]] : [[x, y, t]];
+const thkSPARK = [[],
+  [[6, 4, ':']],
+  [[6, 4, 'W'], [5, 4, '#'], [7, 4, '#'], [6, 3, '#'], [6, 5, '#']],
+  [[6, 4, 'W'], [5, 4, '#'], [7, 4, '#'], [6, 3, '#'], [6, 5, '#'], [4, 4, '#'], [8, 4, '#'], [3, 4, ':'], [9, 4, ':']],
+  [[6, 4, '#'], [5, 4, ':'], [7, 4, ':'], [6, 3, ':'], [6, 5, ':']]];
+const thkCloud = (parts, spark = 0) => stamp([...thkCLOUD, ...parts.flat(), ...thkSPARK[spark]]);
+const thkREST = [thkBub(2, 9, true), thkBub(0, 12, false)];
+/* one thought's journey: up into the cloud and through its edge, a point inside gliding to the middle. The trail moves
+   up behind it. `before` is the spark while it travels, `after` once it arrives */
+const thkThought = (before, after, rest) => [
+  F(thkCloud([thkBub(2, 8, true), thkBub(1, 11, false)], before), 130),
+  F(thkCloud([thkBub(2, 6, true), thkBub(1, 10, true)], before), 90),
+  F(thkCloud([[[4, 6, '#']], thkBub(2, 9, true), thkBub(0, 12, false, ':')], before), 60),
+  F(thkCloud([[[5, 5, '#']], ...thkREST], before), 75),
+  F(thkCloud(thkREST, after), rest)];
+const thkCLOUDF = [F(thkCloud(thkREST), 420), ...thkThought(0, 1, 420), ...thkThought(1, 3, 110), F(thkCloud(thkREST, 2), 900), F(thkCloud(thkREST, 4), 120), F(thkCloud(thkREST, 1), 120)];
+
+/* reading, Book take: an open book, two pages with rounded outer corners dipping into the spine, three lines of text on
+   each. The lines are read one after another, left page then right, each one lighting as it is read. Then the right
+   page turns: its corner lifts, it rises and narrows toward the spine, stands on edge, and comes down over the left
+   page, its back shaded like real paper, a glint of light riding its free edge the whole way. It lands, the shade
+   goes as it lies flat, and the next spread is waiting to be read */
+const rdgSPREAD = cellsOf([
+  '.............',
+  '.............',
+  '.###.....###.',
+  '#...##.##...#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '#.....#.....#',
+  '.#####.#####.',
+  '......#......']);
+const rdgLEFT = rdgSPREAD.filter(([x]) => x <= 6), rdgRIGHT = rdgSPREAD.filter(([x]) => x >= 6);
+const rdgLINES = [5, 7, 9];
+const rdgText = (right, read) => rdgLINES.flatMap((y, i) => [2, 3, 4].map(x => [right ? 12 - x : x, y, i < read ? '#' : ':']));
+/* the turning page, hinged on the spine: its free edge stands at x = 6 + w, lifted by `lift` rows. Shaded inside, lit
+   edges, the top of the free edge white */
+const rdgTurn = (w, lift) => {
+  const top = [6 + w, 3 - lift], bot = [6 + w, 11 - lift];
+  const fill = [];
+  for (let y = 0; y < N; y++) for (let x = Math.min(6, 6 + w); x <= Math.max(6, 6 + w); x++) {
+    const t = w === 0 ? 0 : (x - 6) / w;
+    if (y > 4 + (top[1] - 4) * t && y < 12 + (bot[1] - 12) * t) fill.push([x, y, ':']);
+  }
+  return [...fill, ...pathCells([[6, 4], top, bot, [6, 12]], true).map(([x, y]) => [x, y, x === top[0] && y === Math.max(0, top[1]) ? 'W' : '#'])];
+};
+/* readL / readR: lines read on each page; turn: [w, lift] of a page in the air, which hides what it covers */
+const rdgBook = (readL, readR, turn) => {
+  const page = turn ? rdgTurn(...turn) : [], covered = new Set(page.map(([x, y]) => x + ',' + y));
+  return stamp([...[...rdgLEFT, ...rdgText(false, readL), ...rdgRIGHT, ...rdgText(true, readR)].filter(([x, y]) => !covered.has(x + ',' + y)), ...page]);
+};
+const rdgLANDED = stamp([...rdgLEFT, ...cellsOf(['', '', '', '.:::', '.:::::', '.:::::', '.:::::', '.:::::', '.:::::', '.:::::', '.:::::']), ...rdgRIGHT, ...rdgText(true, 0)]);
+const rdgBOOK = [
+  F(rdgBook(0, 0), 420), F(rdgBook(1, 0), 190), F(rdgBook(2, 0), 160), F(rdgBook(3, 0), 190), F(rdgBook(3, 1), 190), F(rdgBook(3, 2), 160), F(rdgBook(3, 3), 420),
+  ...[[6, 1], [5, 2], [3, 3], [0, 3], [-3, 3], [-5, 2], [-6, 1]].map((t, i) => F(rdgBook(3, 0, t), [150, 110, 75, 60, 65, 90, 110][i])), F(rdgLANDED, 130)];
+
+/* reading, Specs take: a pair of reading glasses over a page, and the eyes behind them doing the reading. Both pupils
+   look down at the top line and move along it word by word, pausing on each, and every word they reach lights up. At
+   the end of the line the eyes flick back to the start as the page scrolls up a line, the read line slipping away
+   under the glasses. At the end of the third line the reader rests a moment and blinks */
+const rdgSPECS = cellsOf([
+  '.............',
+  '.###..#..###.',
+  '#...##.##...#',
+  '#...#...#...#',
+  '#...#...#...#',
+  '.###.....###.']);
+/* three lines of three words, [from, to] columns, repeating down the page */
+const rdgDOC = [[[1, 4], [6, 8], [10, 11]], [[1, 2], [4, 7], [9, 11]], [[1, 3], [5, 6], [8, 11]]];
+/* top: the line being read; read: words of it read; gaze: 0 to 2 across the lens; o: rows scrolled */
+const rdgSpecs = (top, read, gaze, o = 0, blink = false) => stamp([...rdgSPECS,
+  ...(blink ? [1, 2, 3, 9, 10, 11].map(x => [x, 3, '#']) : [[1 + gaze, 4, 'W'], [9 + gaze, 4, 'W']]),
+  ...[0, 1, 2, 3].flatMap(k => { const y = 8 + 2 * k - o; if (y < 7 || y > 12) return [];
+    return rdgDOC[(top + k) % 3].flatMap(([a, b], wi) => Array.from({ length: b - a + 1 }, (_, j) => [a + j, y, k === 0 && wi < read ? '#' : ':'])); })]);
+const rdgReadLine = (top, blink) => [F(rdgSpecs(top, 1, 0), 190), F(rdgSpecs(top, 2, 1), 150), F(rdgSpecs(top, 3, 2), blink ? 420 : 180),
+  ...(blink ? [F(rdgSpecs(top, 3, 2, 0, true), 110), F(rdgSpecs(top, 3, 2), 160)] : []), F(rdgSpecs(top, 3, 0, 1), 90), F(rdgSpecs((top + 1) % 3, 0, 0), 140)];
+
+/* analyzing, Trend take: a line chart that finds its trend. The data comes in first, four dim points, left to right.
+   Then a white-hot head joins them up, easing out of each point and slowing into the next, leaving the line lit
+   behind it: up, a dip, and a long climb. At the last point it pushes on a cell, pulls back, and the end of the line
+   opens into an arrowhead, the trending-up chart everyone knows. It holds, then the chart scrolls off to the left for
+   the next set of data */
+const anlPTS = [[1, 9], [4, 6], [6, 8], [11, 3]];
+const anlPATH = pathCells(anlPTS, true);
+const anlAT = anlPTS.map(([px, py]) => anlPATH.findIndex(([x, y]) => x === px && y === py));
+const anlBARBS = [[[10, 3], [11, 4]], [[9, 3], [11, 5]], [[8, 3], [11, 6]]];
+/* to: path cells drawn; dots: data points shown; barbs: arrowhead length; over: head pushed one cell past the end */
+const anlChart = (to, { dots = 4, barbs = 0, over = false, dx = 0 } = {}) => stamp([
+  ...anlPTS.slice(0, dots).map(([x, y]) => [x, y, ':']),
+  ...anlPATH.slice(0, to).map(([x, y], i) => [x, y, i === to - 1 && !over ? 'W' : '#']), ...(over ? [[12, 2, 'W']] : []),
+  ...anlBARBS.slice(0, barbs).flat().map(([x, y]) => [x, y, '#'])].map(([x, y, t]) => [x + dx, y, t]));
+const anlDrawMs = k => anlAT.includes(k) ? 160 : anlAT.includes(k - 1) || anlAT.includes(k + 1) ? 95 : 60;
+const anlEND = anlPATH.length;
+const anlTREND = [...[1, 2, 3, 4].map(d => F(anlChart(0, { dots: d }), [100, 70, 70, 110][d - 1])), F(anlChart(1), 160),
+  ...anlPATH.slice(1).map((_, k) => F(anlChart(k + 2), anlDrawMs(k + 1))),
+  F(anlChart(anlEND, { over: true }), 70), ...[1, 2].map(b => F(anlChart(anlEND, { barbs: b }), 60)), F(anlChart(anlEND, { barbs: 3 }), 900),
+  ...[-1, -3, -6, -10].map((dx, i) => F(anlChart(anlEND, { barbs: 3, dx }), [120, 80, 60, 60][i])), F(EMPTY, 120)];
+
+/* analyzing, Pie take: breaking the whole into its parts. A whole disc of data, dim. Light runs out from its centre
+   along three cuts, up, right and down to the lower left, and leaves them open, so it is a pie chart in three slices.
+   The slices ease apart, each along its own direction, and the top-right quarter, the one that matters, fills with
+   light from the centre out to its rim. It holds, then the slices close up, the light drains and the cuts heal */
+const anlCUT = (dx, dy) => (dx === 0 && dy < 0) || (dy === 0 && dx > 0) || (dx === -dy && dx < 0);
+const anlSlice = (x, y) => { const dx = x - 6, dy = y - 6; if (dx * dx + dy * dy > 30.5) return -1; if ((dx === 0 && dy === 0) || anlCUT(dx, dy)) return 3;
+  const a = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360; return a < 90 ? 0 : a < 225 ? 1 : 2; };
+const anlAPART = [[1, -1], [-1, 0], [0, 1]];
+/* cut: how far out the cuts have run (-1 none, 9 all); open: slices apart or not; lit: the quarter lit out to radius r */
+const anlPie = (cut, open = 0, lit = -1) => { const cs = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+  const s = anlSlice(x, y); if (s < 0) continue;
+  if (s === 3) { const d = Math.max(Math.abs(x - 6), Math.abs(y - 6)); if (d > cut) cs.push([x, y, ':']); else if (d === cut) cs.push([x, y, 'W']); continue; }
+  cs.push([x + anlAPART[s][0] * open, y + anlAPART[s][1] * open, s === 0 && Math.hypot(x - 6, y - 6) <= lit ? '#' : ':']); } return stamp(cs); };
+const anlPIE = [F(anlPie(-1), 420), F(anlPie(1), 60), F(anlPie(3), 50), F(anlPie(5), 60), F(anlPie(9), 90), F(anlPie(9, 1), 110),
+  ...[2, 3.5].map((r, i) => F(anlPie(9, 1, r), [70, 60][i])), F(anlPie(9, 1, 9), 900), F(anlPie(9, 0, 9), 120), F(anlPie(9), 120)];
+
+const OPTS_A = {
+  thinking_bulb: Object.assign(seq(...thkBULB), { rest: 11 }),
+  thinking_cloud: Object.assign(seq(...thkCLOUDF), { still: thkCloud(thkREST, 2) }),
+  reading_book: Object.assign(seq(...rdgBOOK), { still: rdgBook(3, 1) }),
+  reading_specs: Object.assign(seq(...rdgReadLine(0), ...rdgReadLine(1), ...rdgReadLine(2, true)), { still: rdgSpecs(0, 1, 0) }),
+  analyzing_trend: Object.assign(seq(...anlTREND), { still: anlChart(anlEND, { barbs: 3 }), trail: 0.7 }),
+  analyzing_pie: Object.assign(seq(...anlPIE), { still: anlPie(9, 1, 9) }),
+};
+
+/* searching, Radar take: a radar scope, the picture of looking for something nearby. A dim bezel and a dim range ring,
+   a hub, and a bright arm that sweeps round with a dim wedge of afterglow behind it. Wherever the arm passes over
+   something a blip lights white and fades as the arm moves on, the way a phosphor screen holds a contact. The arm
+   eases out of rest, races round, two stray contacts flare and die, and it slows as it comes back up; this time the
+   blip it crosses does not fade. The arm brakes to a stop just past it, the contact pings once and holds white:
+   found. Then the sweep starts again and the contact fades behind it */
+const srhRING_ROWS = ['....#####....', '..##.....##..', '.#.........#.', '.#.........#.', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '.#.........#.', '.#.........#.', '..##.....##..', '....#####....'];
+const srhINNER = [[5,3],[6,3],[7,3],[4,4],[8,4],[3,5],[9,5],[3,6],[9,6],[3,7],[9,7],[4,8],[8,8],[5,9],[6,9],[7,9]];
+const srhInside = (x, y) => { const r = srhRING_ROWS[y]; return !!r && x > r.indexOf('#') && x < r.lastIndexOf('#') && r[x] !== '#'; };
+/* the arm at step i of sixteen, clockwise from twelve o'clock: a one-cell ray from the hub out to the bezel */
+const srhArm = i => { const a = (((i % 16) + 16) % 16) * Math.PI / 8, out = [];
+  for (const [x, y] of pathCells([[6, 6], [6 + 8 * Math.sin(a), 6 - 8 * Math.cos(a)]], true).slice(1)) { if (!srhInside(x, y)) break; out.push([x, y]); }
+  return out; };
+/* stray contacts sit on the arm's path at [arm step, cell]: white as the arm crosses, then lit, then dim, then gone */
+const srhSTRAYS = [[6, [9, 9]], [11, [2, 8]]];
+const srhTARGET = [4, 2], srhTARGET_STEP = 15, srhSTOP = 2;
+/* where in the turn the arm crosses the target */
+const srhFOUND_AT = srhTARGET_STEP > srhSTOP ? srhTARGET_STEP : srhTARGET_STEP + 16;
+const srhAge = age => age === 0 ? 'W' : age === 1 ? '#' : age <= 3 ? ':' : null;
+const srhPLUS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const srhScope = (p, wedge, target, ping) => {
+  const arm = srhArm(p), key = ([x, y]) => x + ',' + y, onArm = new Set(arm.map(key));
+  const cells = [...cellsOf(srhRING_ROWS).map(([x, y]) => [x, y, ':']), ...srhINNER.map(([x, y]) => [x, y, ':']), [6, 6, '#'], ...arm.map(([x, y]) => [x, y, '#'])];
+  for (let k = 1; k <= wedge; k++) for (const c of srhArm(p - k)) if (!onArm.has(key(c))) cells.push([c[0], c[1], ':']);
+  for (const [i, [x, y]] of srhSTRAYS) { const t = srhAge(((p - i) % 16 + 16) % 16); if (t) cells.push([x, y, t]); }
+  if (target) cells.push([...srhTARGET, target]);
+  if (ping) cells.push(...srhPLUS.map(([dx, dy]) => [srhTARGET[0] + dx, srhTARGET[1] + dy, ping]));
+  return stamp(cells);
+};
+/* one turn, from the stop round to the stop again: slow off the mark, fast through the far side, braking at the end */
+const srhTURN = Array.from({ length: 16 }, (_, k) => srhSTOP + 1 + k);
+const srhTURN_MS = ease(16, 160, 42);
+const srhTARGET_FADE = ['#', ':', ':'];
+const srhRADAR = [F(srhScope(srhSTOP, 0, 'W'), 640),
+  ...srhTURN.map((p, k) => F(srhScope(p, Math.min(1, k), p >= srhFOUND_AT ? 'W' : srhTARGET_FADE[k] || null), srhTURN_MS[k])),
+  F(srhScope(srhSTOP + 16, 0, 'W', '#'), 90), F(srhScope(srhSTOP + 16, 0, 'W', ':'), 110)];
+
+/* searching, Eye take: an eye looking for something, the eye symbol come to life. A wide almond lid, a round iris
+   with a dark pupil. It searches the way eyes really do, in quick jumps with still looks between: left, then all the
+   way right, then a glance down. Something there: it narrows to peer at it, then opens and turns to you with a white
+   catchlight in the iris: found it. It blinks, and starts looking again */
+const srhLIDS = { 4: ['....#####....', '..##.....##..', '.#.........#.', '#...........#', '#...........#', '#...........#', '.#.........#.', '..##.....##..', '....#####....'],
+  2: ['...#######...', '.##.......##.', '#...........#', '.##.......##.', '...#######...'],
+  1: ['..#########..', '##.........##', '..#########..'], 0: ['##.........##', '..#########..'] };
+const srhIRIS = ['.###.', '#####', '##.##', '#####', '.###.'];
+/* the eye open k rows above and below the middle (4 open, 2 peering, 1 a squint, 0 shut), the iris dx, dy from
+   centre and cut by the lids */
+const srhEye = (k, dx, dy, glint) => { const rows = srhLIDS[k], top = k === 0 ? 6 : 6 - k, cells = cellsOf(rows, 0, top);
+  const inside = (x, y) => { const r = rows[y - top]; return !!r && y > top && y - top < rows.length - 1 && x > r.indexOf('#') && x < r.lastIndexOf('#'); };
+  if (k > 0) cells.push(...cellsOf(srhIRIS, 4 + dx, 4 + dy).filter(([x, y]) => inside(x, y)));
+  if (k > 0 && glint && inside(7 + dx, 5 + dy)) cells.push([7 + dx, 5 + dy, 'W']);
+  return stamp(cells); };
+const srhEYE = [F(srhEye(4, 0, 0), 480), F(srhEye(4, -1, 0), 40), F(srhEye(4, -2, 0), 380), F(srhEye(4, -1, 0), 35), F(srhEye(4, 0, 0), 30), F(srhEye(4, 1, 0), 35), F(srhEye(4, 2, 0), 360),
+  F(srhEye(4, 1, 1), 40), F(srhEye(4, -1, 1), 280), F(srhEye(2, 0, 0), 90), F(srhEye(2, 1, 0), 360), F(srhEye(4, 1, 0, true), 70), F(srhEye(4, 0, 0, true), 600),
+  F(srhEye(1, 0, 0), 45), F(srhEye(0, 0, 0), 80), F(srhEye(1, 0, 0), 45)];
+
+/* generating, Gather take: the sparkle is made of what it gathers. Six motes wait scattered and dim. One at a time
+   they set off for the middle, brightening and gathering speed as they fall in, and each one that lands feeds the
+   sparkle a size: a point, a plus, then a four-point star whose body fills out as its rays reach for the edges. Whole,
+   a light runs out along its rays and it holds with a white-hot heart. Then it lets go: the sparkle collapses and the
+   motes fly back out to where they started, slowing and dimming, ready to be gathered again */
+/* the sparkle at ray length R: half-widths of each row out from the middle, so the sides curve in */
+const genW = [[], [1, 0], [2, 0, 0], [3, 1, 0, 0], [4, 1, 0, 0, 0], [5, 2, 1, 0, 0, 0], [6, 2, 1, 0, 0, 0, 0]];
+const genStar = (R, tone = '#') => { if (R <= 0) return []; const w = genW[R], cells = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const dx = Math.abs(x - 6), dy = Math.abs(y - 6); if (dy <= R && dx <= w[dy]) cells.push([x, y, tone]); }
+  return cells; };
+const genMOTES = [[4, 1], [8, 11], [11, 3], [1, 9], [1, 4], [11, 8]];
+/* mote i falling into a sparkle of size R: the cells of its line to the middle, stopping where it touches */
+const genFall = (i, R) => { const body = new Set(genStar(R).map(([x, y]) => x + ',' + y)), out = [];
+  for (const [x, y] of pathCells([genMOTES[i], [6, 6]], true)) { if (body.has(x + ',' + y)) break; out.push([x, y]); }
+  return out; };
+const genWaiting = from => genMOTES.slice(from).map(([x, y]) => [x, y, ':']);
+/* each fall is quicker than the last, so the gathering builds to the bloom */
+const genPACE = [1.2, 1.05, 0.95, 0.85, 0.78, 0.72];
+const genGATHER = genMOTES.flatMap((_, i) => [...[0.35, 0.7, 1].map((p, s) => { const path = genFall(i, i), [x, y] = path[Math.round(p * p * (path.length - 1))];
+  return F(stamp([...genStar(i), ...genWaiting(i + 1), [x, y, '#']]), Math.round([100, 65, 45][s] * genPACE[i])); }), F(stamp([...genStar(i + 1), ...genWaiting(i + 1), [6, 6, 'W']]), i === 5 ? 90 : Math.round(80 * genPACE[i]))]);
+const genRays = d => stamp([...genStar(6), [6 - d, 6, 'W'], [6 + d, 6, 'W'], [6, 6 - d, 'W'], [6, 6 + d, 'W']]);
+const genSPARK = stamp([...genStar(6), [6, 6, 'W']]);
+const genScatter = (t, R) => stamp([...genStar(R), ...genMOTES.map(([x, y]) => [Math.round(6 + (x - 6) * t), Math.round(6 + (y - 6) * t), t > 0.8 ? ':' : '#'])]);
+const genGATHER_LOOP = [F(stamp(genWaiting(0)), 260), ...genGATHER, ...[2, 4, 6].map(d => F(genRays(d), 40)), F(genSPARK, 760),
+  F(genScatter(0.35, 4), 50), F(genScatter(0.65, 2), 60), F(genScatter(0.88, 0), 85), F(genScatter(1, 0), 130)];
+
+/* generating, Wand take: the magic wand from the toolbar, a slim stick with a heavier grip and a white-hot tip, and
+   the stars it makes. At rest a big four-point star and two small ones hang by the tip. They twinkle out one after
+   another, shrinking to a point and going dark. The wand draws back a cell, then flicks forward, and new stars fly
+   off the tip, big one first, each opening from a point into a star with a white heart, and the wand settles back */
+const genStarAt = (cx, cy, R, core, tone = '#') => { if (R < 0) return []; if (R === 0) return [[cx, cy, core || tone]];
+  const w = genW[R], cells = []; for (let dy = -R; dy <= R; dy++) for (let dx = -w[Math.abs(dy)]; dx <= w[Math.abs(dy)]; dx++) cells.push([cx + dx, cy + dy, dx === 0 && dy === 0 && core ? core : tone]);
+  return cells; };
+const genTIP = [6, 6];
+/* the wand with its tip d cells along its own line from rest: forward up and to the right, back down and to the left */
+const genWand = d => { const tx = genTIP[0] + d, ty = genTIP[1] - d; return [[tx, ty, 'W'], ...[1, 2, 3, 4, 5, 6, 7].map(k => [tx - k, ty + k, '#']), ...[5, 6, 7].map(k => [tx - k + 1, ty + k, '#'])]; };
+const genSTARS = [[9, 3], [3, 2], [11, 9]];
+/* each star is null (none), a number (flying out of the tip, that far along), or [R, core, tone] */
+const genMagic = (d, stars) => stamp(inGrid([...genWand(d), ...stars.flatMap((s, i) => { const [cx, cy] = genSTARS[i]; if (s == null) return [];
+  if (typeof s === 'number') { const fx = genTIP[0] + 1, fy = genTIP[1] - 1; return [[Math.round(fx + (cx - fx) * s), Math.round(fy + (cy - fy) * s), 'W']]; }
+  return genStarAt(cx, cy, ...s); })]));
+const genREST = [[3, 'W'], [1], [1]];
+const genWAND = [F(genMagic(0, genREST), 620),
+  F(genMagic(0, [[3], [0], [1]]), 90), F(genMagic(0, [[2], [0, null, ':'], [0]]), 80), F(genMagic(0, [[1], null, [0, null, ':']]), 80), F(genMagic(0, [[0], null, null]), 90), F(genMagic(0, [[0, null, ':'], null, null]), 120),
+  F(genMagic(0, [null, null, null]), 140), F(genMagic(-1, [null, null, null]), 240),
+  F(genMagic(1, [0.5, null, null]), 55), F(genMagic(1, [[1, 'W'], 0.45, null]), 60), F(genMagic(0, [[2, 'W'], 0.8, 0.45]), 70), F(genMagic(0, [[3, 'W'], [1, 'W'], 0.8]), 85), F(genMagic(0, [[3, 'W'], [1], [1, 'W']]), 110)];
+
+/* writing, Caret take: text being written the way it appears on screen, a tall white caret leading lines of words.
+   It types in a rhythm, quick through a word and a beat at each space. Halfway through a line it stops on a word,
+   blinks, thinks better of it, deletes it and types a longer one, then finishes the line and returns: the caret
+   sweeps back to the start as the page scrolls up a line, overshooting a row and settling, the top line fading out
+   of view. The next line comes straight out */
+const wrtLINES = ['###.##.####', '##.####.##'];
+const wrtDRAFT = '###.##.###';
+/* the page: line a is being typed on row 10 with `text` showing; earlier lines sit three rows apart above it and the
+   top one is dim. s scrolls it all up while the next line comes in. The caret is three cells tall at [x, row] */
+const wrtPage = (a, text, s, caret) => { const cells = [];
+  for (let j = 0; j <= 4; j++) { const y = 10 - 3 * j - s, line = j === 0 ? text : wrtLINES[(((a - j) % 2) + 2) % 2];
+    for (let x = 0; x < line.length; x++) if (line[x] === '#') cells.push([1 + x, y, y <= 1 ? ':' : '#']); }
+  if (caret) cells.push(...[-1, 0, 1].map(k => [caret[0], caret[1] + k, 'W']));
+  return stamp(inGrid(cells)); };
+/* typing `to` from what is already there, `from`: quick within a word, a beat on the first letter after a space */
+const wrtType = (a, from, to) => Array.from({ length: to.length - from.length }, (_, k) => { const n = from.length + k + 1, text = to.slice(0, n);
+  return text.endsWith('.') ? null : F(wrtPage(a, text, 0, [1 + n, 10]), n === 1 || to[n - 2] === '.' ? 115 : 60); }).filter(Boolean);
+const wrtBack = (a, from, to) => Array.from({ length: from.length - to.length }, (_, k) => { const n = from.length - k - 1; return F(wrtPage(a, from.slice(0, n), 0, [1 + n, 10]), 45); });
+/* return: the caret sweeps to the start of the next line as the page scrolls three rows, one past, and back */
+const wrtReturn = (a, endX) => [F(wrtPage(a + 1, '', -2, [Math.round(endX * 0.6), 12]), 80), F(wrtPage(a + 1, '', -1, [3, 11]), 55), F(wrtPage(a + 1, '', 0, [1, 10]), 60),
+  F(wrtPage(a + 1, '', 1, [1, 9]), 80), F(wrtPage(a + 1, '', 0, [1, 10]), 160)];
+const wrtCARET = [...wrtType(0, '', wrtDRAFT), F(wrtPage(0, wrtDRAFT, 0, null), 170), F(wrtPage(0, wrtDRAFT, 0, [11, 10]), 230), ...wrtBack(0, wrtDRAFT, '###.##.'), F(wrtPage(0, '###.##.', 0, [8, 10]), 90),
+  ...wrtType(0, '###.##.', wrtLINES[0]), F(wrtPage(0, wrtLINES[0], 0, [12, 10]), 150), ...wrtReturn(0, 12),
+  ...wrtType(1, '', wrtLINES[1]), F(wrtPage(1, wrtLINES[1], 0, [11, 10]), 150), ...wrtReturn(1, 11)];
+
+/* writing, Signature take: a signature written in one breath. Wet ink leaves the pen white-hot and dries to a line
+   behind it. Two looped letters lean into each other: up the slope fast, slowing round the top of each loop, down the
+   stem and through the crossing, a quick link to the next. The pen lifts, comes in from the right and sweeps a long
+   underline back beneath the name, quick through the middle and easing out at its tail. The signature holds, then the
+   ink dims and is gone, ready to be signed again */
+const wrtSIGN = [[0,9],[1,8],[2,7],[3,6],[4,5],[4,4],[4,3],[3,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[3,9],[4,9],[5,8],[6,7],[7,6],[8,5],[8,4],[8,3],[7,2],[6,3],[6,4],[6,5],[6,6],[6,7],[6,8],[7,9],[8,9],[9,8],[10,7]];
+const wrtUNDER = [[12,9],[11,10],[10,11],[9,11],[8,11],[7,11],[6,11],[5,11],[4,11],[3,11],[2,11],[1,11]];
+const wrtINK = [...wrtSIGN, ...wrtUNDER];
+/* how long the pen takes to reach each cell: slow where the stroke turns, quick along a straight run */
+const wrtTurn = (pts, i) => { if (i === 0 || i === pts.length - 1) return 1; const [a, b, c] = [pts[i - 1], pts[i], pts[i + 1]]; return (b[0] - a[0]) !== (c[0] - b[0]) || (b[1] - a[1]) !== (c[1] - b[1]) ? 1 : 0; };
+const wrtSignAt = (to, tone = '#') => stamp(wrtINK.slice(0, to).map(([x, y], k) => [x, y, tone === '#' && k === to - 1 && to < wrtINK.length && to !== wrtSIGN.length ? 'W' : tone]));
+const wrtSIGNED = wrtSignAt(wrtINK.length);
+const wrtSIGNATURE = [
+  ...wrtSIGN.map((_, i) => F(wrtSignAt(i + 1), i === 0 ? 110 : wrtTurn(wrtSIGN, i) ? 55 : 30)), F(wrtSignAt(wrtSIGN.length), 130),
+  ...wrtUNDER.map((_, i) => F(wrtSignAt(wrtSIGN.length + i + 1), ease(wrtUNDER.length, 80, 30)[i])), F(wrtSIGNED, 850),
+  F(wrtSignAt(wrtINK.length, ':'), 170), F(EMPTY, 190)];
+
+const OPTS_B = {
+  searching_radar: Object.assign(seq(...srhRADAR), { rest: 0, trail: 1.3 }),
+  searching_eye: Object.assign(seq(...srhEYE), { still: srhEye(4, 0, 0, true), trail: 0.6 }),
+  generating_gather: Object.assign(seq(...genGATHER_LOOP), { still: genSPARK }),
+  generating_wand: Object.assign(seq(...genWAND), { rest: 0 }),
+  writing_caret: Object.assign(seq(...wrtCARET), { still: wrtPage(1, '##.##', 0, [6, 10]), trail: 0.6 }),
+  writing_signature: Object.assign(seq(...wrtSIGNATURE), { still: wrtSIGNED, trail: 0.7 }),
+};
+
+/* syncing, Loop take: the sync symbol everyone knows, two arrows chasing each other around a ring, eased so it reads as
+   effort and release rather than a spinner. The ring is the radius-5 circle, 28 cells, and each arrow covers twelve of
+   them with a 45 degree arrowhead at a diagonal, so the pose a quarter turn on is the same icon turned. At rest the
+   arrows hold. Then each one coils: its tail draws up into its head while the head stays put and tucks its barbs in,
+   like a spring loading. Released, the head flings half a turn round the ring with a white tip, the tail following and
+   the arc lengthening back out, overshoots a cell, and the barbs open again as it settles where the other arrow began */
+const SYN_RING = (() => {
+  const cs = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const r = Math.hypot(x - 6, y - 6); if (r > 4.6 && r < 5.5) cs.push([x, y]); }
+  const ang = ([x, y]) => (Math.atan2(x - 6, 6 - y) + 2 * Math.PI) % (2 * Math.PI);
+  return cs.sort((a, b) => ang(a) - ang(b));
+})();
+const synAt = i => SYN_RING[((i % SYN_RING.length) + SYN_RING.length) % SYN_RING.length];
+/* the barbs of an arrowhead pointing down-right from a tip at ring cell 4, turned a quarter at a time for the other diagonals */
+const SYN_BARBS = [[0, -1], [-1, 0], [0, -2], [-2, 0]];
+const synTurn = ([dx, dy], k) => { for (let j = 0; j < ((k % 4) + 4) % 4; j++) [dx, dy] = [-dy, dx]; return [dx, dy]; };
+/* one arrow along the ring from cell t to its tip at cell h. head: 'open' (full barbs), 'tuck' (short barbs) or 'hot'
+   (no barbs, a white tip, for when it is flying) */
+const synArc = (t, h, head) => {
+  const cs = [];
+  for (let i = t; i <= h; i++) cs.push([...synAt(i), '#']);
+  const [hx, hy] = synAt(h), diag = ((h - 4) % 7 + 7) % 7 === 0;
+  if (head === 'hot') cs.push([hx, hy, 'W']);
+  else if (diag) SYN_BARBS.slice(0, head === 'open' ? 4 : 2).forEach(b => { const [dx, dy] = synTurn(b, (h - 4) / 7); cs.push([hx + dx, hy + dy, '#']); });
+  return cs;
+};
+const synLoop = (t, h, head) => stamp([...synArc(t, h, head), ...synArc(t + 14, h + 14, head)]);
+
+/* syncing, Devices take: a laptop and a phone joined by a short dim link, the picture of your things staying in step.
+   The device that has the change glows, its screen a dim wash of light. A white packet leaves that screen, slow off the
+   mark and quick across the link, and the other screen lights up from the side it arrives on, the way a page loads in.
+   Now both glow: in sync. The first one sleeps, and the phone sends the next change back the same way */
+const SYN_LAPTOP = ['.######.', '.#....#.', '.#....#.', '.#....#.', '.######.', '########'];
+const SYN_PHONE = ['.##.', '#..#', '#..#', '#..#', '#..#', '#..#', '.##.'];
+/* screen cells in columns, counted from the side that faces the other device */
+const SYN_LAP_SCREEN = [5, 4, 3, 2].map(x => [5, 6, 7].map(y => [x, y])), SYN_PHONE_SCREEN = [10, 11].map(x => [4, 5, 6, 7, 8].map(y => [x, y]));
+/* l, p: how many columns of each screen glow; pk: packet cells on top */
+const synDev = (l, p, pk = []) => stamp([...cellsOf(SYN_LAPTOP, 0, 4), ...cellsOf(SYN_PHONE, 9, 3), [7, 6, ':'], [8, 6, ':'],
+  ...SYN_LAP_SCREEN.slice(0, l).flat().map(([x, y]) => [x, y, ':']), ...SYN_PHONE_SCREEN.slice(0, p).flat().map(([x, y]) => [x, y, ':']), ...pk]);
+/* the packet runs along row 6 from one screen's facing edge (x 5 or 10) to the other's, a lit cell behind its white head */
+const synPacket = (x, d) => [[x, 6, 'W'], ...(x - d >= 5 && x - d <= 10 ? [[x - d, 6, '#']] : [])];
+const synSend = toPhone => {
+  const d = toPhone ? 1 : -1, xs = toPhone ? [5, 6, 7, 8, 9, 10] : [10, 9, 8, 7, 6, 5];
+  return [...xs.map((x, k) => F(toPhone ? synDev(4, 0, synPacket(x, d)) : synDev(0, 2, synPacket(x, d)), [85, 55, 40, 40, 55, 75][k])),
+    ...(toPhone ? [F(synDev(4, 1, [[10, 6, 'W']]), 70), F(synDev(4, 2), 90)] : [F(synDev(1, 2, [[5, 6, 'W']]), 60), F(synDev(2, 2), 55), F(synDev(3, 2), 60), F(synDev(4, 2), 90)])];
+};
+
+/* building, Bricks take: a brick wall laid course by course in running bond, the way a mason builds it. Each brick
+   drops in from above, gathering speed, squashes flat on landing with a puff of dust either side and settles back into
+   shape. The middle course is offset by half a brick, so its ends are half bricks. When the last brick is down a light
+   runs across the top course, the wall holds, then slides away and the ground is clear for the next one */
+/* [x, y, width] of each brick in the order it is laid */
+const BLD_BRICKS = [[1, 10, 5], [7, 10, 5], [4, 7, 5], [1, 7, 2], [10, 7, 2], [1, 4, 5], [7, 4, 5]];
+const bldBrick = ([x, y, w], dy = 0) => Array.from({ length: w }, (_, i) => [[x + i, y + dy, '#'], [x + i, y + dy + 1, '#']]).flat();
+const bldSquash = ([x, y, w]) => [...Array.from({ length: w + 2 }, (_, i) => [x - 1 + i, y + 1, '#']), [x - 2, y + 1, ':'], [x + w + 1, y + 1, ':']];
+const BLD_GROUND = Array.from({ length: N }, (_, x) => [x, 12, ':']);
+/* the wall with the first n bricks laid, slid by dx, with extra cells on top */
+const bldWall = (n, dx = 0, extra = []) => stamp(inGrid([...BLD_GROUND, ...BLD_BRICKS.slice(0, n).flatMap(b => bldBrick(b)).map(([x, y, c]) => [x + dx, y, c]), ...extra]));
+/* a fall eases in like gravity, in four steps from the top of the frame or three for the upper courses */
+const bldDrop = k => { const b = BLD_BRICKS[k], d = b[1] + 1, steps = d > 9 ? [0, 0.2, 0.5, 0.82] : [0, 0.35, 0.75];
+  return [...steps.map((f, i) => F(bldWall(k, 0, bldBrick(b, Math.round(-d * (1 - f)))), [55, 45, 40, 40][i])),
+    F(bldWall(k, 0, bldSquash(b)), 60), F(bldWall(k + 1), k === BLD_BRICKS.length - 1 ? 80 : 100)]; };
+/* a diagonal glint on the top course at column c, only where there is brick */
+const BLD_TOP = new Set(BLD_BRICKS.slice(5).flatMap(b => bldBrick(b)).map(([x, y]) => x + ',' + y));
+const bldShine = c => bldWall(7, 0, [[c, 4, 'W'], [c - 1, 5, 'W']].filter(([x, y]) => BLD_TOP.has(x + ',' + y)));
+
+/* building, Crane take: a crane tops out a tower. A trolley runs along the dim jib at the top of the frame carrying a
+   new floor on its hook and brakes over the tower; the load swings on past it, back, and settles, the way a hung weight
+   does. The cable pays out and the floor is lowered gently onto the tower, the hook lets go and its windows light up
+   white. The hook winds up, the trolley runs off for the next one, and the tower sinks a floor as the view rises with
+   it, so the building keeps growing and the loop never ends */
+/* a floor: a slab over a row of windows, seven cells wide */
+const bldFloor = (x, y, win = ':') => [...[0, 1, 2, 3, 4, 5, 6].map(i => [x + i, y, '#']), ...[0, 1, 2, 3, 4, 5, 6].map(i => [x + i, y + 1, i % 2 ? win : '#'])];
+const BLD_JIB = Array.from({ length: N }, (_, x) => [x, 0, ':']);
+/* the trolley at tx; the hook hangs at row hy, swung sideways by swing, with the floor on two short slings when loaded */
+const bldHang = (tx, hy, swing = 0, load = true) => { const hx = tx + swing;
+  return [[tx - 1, 0, '#'], [tx, 0, '#'], [tx + 1, 0, '#'], ...Array.from({ length: hy - 1 }, (_, k) => [Math.round(tx + (hx - tx) * (k + 1) / hy), k + 1, ':']), [hx, hy, '#'],
+    ...(load ? [[hx - 1, hy + 1, ':'], [hx + 1, hy + 1, ':'], ...bldFloor(hx - 3, hy + 2)] : [])]; };
+/* the tower: floors stacked down from row top; the newest one's windows can be lit */
+const bldTower = (top, lit) => [0, 1, 2].flatMap(k => bldFloor(3, top + 2 * k, k === 0 && lit ? lit : ':'));
+const bldCrane = (tx, hy, swing, load, top, lit) => stamp(inGrid([...BLD_JIB, ...bldTower(top, lit), ...bldHang(tx, hy, swing, load)]));
+
+/* debugging, Ladybug take: the bug everyone draws for a bug report, drawn cute: two wing cases with a seam and dim
+   spots, a dim head with two white eyes, bobble antennae and stubby dim legs. It sits, blinks and twitches its
+   antennae as it checks the spot. Then it lifts its cases, which swing open about their front corners into a V over its
+   dim body, its wings flicker out at the sides, it hovers, rises slowly, and is gone off the top. The next one flies in
+   from below, slowing as it comes, folds its cases shut and settles with a little bump. The bug is found, and leaves */
+const DBG_SHUT = ['.....:.:.....', '.....:::.....', '....:W:W:....', '...###.###...', '.:####.####:.', '..#:##.##:#..', '.:####.####:.', '..##:#.#:##..', '..:###.###:..', '....##.##....'];
+const DBG_OPEN1 = ['.....:.:.....', '.....:::.....', '....:W:W:....', '...###.###...', '..####:####..', '..#:##:##:#..', '.####:::####.', '.##:#:::#:##.', '..###.:.###..', '...##...##...'];
+const DBG_OPEN2 = ['.....:.:.....', '.....:::.....', '...#:W:W:#...', '..###.:.###..', '.####:::####.', '.#:##:::##:#.', '####.:::.####', '#:##.:::.##:#', '.##...:...##.', '.............'];
+const DBG_WINGS = [[], [[0, 5], [0, 6], [12, 5], [12, 6]], [[0, 10], [0, 11], [1, 11], [12, 10], [12, 11], [11, 11]]];
+const DBG_ANTENNAE = [[4, 1, '#'], [8, 1, '#']], DBG_ANTENNAE_TWITCH = [[5, 1, '#'], [7, 1, '#'], [5, 2, ':'], [7, 2, ':']];
+/* pose: 'shut', 'open1' or 'open2'; wings: 0, 1 (flicked forward) or 2 (back); dy moves the whole ladybug */
+const dbgLady = ({ pose = 'shut', wings = 0, dy = 0, blink = false, twitch = false } = {}) => {
+  const rows = pose === 'open2' ? DBG_OPEN2 : pose === 'open1' ? DBG_OPEN1 : DBG_SHUT;
+  const body = cellsOf(rows, 0, 2).filter(([, y]) => !(twitch && y === 2)).map(([x, y, c]) => [x, y, blink && c === 'W' ? ':' : c]);
+  return stamp(inGrid([...body, ...(twitch ? DBG_ANTENNAE_TWITCH : DBG_ANTENNAE), ...DBG_WINGS[wings].map(([x, y]) => [x, y, ':'])].map(([x, y, c]) => [x, y + dy, c])));
+};
+
+/* debugging, Spider take: a little spider drops in on its thread to look for the bug. Round body, two white eyes, eight
+   dim legs bent at the knee, and a dim thread to the top of the frame. It falls with its legs trailing up, overshoots as
+   the silk stretches and flings its legs out, bounces back and settles, dangling. It glances left, then right, and
+   blinks. Then it climbs back up hand over hand, reaching up and pulling, slowly and then quickly, and drops in again.
+   The legs follow through on every change of direction, so the bounce feels elastic */
+const DBG_SPIDER = {
+  rest: ['.::..###..::.', ':..:#####:..:', '..::#.#.#::..', '.:..#####..:.', ':..:.###.:..:', '..:.......:..'],
+  up: ['.:.........:.', ':.:.......:.:', '...:.###.:...', '.::.#####.::.', ':..:#.#.#:..:', '..:.#####.:..', '.:...###...:.'],
+  down: ['.....###.....', '.:::#####:::.', ':...#.#.#...:', '..::#####::..', '.:...###...:.', ':.:.......:.:'],
+};
+/* pose 'rest', 'up' (legs raised) or 'down' (legs flung out); dy from the resting height; eyes 'c', 'l', 'r' or 'shut' */
+const dbgSpider = (pose, dy, eyes = 'c') => {
+  const ex = eyes === 'l' ? [4, 6] : eyes === 'r' ? [6, 8] : eyes === 'c' ? [5, 7] : [];
+  return stamp(inGrid([...Array.from({ length: Math.max(3, 4 + dy) }, (_, y) => [6, y, ':']), ...cellsOf(DBG_SPIDER[pose], 0, (pose === 'up' ? 2 : 4) + dy),
+    ...[5, 7].map(x => [x, 6 + dy, '#']), ...ex.map(x => [x, 6 + dy, 'W'])]));
+};
+
+const OPTS_C = {
+  syncing_loop: Object.assign(seq(
+    F(synLoop(-7, 4, 'open'), 560), F(synLoop(-6, 4, 'open'), 110), F(synLoop(-4, 4, 'open'), 70), F(synLoop(-2, 4, 'open'), 60), F(synLoop(-1, 4, 'tuck'), 90),
+    F(synLoop(0, 6, 'hot'), 70), F(synLoop(2, 9, 'hot'), 50), F(synLoop(4, 13, 'hot'), 40), F(synLoop(6, 16, 'hot'), 45), F(synLoop(8, 19, 'hot'), 65),
+    F(synLoop(7, 18, 'tuck'), 70), F(synLoop(7, 18, 'open'), 60)), { still: synLoop(-7, 4, 'open') }),
+  syncing_devices: Object.assign(seq(
+    F(synDev(4, 0), 400), ...synSend(true), F(synDev(4, 2), 480), F(synDev(2, 2), 70), F(synDev(0, 2), 260),
+    ...synSend(false), F(synDev(4, 2), 480), F(synDev(4, 1), 70), F(synDev(4, 0), 120)), { still: synDev(4, 2) }),
+  building_bricks: Object.assign(seq(F(bldWall(0), 160), ...BLD_BRICKS.flatMap((_, k) => bldDrop(k)), ...[1, 3, 5, 8, 10, 12].map(c => F(bldShine(c), 40)), F(bldWall(7), 460),
+    ...[-1, -3, -6, -10, -14].map((d, i) => F(bldWall(7, d), [110, 75, 55, 50, 60][i]))), { still: bldWall(7) }),
+  building_crane: Object.assign(seq(
+    ...[-1, 2, 4, 5].map((tx, i) => F(bldCrane(tx, 2, 0, true, 9), [80, 65, 75, 95][i])),
+    F(bldCrane(6, 2, 1, true, 9), 140), F(bldCrane(6, 2, 0, true, 9), 110), F(bldCrane(6, 2, -1, true, 9), 80), F(bldCrane(6, 2, 0, true, 9), 420),
+    F(bldCrane(6, 3, 0, true, 9), 110), F(bldCrane(6, 4, 0, true, 9), 90), F(bldCrane(6, 5, 0, true, 9), 140),
+    F(bldCrane(6, 5, 0, false, 7, 'W'), 100), F(bldCrane(6, 4, 0, false, 7), 110), F(bldCrane(6, 2, 0, false, 7), 280),
+    F(bldCrane(8, 2, 0, false, 8), 90), F(bldCrane(11, 2, 0, false, 9), 80), F(bldCrane(15, 2, 0, false, 9), 120)), { rest: 7 }),
+  debugging_ladybug: Object.assign(seq(
+    F(dbgLady(), 520), F(dbgLady({ blink: true }), 90), F(dbgLady(), 220), F(dbgLady({ twitch: true }), 120), F(dbgLady(), 140), F(dbgLady({ twitch: true }), 100), F(dbgLady(), 160),
+    F(dbgLady({ pose: 'open1' }), 110), F(dbgLady({ pose: 'open2' }), 90),
+    ...[1, 2, 1, 2, 1, 2].map((w, k) => F(dbgLady({ pose: 'open2', wings: w, dy: [0, 0, -1, -1, -2, -3][k] }), 50)),
+    ...[-5, -8, -12].map((dy, k) => F(dbgLady({ pose: 'open2', wings: 1 + k % 2, dy }), [45, 45, 50][k])),
+    ...[7, 4, 2, 1, 0].map((dy, k) => F(dbgLady({ pose: 'open2', wings: 2 - k % 2, dy }), [55, 55, 60, 70, 80][k])),
+    F(dbgLady({ pose: 'open1' }), 90), F(dbgLady({ dy: 1 }), 80)), { still: dbgLady() }),
+  debugging_spider: Object.assign(seq(
+    F(dbgSpider('up', -7), 70), F(dbgSpider('up', -4), 55), F(dbgSpider('up', -1), 45), F(dbgSpider('down', 2), 90), F(dbgSpider('up', -1), 110), F(dbgSpider('down', 1), 100),
+    F(dbgSpider('rest', 0), 420), F(dbgSpider('rest', 0, 'l'), 300), F(dbgSpider('rest', 0, 'r'), 320), F(dbgSpider('rest', 0), 160), F(dbgSpider('rest', 0, 'shut'), 90), F(dbgSpider('rest', 0), 300),
+    F(dbgSpider('up', 0), 120), F(dbgSpider('rest', -2), 90), F(dbgSpider('up', -3), 80), F(dbgSpider('rest', -6), 65), F(dbgSpider('up', -10), 60), F(dbgSpider('up', -14), 180)),
+    { still: dbgSpider('rest', 0) }),
+};
+
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
@@ -490,4 +978,5 @@ const SPRITES = {
   calculating_keypad: restAtLongest(seq(...KEYPAD)),
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
+Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
