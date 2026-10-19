@@ -107,7 +107,7 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .ctx { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .ctx h3 { margin: 0; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ctx p { margin: 0; font-size: 15px; line-height: 1.6; }
-.ctx .inline-l { --s: 1em; margin: 0 .25em; position: relative; top: -.06em; }
+.ctx .inline-l { --s: 1.1em; margin: 0 .25em; position: relative; top: -.06em; }
 .ctx .card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); }
 .ctx .card .t { font-weight: 600; font-size: 15px; }
 .ctx .card .d { color: var(--muted); font-size: 12.5px; }
@@ -136,7 +136,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 <div class="wrap">
   <header>
     <h1>Pixel Loaders Lab</h1>
-    <p>Shapes live in 3D with real edges. They are projected onto an LED grid, where bright cells run from the hue up to white-hot and leave trails as they move. Click a state to inspect it, tune the rail, copy the tokens.</p>
+    <p>Every loop is an assembly. Pixels fly in from outside, strings reach out and stitch them together, and the outline snaps into an icon that means the thing: a tick, a quill, a heart. It lives for a moment, dissolves, and begins again. Click a state to inspect it, tune the rail, copy the tokens.</p>
   </header>
 
   <div class="stage">
@@ -148,7 +148,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
         <p class="hero-idea" id="heroIdea"></p>
         <div class="hero-meta" id="heroMeta"></div>
         <div>
-          <h2>Across one loop</h2>
+          <h2>Across one loop: gather, form, live, dissolve</h2>
           <div class="strip" id="strip"></div>
         </div>
       </div>
@@ -163,19 +163,19 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
       <h2>In context</h2>
       <div class="contexts">
         <div class="ctx" id="ctxInline">
-          <h3>Inline, 5×5 at 1em</h3>
-          <p>Your results will be ready in a moment. We are<span class="loader inline-l" data-grid="5" data-state="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-grid="5" data-state="reading"></span>reading the attached report.</p>
+          <h3>Inline, 7×7 at 1.1em</h3>
+          <p>Your results will be ready in a moment. We are<span class="loader inline-l" data-grid="7" data-state="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-grid="7" data-state="reading"></span>reading the attached report.</p>
         </div>
         <div class="ctx" id="ctxCard">
-          <h3>Card, 7×7 at 32px</h3>
-          <div class="card"><span class="loader" data-grid="7" data-state="heartbeat" style="--s: 32px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
+          <h3>Card, 9×9 at 36px</h3>
+          <div class="card"><span class="loader" data-grid="9" data-state="heartbeat" style="--s: 36px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
           <div class="bar" style="--h: 28"><i></i></div>
         </div>
         <div class="ctx" id="ctxStack">
-          <h3>Steps, 5×5 at 20px</h3>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="reading" style="--s: 20px"></span><div class="t" style="font-size:14px">Reading docs</div></div>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="building" style="--s: 20px"></span><div class="t" style="font-size:14px">Building</div></div>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="5" data-state="done" style="--s: 20px"></span><div class="t" style="font-size:14px">Done</div></div>
+          <h3>Steps, 7×7 at 22px</h3>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="7" data-state="reading" style="--s: 22px"></span><div class="t" style="font-size:14px">Reading docs</div></div>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="7" data-state="building" style="--s: 22px"></span><div class="t" style="font-size:14px">Building</div></div>
+          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="7" data-state="done" style="--s: 22px"></span><div class="t" style="font-size:14px">Done</div></div>
         </div>
       </div>
     </section>
@@ -187,7 +187,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <div class="ctl"><span class="lab">Label font</span><div class="seg" data-set="font"><button data-v="inter">Inter</button><button data-v="system">System</button></div></div>
     <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
     <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
-    <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="5">5×5</button><button data-v="7">7×7</button><button data-v="9">9×9</button></div></div>
+    <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="7">7×7</button><button data-v="9">9×9</button><button data-v="11">11×11</button></div></div>
     <div class="ctl"><span class="lab">Pill size</span><div class="seg" data-set="size"><button data-v="16">16</button><button data-v="20">20</button><button data-v="24">24</button><button data-v="32">32</button><button data-v="48">48</button></div></div>
     <div class="ctl"><span class="lab">Brightness levels</span><div class="seg" data-set="levels"><button data-v="0">Smooth</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></div></div>
     <div class="ctl"><label for="step">Time step <output id="stepOut">smooth</output></label><input type="range" id="step" min="0" max="240" step="10" value="0"></div>
@@ -211,7 +211,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 /* ---------- settings ---------- */
 const S = {
   theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
-  grid: 5, size: 20, levels: 5, step: 0, rise: 60, decay: 260, glow: 0.6, bed: 0.12,
+  grid: 7, size: 20, levels: 5, step: 0, rise: 60, decay: 260, glow: 0.6, bed: 0.12,
   vectors: 'on', spill: 'on', motion: 'on',
 };
 
@@ -244,219 +244,159 @@ function makeCtx(N) {
   };
 }
 
-/* ---------- states: each is a concept drawn in continuous time ---------- */
-const STATES = [
-{ id: 'thinking', label: 'Thinking', hue: 300, hueName: 'violet', group: 'General', period: 4.2, decayMul: 1.6,
-  idea: 'A small constellation of nodes. A spark travels down one link at a time and the node it reaches flashes white, like a thought arriving.',
-  still: 0.3,
-  draw(t, c, o) {
-    const K = c.N >= 7 ? 8 : 6;
-    const nodes = c.cache('nodes', () => Array.from({ length: K }, (_, k) => { const a = k / K * TAU + hash(k, 3, 1) * 0.9, r = c.Rf * (0.42 + 0.55 * hash(k, 4, 1)); return { x: Math.cos(a) * r, y: Math.sin(a) * r }; }));
-    const D = 0.35, k = Math.floor(t / D), u = (t - k * D) / D;
-    const a = Math.floor(hash(k, 1, 7) * K), b = (a + 1 + Math.floor(hash(k, 2, 7) * (K - 1))) % K;
-    const pa = Math.floor(hash(k - 1, 1, 7) * K), pb = (pa + 1 + Math.floor(hash(k - 1, 2, 7) * (K - 1))) % K;
-    nodes.forEach((n, i) => o.points.push({ x: n.x, y: n.y, i: 0.3 + (i === pb && u < 0.3 ? 1.0 * (1 - u / 0.3) : 0) + (i === b && u > 0.88 ? 1.0 : 0), s: 0.42 }));
-    const e = easeInOut(u);
-    o.points.push({ x: lerp(nodes[a].x, nodes[b].x, e), y: lerp(nodes[a].y, nodes[b].y, e), i: 1.05, s: 0.38 });
-    o.lines.push({ x1: nodes[a].x, y1: nodes[a].y, x2: nodes[b].x, y2: nodes[b].y, i: 0.35 });
-    o.lines.push({ x1: nodes[pa].x, y1: nodes[pa].y, x2: nodes[pb].x, y2: nodes[pb].y, i: 0.18 * (1 - u) });
-  } },
-{ id: 'reading', label: 'Reading docs', hue: 75, hueName: 'amber', group: 'General', period: 1.8,
-  idea: 'A page with lines of text turns over in perspective, collapsing to its spine and flipping away, and the next page is already there.',
-  still: 0.45,
-  draw(t, c, o) {
-    const w = c.Rf * 1.15, h = c.Rf * 1.5, x0 = -w / 2, turn = 1.15;
-    const u = clamp(t / turn, 0, 1), a = easeInOut(u) * PI;
-    const rows = c.N >= 7 ? 4 : 3;
-    const text = []; for (let r = 0; r < rows; r++) { const n = r === rows - 1 ? 2 : 3; for (let j = 0; j < n; j++) text.push({ x: x0 + w * (0.22 + 0.28 * j), y: -h / 2 + h * (0.2 + 0.6 * r / (rows - 1)) }); }
-    const corners = [{ x: x0, y: -h / 2 }, { x: x0 + w, y: -h / 2 }, { x: x0 + w, y: h / 2 }, { x: x0, y: h / 2 }];
-    const rest = u >= 1, base = rest ? 0.5 : 0.24;
-    text.forEach(p => o.points.push({ x: p.x, y: p.y, i: base + (rest && p.y < -h / 2 + h * 0.25 ? 0.5 : 0), s: 0.36 }));
-    for (let i = 0; i < 4; i++) { const p = corners[i], q = corners[(i + 1) % 4]; o.lines.push({ x1: p.x, y1: p.y, x2: q.x, y2: q.y, i: rest ? 0.3 : 0.16 }); }
-    if (!rest) {
-      const T = p => { const dx = p.x - x0; return { x: x0 + dx * Math.cos(a), y: p.y, z: -dx * Math.sin(a) }; };
-      const back = a > PI / 2;
-      text.forEach(p => c.p3(o, T(p), back ? 0.5 : 1.0, 0.38));
-      const C = corners.map(T); for (let i = 0; i < 4; i++) c.l3(o, C[i], C[(i + 1) % 4], back ? 0.3 : 0.55);
-    }
-  } },
-{ id: 'analyzing', label: 'Analyzing', hue: 205, hueName: 'cyan', group: 'General', period: 7.2,
-  idea: 'Two rings of light on different axes, one inside the other, turning like a gyroscope. The near side is bright, the far side dim.',
-  still: 0.9,
-  draw(t, c, o) {
-    const outer = 14, inner = 10;
-    for (let k = 0; k < outer; k++) { const a = k / outer * TAU + TAU * t / 2.4; let p = { x: Math.cos(a) * c.Rf * 0.9, y: Math.sin(a) * c.Rf * 0.9, z: 0 }; p = rotY(rotX(p, 1.1), 0.35); c.p3(o, p, 0.95, 0.46); }
-    for (let k = 0; k < inner; k++) { const a = k / inner * TAU - TAU * t / 1.8; let p = { x: Math.cos(a) * c.Rf * 0.5, y: Math.sin(a) * c.Rf * 0.5, z: 0 }; p = rotY(rotX(p, -0.75), 0.6); c.p3(o, p, 0.85, 0.42); }
-    o.points.push({ x: 0, y: 0, i: 0.55 + 0.4 * Math.sin(TAU * t / 1.2) ** 2, s: 0.4 });
-  } },
-{ id: 'searching', label: 'Searching', hue: 250, hueName: 'blue', group: 'General', period: 3,
-  idea: 'A faint field of specks and a lens roaming over it. Whatever is under the lens is magnified into light. When it finds the one it was looking for, that speck flares.',
-  still: 1.05,
-  draw(t, c, o) {
-    const K = 11, field = c.cache('field', () => Array.from({ length: K }, (_, k) => ({ x: (hash(k, 5, 2) - 0.5) * 2 * c.Rf * 0.92, y: (hash(k, 6, 2) - 0.5) * 2 * c.Rf * 0.92 })));
-    const u = t / 3, lx = c.Rf * 0.6 * Math.sin(TAU * u), ly = c.Rf * 0.58 * Math.sin(TAU * 2 * u + 1), rl = Math.max(1.05, c.Rf * 0.42);
-    field.forEach((p, k) => { const d = Math.hypot(p.x - lx, p.y - ly), inside = d < rl; const target = k === 3; o.points.push({ x: p.x, y: p.y, i: inside ? (target ? 1.25 : 0.9) : 0.16, s: inside ? 0.55 : 0.4 }); });
-    const seg = 14; for (let k = 0; k < seg; k++) { const a0 = k / seg * TAU, a1 = (k + 1) / seg * TAU; o.lines.push({ x1: lx + Math.cos(a0) * rl, y1: ly + Math.sin(a0) * rl, x2: lx + Math.cos(a1) * rl, y2: ly + Math.sin(a1) * rl, i: 0.5 }); }
-    o.points.push({ x: lx, y: ly, i: 0.3, s: rl * 0.6 });
-  } },
-{ id: 'generating', label: 'Generating', hue: 290, hueName: 'violet', group: 'General', period: 1.6,
-  idea: 'Particles spiral down a cone into a core. The core breathes and throws off a ring each time it swallows a wave.',
-  still: 0.55,
-  draw(t, c, o) {
-    const M = 16, life = 1.6;
-    for (let i = 0; i < M; i++) { const u = frac(t / life + i / M), r = c.Rf * Math.pow(1 - u, 1.15), a = u * TAU * 2.2 + i * 1.3; let p = { x: Math.cos(a) * r, y: Math.sin(a) * r, z: (0.5 - u) * c.Rf * 1.1 }; p = rotX(p, 0.95); c.p3(o, p, 0.35 + 0.75 * u, 0.4); }
-    o.points.push({ x: 0, y: 0, i: 0.75 + 0.5 * Math.sin(TAU * t / life) ** 2, s: 0.5 });
-    const pr = frac(t / life), rr = pr * c.Rf * 1.05, seg = 12; for (let k = 0; k < seg; k++) { const a0 = k / seg * TAU, a1 = (k + 1) / seg * TAU; o.lines.push({ x1: Math.cos(a0) * rr, y1: Math.sin(a0) * rr * 0.6, x2: Math.cos(a1) * rr, y2: Math.sin(a1) * rr * 0.6, i: 0.45 * (1 - pr) }); }
-  } },
-{ id: 'writing', label: 'Writing', hue: 350, hueName: 'pink', group: 'General', period: 2.8, decayMul: 3.2,
-  idea: 'A white-hot nib writes a looping line across the grid and the ink cools behind it. At the end of the line it lifts, and the page clears for the next.',
-  still: 1.4,
-  draw(t, c, o) {
-    const dur = 2.25;
-    if (t < dur) {
-      const th = (t / dur) * 6 * PI, a = (1.75 * c.Rf) / (6 * PI), b = c.Rf * 0.4;
-      const x = -c.Rf * 0.88 + a * th - b * Math.sin(th) * 0.55, y = b * 0.75 * Math.cos(th) * -1 + c.Rf * 0.05;
-      o.points.push({ x, y, i: 1.25, s: 0.38 });
-      o.lines.push({ x1: -c.Rf * 0.9, y1: c.Rf * 0.72, x2: x, y2: c.Rf * 0.72, i: 0.22 });
-    } else {
-      o.points.push({ x: -c.Rf * 0.88, y: 0, i: frac(t * 2) < 0.5 ? 0.9 : 0.2, s: 0.38 });
-    }
-  } },
-{ id: 'syncing', label: 'Syncing', hue: 150, hueName: 'green', group: 'General', period: 4,
-  idea: 'Two heads chase each other around an infinity loop that tilts gently in 3D, so they pass through each other at the crossing and swap sides.',
-  still: 0.7,
-  draw(t, c, o) {
-    const A = c.Rf * 0.98, lem = th => { const s = Math.sin(th), k = 1 + s * s; return { x: A * Math.cos(th) / k, y: A * 1.35 * s * Math.cos(th) / k, z: 0 }; };
-    const tilt = p => rotX(p, 0.5 * Math.sin(TAU * t / 4));
-    const seg = 26; for (let k = 0; k < seg; k++) c.l3(o, tilt(lem(k / seg * TAU)), tilt(lem((k + 1) / seg * TAU)), 0.2);
-    for (const ph of [0, PI]) c.p3(o, tilt(lem(TAU * t / 2 + ph)), 1.15, 0.45);
-  } },
-{ id: 'connecting', label: 'Connecting', hue: 235, hueName: 'blue', group: 'General', period: 2.4,
-  idea: 'Two endpoints reach toward each other with a spark at each tip. They meet in the middle with a burst, then pulses run the finished line.',
-  still: 0.75,
-  draw(t, c, o) {
-    const ax = -c.Rf * 0.85, bx = c.Rf * 0.85, fade = t > 2.0 ? 1 - (t - 2.0) / 0.4 : 1;
-    o.points.push({ x: ax, y: 0, i: 0.55 * fade, s: 0.45 }, { x: bx, y: 0, i: 0.55 * fade, s: 0.45 });
-    if (t < 0.8) { const p = easeOut(t / 0.8), ex = ax + (0 - ax) * p; o.lines.push({ x1: ax, y1: 0, x2: ex, y2: 0, i: 0.6 }, { x1: bx, y1: 0, x2: -ex, y2: 0, i: 0.6 }); o.points.push({ x: ex, y: 0, i: 1.1, s: 0.36 }, { x: -ex, y: 0, i: 1.1, s: 0.36 }); }
-    else if (t < 1.05) { const u = (t - 0.8) / 0.25; o.points.push({ x: 0, y: 0, i: 1.3 * (1 - u * 0.5), s: 0.5 }); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU + 0.3; o.points.push({ x: Math.cos(a) * u * c.Rf * 0.6, y: Math.sin(a) * u * c.Rf * 0.6, i: (1 - u) * 0.9, s: 0.32 }); } o.lines.push({ x1: ax, y1: 0, x2: bx, y2: 0, i: 0.5 }); }
-    else { o.lines.push({ x1: ax, y1: 0, x2: bx, y2: 0, i: 0.45 * fade }); const u = (t - 1.05) / 0.45, tri = 1 - Math.abs(frac(u) * 2 - 1); o.points.push({ x: lerp(ax, bx, easeInOut(tri)), y: 0, i: 1.0 * fade, s: 0.38 }); }
-  } },
-{ id: 'uploading', label: 'Uploading', hue: 225, hueName: 'blue', group: 'General', period: 1.4,
-  idea: 'A spring of light climbs out of the grid, turning as it rises, with the newest coil white-hot at the top.',
-  still: 0.5,
-  draw(t, c, o) { helix(t, c, o, -1); } },
-{ id: 'downloading', label: 'Downloading', hue: 215, hueName: 'blue', group: 'General', period: 1.4,
-  idea: 'The same spring, descending into the grid and settling at the bottom.',
-  still: 0.5,
-  draw(t, c, o) { helix(t, c, o, 1); } },
-{ id: 'done', label: 'Done', hue: 145, hueName: 'green', group: 'General', period: 3.2, decayMul: 1.9, oneShot: true,
-  idea: 'A ring of particles collapses to a point, flashes, and sends out a shockwave. The light that is left draws the check in one stroke and settles.',
-  still: 1.5,
-  draw(t, c, o) {
-    const R = c.Rf;
-    if (t < 0.5) { const u = easeIn(t / 0.5); for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; o.points.push({ x: Math.cos(a) * R * (1 - u), y: Math.sin(a) * R * (1 - u), i: 0.5 + 0.7 * u, s: 0.36 }); } }
-    if (t >= 0.5 && t < 0.75) { const u = (t - 0.5) / 0.25; o.points.push({ x: 0, y: 0, i: 1.3 * (1 - u * 0.6), s: 0.55 }); const rr = u * R * 1.15, seg = 12; for (let k = 0; k < seg; k++) { const a0 = k / seg * TAU, a1 = (k + 1) / seg * TAU; o.lines.push({ x1: Math.cos(a0) * rr, y1: Math.sin(a0) * rr, x2: Math.cos(a1) * rr, y2: Math.sin(a1) * rr, i: 0.7 * (1 - u) }); } }
-    const P = [{ x: -R * 0.72, y: R * 0.05 }, { x: -R * 0.22, y: R * 0.58 }, { x: R * 0.78, y: -R * 0.62 }];
-    if (t >= 0.6) {
-      const p = clamp(easeOut((t - 0.6) / 0.6), 0, 1), L1 = Math.hypot(P[1].x - P[0].x, P[1].y - P[0].y), L2 = Math.hypot(P[2].x - P[1].x, P[2].y - P[1].y), d = p * (L1 + L2);
-      const breathe = t > 1.25 ? 0.9 + 0.1 * Math.sin(TAU * (t - 1.25) / 1.8) : 1;
-      let head;
-      if (d <= L1) { head = { x: lerp(P[0].x, P[1].x, d / L1), y: lerp(P[0].y, P[1].y, d / L1) }; o.lines.push({ x1: P[0].x, y1: P[0].y, x2: head.x, y2: head.y, i: 0.7 }); }
-      else { const v = (d - L1) / L2; head = { x: lerp(P[1].x, P[2].x, v), y: lerp(P[1].y, P[2].y, v) }; o.lines.push({ x1: P[0].x, y1: P[0].y, x2: P[1].x, y2: P[1].y, i: 0.7 * breathe }, { x1: P[1].x, y1: P[1].y, x2: head.x, y2: head.y, i: 0.7 * breathe }); }
-      o.points.push({ x: head.x, y: head.y, i: p < 1 ? 1.25 : 0.95 * breathe, s: 0.42 });
-      if (p >= 1) { o.points.push({ x: P[0].x, y: P[0].y, i: 0.8 * breathe, s: 0.4 }, { x: P[1].x, y: P[1].y, i: 0.9 * breathe, s: 0.42 }); for (let k = 0; k < 3; k++) { const u = frac((t - 1.2) / 1.2 + k / 3); o.points.push({ x: (hash(k, 9, 1) - 0.5) * R * 1.4, y: R * 0.4 - u * R * 1.3, i: 0.5 * (1 - u) * (u > 0.05 ? 1 : 0), s: 0.28 }); } }
-    }
-  } },
-{ id: 'error', label: 'Something went wrong', hue: 15, hueName: 'red', group: 'General', period: 2.2, decayMul: 0.5,
-  idea: 'A solid block with an exclamation mark that holds steady, then tears: rows slip sideways, a few cells blow out to white, and it snaps back.',
-  still: 0.6,
-  draw(t, c, o) {
-    const R = c.Rf, glitch = t < 0.32 || (t > 0.95 && t < 1.1), f = Math.floor(t * 30);
-    const off = y => glitch ? (hash(Math.round(y + c.R), f, 3) - 0.5) * R * 1.3 * (hash(f, 11, 2) > 0.3 ? 1 : 0) : 0;
-    for (let y = -c.R; y <= c.R; y++) for (let x = -c.R; x <= c.R; x++) o.points.push({ x: x + off(y), y, i: 0.22, s: 0.4 });
-    for (let y = -R * 0.8; y <= R * 0.2; y += 0.5) o.points.push({ x: off(y), y, i: 0.95, s: 0.42 });
-    o.points.push({ x: off(R * 0.7), y: R * 0.7, i: 1.0, s: 0.46 });
-    if (glitch) for (let k = 0; k < 4; k++) o.points.push({ x: (hash(k, f, 5) - 0.5) * 2 * R, y: (hash(k, f, 6) - 0.5) * 2 * R, i: 1.3, s: 0.35 });
-    if (glitch && hash(f, 7, 7) > 0.5) { const y = (hash(f, 8, 7) - 0.5) * 2 * R; o.lines.push({ x1: -R, y1: y, x2: R, y2: y, i: 0.5 }); }
-  } },
-{ id: 'building', label: 'Building', hue: 55, hueName: 'orange', group: 'Code', period: 4,
-  idea: 'A wireframe cube draws itself one edge at a time while it turns, each vertex lighting as an edge reaches it. Finished, it spins once and dissolves.',
-  still: 2.6,
-  draw(t, c, o) {
-    const R = c.Rf * 0.55, V = []; for (let i = 0; i < 8; i++) V.push({ x: (i & 1 ? 1 : -1) * R, y: (i & 2 ? 1 : -1) * R, z: (i & 4 ? 1 : -1) * R });
-    const E = [[0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [3, 7], [2, 6]];
-    const T = p => rotX(rotY(p, t * 0.75 + 0.6), 0.5), W = V.map(T);
-    const fade = t > 3.6 ? 1 - (t - 3.6) / 0.4 : 1, prog = clamp(t / 2.0, 0, 1) * E.length;
-    const lit = new Set();
-    E.forEach(([a, b], k) => {
-      if (k + 1 <= prog) { c.l3(o, W[a], W[b], 0.55 * fade); lit.add(a); lit.add(b); }
-      else if (k < prog) { const u = prog - k, m = { x: lerp(W[a].x, W[b].x, u), y: lerp(W[a].y, W[b].y, u), z: lerp(W[a].z, W[b].z, u) }; c.l3(o, W[a], m, 0.55); c.p3(o, m, 1.3, 0.38); lit.add(a); }
-    });
-    W.forEach((p, i) => { if (lit.has(i)) c.p3(o, p, 0.95 * fade, 0.44); });
-  } },
-{ id: 'debugging', label: 'Debugging', hue: 45, hueName: 'orange', group: 'Code', period: 2.6,
-  idea: 'An isometric stack of cells. A scan plane passes through it layer by layer. The one bad cell flares and jitters when the plane hits it, then it is gone.',
-  still: 1.0,
-  draw(t, c, o) {
-    const n = 3, sp = c.Rf * 0.52, cyc = Math.floor(t / 2.6), bug = Math.floor(hash(cyc, 13, 1) * 27);
-    const T = p => rotX(rotY(p, PI / 4), 0.62);
-    const yp = -c.Rf * 0.95 + (clamp(t / 1.7, 0, 1)) * c.Rf * 1.9;
-    let idx = 0; const f = Math.floor(t * 24);
-    for (let yy = 0; yy < n; yy++) for (let zz = 0; zz < n; zz++) for (let xx = 0; xx < n; xx++, idx++) {
-      let p = T({ x: (xx - 1) * sp, y: (yy - 1) * sp, z: (zz - 1) * sp });
-      const near = Math.abs(p.y - yp) < 0.32, isBug = idx === bug, passed = p.y < yp - 0.32;
-      if (isBug && passed) continue;
-      if (isBug && near) { p = { x: p.x + (hash(f, 1, 9) - 0.5) * 0.7, y: p.y + (hash(f, 2, 9) - 0.5) * 0.4, z: p.z }; c.p3(o, p, 1.4, 0.5); }
-      else c.p3(o, p, near ? 1.05 : 0.42, near ? 0.46 : 0.4);
-    }
-    if (t < 1.7) o.lines.push({ x1: -c.Rf, y1: yp, x2: c.Rf, y2: yp, i: 0.3 });
-  } },
-{ id: 'heartbeat', label: 'Reading your heartbeat', hue: 28, hueName: 'coral', group: 'Health', period: 3.6,
-  idea: 'An actual heart, drawn as points and edges, beating with a real lub-dub. One spark laps the outline on every beat, like the ECG trace that measures it.',
-  still: 0.06,
-  draw(t, c, o) {
-    const R = c.Rf * 0.92, K = c.N >= 7 ? 24 : 16, beat = 0.9, u = frac(t / beat);
-    const s = 1 + 0.14 * bump(u, 0.06, 0.05) + 0.08 * bump(u, 0.24, 0.07);
-    const H = th => { const x = 16 * Math.sin(th) ** 3, y = -(13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th)); return { x: x / 17 * R * s, y: (y / 17 + 0.08) * R * s, z: 0 }; };
-    const tilt = p => rotY(p, 0.35 * Math.sin(TAU * t / 3.6));
-    const base = 0.5 + (s - 1) * 3.2, sparkK = u * K;
-    for (let k = 0; k < K; k++) { const p = tilt(H(k / K * TAU)), q = tilt(H((k + 1) / K * TAU)); c.l3(o, p, q, 0.3 + (s - 1) * 1.5); const ds = Math.min(Math.abs(k - sparkK), K - Math.abs(k - sparkK)); c.p3(o, p, ds < 0.6 ? 1.3 : ds < 2.2 ? 0.95 : base, 0.4); }
-    if (c.N >= 7) for (let k = 0; k < 6; k++) { const p = tilt(H(k / 6 * TAU)); c.p3(o, { x: p.x * 0.45, y: p.y * 0.45 + R * 0.05, z: 0 }, 0.3 + (s - 1) * 2, 0.5); }
-  } },
-{ id: 'scanning', label: 'Scanning', hue: 28, hueName: 'coral', group: 'Health', period: 3,
-  idea: 'A double helix with rungs, turning on its axis. A scan plane runs the length of it and lights each rung as it passes, like sequencing.',
-  still: 0.9,
-  draw(t, c, o) {
-    const steps = c.N >= 7 ? 14 : 10, r = c.Rf * 0.55, yp = -c.Rf + 2 * c.Rf * frac(t / 1.5);
-    const strand = (k, ph) => { const y = -c.Rf * 0.95 + k / (steps - 1) * c.Rf * 1.9, a = y * 1.7 / c.Rf * 2.2 + TAU * t / 3 + ph; return { x: Math.cos(a) * r, y, z: Math.sin(a) * r }; };
-    for (let k = 0; k < steps; k++) { const A = strand(k, 0), B = strand(k, PI), near = Math.abs(A.y - yp) < c.Rf * 0.18; c.p3(o, A, near ? 1.25 : 0.6, 0.42); c.p3(o, B, near ? 1.25 : 0.6, 0.42); if (k % 2 === 0) c.l3(o, A, B, near ? 0.7 : 0.28); if (k < steps - 1) { c.l3(o, A, strand(k + 1, 0), 0.22); c.l3(o, B, strand(k + 1, PI), 0.22); } }
-    o.lines.push({ x1: -c.Rf, y1: yp, x2: c.Rf, y2: yp, i: 0.25 });
-  } },
-{ id: 'breathing', label: 'Breathe', hue: 28, hueName: 'coral', group: 'Health', period: 4.4,
-  idea: 'A sphere of points that inflates on a slow inhale, holds, and deflates on the exhale, brightening as it fills. The timing is the breathing exercise itself.',
-  still: 1.6,
-  draw(t, c, o) {
-    const ph = t < 1.6 ? easeInOut(t / 1.6) : t < 2.2 ? 1 : t < 3.8 ? 1 - easeInOut((t - 2.2) / 1.6) : 0;
-    const r = c.Rf * lerp(0.42, 0.92, ph), M = c.N >= 7 ? 30 : 20, ga = PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < M; i++) { const y = 1 - (i / (M - 1)) * 2, rr = Math.sqrt(1 - y * y), a = ga * i; let p = { x: Math.cos(a) * rr * r, y: y * r, z: Math.sin(a) * rr * r }; p = rotX(rotY(p, t * 0.35), 0.4); c.p3(o, p, 0.35 + 0.6 * ph, 0.4); }
-    const seg = 16; for (let k = 0; k < seg; k++) { const a0 = k / seg * TAU, a1 = (k + 1) / seg * TAU; o.lines.push({ x1: Math.cos(a0) * r, y1: Math.sin(a0) * r, x2: Math.cos(a1) * r, y2: Math.sin(a1) * r, i: 0.14 + 0.1 * ph }); }
-  } },
-{ id: 'calculating', label: 'Calculating', hue: 160, hueName: 'green', group: 'Finance', period: 4.8,
-  idea: 'A live ticker. The line keeps drawing in from the right with a hot head and the chart scrolls left under it, the area beneath filled in dim cells.',
-  still: 2.1,
-  draw(t, c, o) {
-    const P = 16, vals = c.cache('vals', () => { const v = [], a = []; let y = 0; for (let i = 0; i < P; i++) { y = clamp(y + (hash(i, 17, 3) - 0.5) * 1.1, -1, 1); a.push(y); } const m = Math.max(...a.map(Math.abs)) || 1; return a.map(x => x / m * c.Rf * 0.75); });
-    const sp = 0.3, off = t / sp, k0 = Math.floor(off), fr = frac(off), cols = c.N;
-    const pt = j => ({ x: j - c.R - fr, y: vals[((k0 + j) % P + P) % P] });
-    for (let j = 0; j < cols; j++) { const a = pt(j), b = pt(j + 1); o.lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, i: 0.5 }); }
-    for (let x = -c.R; x <= c.R; x++) { const j = Math.floor(x + c.R + fr), a = pt(j), b = pt(j + 1), ly = lerp(a.y, b.y, frac(x + c.R + fr)); for (let y = Math.ceil(ly); y <= c.R; y++) o.points.push({ x, y, i: 0.2, s: 0.38 }); }
-    const h = pt(cols - 1 + 0); o.points.push({ x: c.R, y: lerp(pt(cols - 1).y, pt(cols).y, fr), i: 1.2, s: 0.42 });
-  } },
-];
-function helix(t, c, o, dir) {
-  const r = c.Rf * 0.55, ds = 0.6, v = ds * 2 / 1.4, K = Math.ceil(c.Rf * 2.2 / ds) + 2;
-  for (let k = 0; k < K; k++) { const s = k * ds + frac(t * v / ds) * ds, y = (c.Rf * 1.05 - s) * -dir, a = s * 2.1 + TAU * t / 1.4 * dir; if (Math.abs(y) > c.Rf * 1.05) continue; const p = { x: Math.cos(a) * r, y, z: Math.sin(a) * r }; const headness = dir < 0 ? (y < -c.Rf * 0.6 ? 1 : 0) : (y > c.Rf * 0.6 ? 1 : 0); c.p3(o, p, 0.7 + 0.5 * headness, 0.42); if (k > 0) { const s2 = (k - 1) * ds + frac(t * v / ds) * ds, y2 = (c.Rf * 1.05 - s2) * -dir, a2 = s2 * 2.1 + TAU * t / 1.4 * dir; c.l3(o, p, { x: Math.cos(a2) * r, y: y2, z: Math.sin(a2) * r }, 0.22); } }
+/* ---------- icons: polylines ("strings") and loose pixels in unit coords, y down ---------- */
+const circle = (cx, cy, r, n, a0 = 0, ry = r) => Array.from({ length: n + 1 }, (_, k) => { const a = a0 + k / n * TAU; return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * ry }; });
+const arc = (cx, cy, r, a0, a1, n) => Array.from({ length: n + 1 }, (_, k) => { const a = lerp(a0, a1, k / n); return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }; });
+const mirror = pts => pts.map(p => ({ x: -p.x, y: p.y, w: p.w }));
+function arrowArc(r, a0, a1, n) {
+  const A = arc(0, 0, r, a0, a1, n), E = A[A.length - 1], tx = -Math.sin(a1), ty = Math.cos(a1);
+  const head = (sgn) => { const ang = Math.atan2(ty, tx) + PI + sgn * 0.6; return { x: E.x + Math.cos(ang) * 0.34, y: E.y + Math.sin(ang) * 0.34 }; };
+  return [A, [head(1), E, head(-1)]];
 }
+const stadium = (cx, cy, len, rad, rot) => { const pts = []; for (let k = 0; k <= 12; k++) { const a = k / 12 * TAU; const onRight = Math.cos(a) >= 0; const x = Math.cos(a) * rad + (onRight ? len / 2 : -len / 2), y = Math.sin(a) * rad; pts.push({ x: cx + x * Math.cos(rot) - y * Math.sin(rot), y: cy + x * Math.sin(rot) + y * Math.cos(rot) }); } return pts; };
+const heartPts = n => Array.from({ length: n + 1 }, (_, k) => { const th = k / n * TAU, x = 16 * Math.sin(th) ** 3, y = -(13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th)); return { x: x / 17 * 0.95, y: y / 17 * 0.95 + 0.1 }; });
+const dnaStrand = sgn => Array.from({ length: 9 }, (_, k) => { const y = -0.9 + k / 8 * 1.8; return { x: sgn * 0.55 * Math.sin(y * PI * 1.1 + 0.4), y }; });
+
+const STATES = [
+{ id: 'thinking', label: 'Thinking', hue: 300, hueName: 'violet', group: 'General', period: 3.4,
+  idea: 'The pixels gather into a light bulb and the strings close its glass. In the held moment the filament glows hot and the rays twinkle.',
+  icon: { strokes: [circle(0, -0.3, 0.58, 10, -PI / 2), [{ x: -0.28, y: 0.4 }, { x: -0.28, y: 0.72 }, { x: 0.28, y: 0.72 }, { x: 0.28, y: 0.4 }], [{ x: -0.22, y: 0.22 }, { x: 0, y: -0.1 }, { x: 0.22, y: 0.22 }]], dots: [{ x: -0.95, y: -0.85 }, { x: 0.95, y: -0.85 }, { x: 0, y: -1.02 }] },
+  hold(u, H) { H.hotStroke = 2; H.hotAmt = 0.6 + 0.4 * Math.sin(TAU * u * 1.5) ** 2; H.twinkle = u; } },
+{ id: 'reading', label: 'Reading docs', hue: 75, hueName: 'amber', group: 'General', period: 3.6,
+  idea: 'An open book: two pages stitched by strings, lines of text as loose pixels. Held, the words light up one by one in reading order.',
+  icon: { strokes: [[{ x: -0.92, y: -0.55 }, { x: -0.92, y: 0.6 }, { x: 0, y: 0.85 }, { x: 0, y: -0.3 }, { x: -0.92, y: -0.55 }], [{ x: 0.92, y: -0.55 }, { x: 0.92, y: 0.6 }, { x: 0, y: 0.85 }, { x: 0, y: -0.3 }, { x: 0.92, y: -0.55 }]], dots: [{ x: -0.62, y: -0.05 }, { x: -0.32, y: 0.05 }, { x: 0.32, y: 0.05 }, { x: 0.62, y: -0.05 }, { x: -0.62, y: 0.3 }, { x: -0.32, y: 0.4 }, { x: 0.32, y: 0.4 }, { x: 0.62, y: 0.3 }] },
+  hold(u, H) { H.readDot = Math.floor(u * 8.99); } },
+{ id: 'analyzing', label: 'Analyzing', hue: 205, hueName: 'cyan', group: 'General', period: 3.4,
+  idea: 'Bars of pixels rise into a chart and a string draws the trend line through them, ending in an arrow. Held, a spark runs the trend.',
+  icon: { strokes: [[{ x: -0.72, y: 0.35 }, { x: -0.25, y: -0.05 }, { x: 0.22, y: 0.15 }, { x: 0.7, y: -0.55 }], [{ x: 0.32, y: -0.6 }, { x: 0.7, y: -0.55 }, { x: 0.66, y: -0.18 }], [{ x: -0.95, y: 0.9 }, { x: 0.95, y: 0.9 }]], dots: [{ x: -0.72, y: 0.65 }, { x: -0.25, y: 0.3 }, { x: -0.25, y: 0.65 }, { x: 0.22, y: 0.5 }, { x: 0.22, y: 0.75 }, { x: 0.7, y: -0.2 }, { x: 0.7, y: 0.15 }, { x: 0.7, y: 0.5 }] },
+  hold(u, H) { H.spark = frac(u * 1.5); H.sparkStroke = 0; } },
+{ id: 'searching', label: 'Searching', hue: 250, hueName: 'blue', group: 'General', period: 3.4,
+  idea: 'A magnifying glass: the lens ring and the handle. Held, it sweeps a small circle as if looking, and the glint on the glass twinkles.',
+  icon: { strokes: [circle(-0.25, -0.25, 0.55, 10, PI / 4), [{ x: 0.15, y: 0.15 }, { x: 0.5, y: 0.5 }, { x: 0.85, y: 0.85 }]], dots: [{ x: -0.48, y: -0.48 }] },
+  hold(u, H) { H.dx = 0.14 * Math.cos(TAU * u); H.dy = 0.14 * Math.sin(TAU * u); H.twinkle = u; } },
+{ id: 'generating', label: 'Generating', hue: 290, hueName: 'violet', group: 'General', period: 3.4,
+  idea: 'A four-point sparkle, the mark of something new. Held, it turns slowly and swells, with two smaller sparks blinking beside it.',
+  icon: { strokes: [[{ x: 0, y: -0.92 }, { x: 0.2, y: -0.2 }, { x: 0.92, y: 0 }, { x: 0.2, y: 0.2 }, { x: 0, y: 0.92 }, { x: -0.2, y: 0.2 }, { x: -0.92, y: 0 }, { x: -0.2, y: -0.2 }, { x: 0, y: -0.92 }]], dots: [{ x: 0.72, y: -0.72 }, { x: -0.7, y: 0.68 }] },
+  hold(u, H) { H.r = 0.35 * easeInOut(u); H.s = 1 + 0.1 * Math.sin(PI * u); H.twinkle = u; } },
+{ id: 'writing', label: 'Writing', hue: 350, hueName: 'pink', group: 'General', period: 3.6,
+  idea: 'A quill. The shaft string lands first, the vane closes around it, barbs stitch across. Held, the feather nods as it writes and the nib leaves a dot of ink.',
+  icon: { strokes: [[{ x: -0.9, y: 0.9 }, { x: -0.45, y: 0.42 }, { x: 0.05, y: -0.1 }, { x: 0.5, y: -0.6 }, { x: 0.82, y: -0.92 }], [{ x: 0.82, y: -0.92 }, { x: 0.3, y: -0.96 }, { x: -0.2, y: -0.72 }, { x: -0.52, y: -0.3 }, { x: -0.45, y: 0.42 }], [{ x: 0.05, y: -0.1 }, { x: -0.36, y: -0.48 }], [{ x: 0.5, y: -0.6 }, { x: 0.05, y: -0.82 }]], dots: [], pivot: { x: -0.9, y: 0.9 } },
+  hold(u, H) { H.r = 0.09 * Math.sin(TAU * u * 2); H.ink = u; } },
+{ id: 'syncing', label: 'Syncing', hue: 150, hueName: 'green', group: 'General', period: 3.6,
+  idea: 'Two arrows chasing each other around a circle. Held, the whole icon turns half a revolution so it lands exactly on itself.',
+  icon: { strokes: [...arrowArc(0.78, -2.8, -0.35, 7), ...arrowArc(0.78, 0.34, 2.79, 7)], dots: [] },
+  hold(u, H) { H.r = PI * easeInOut(u); } },
+{ id: 'connecting', label: 'Connecting', hue: 235, hueName: 'blue', group: 'General', period: 3.4,
+  idea: 'Two links of a chain. Each loop is its own string. Held, they pull tight toward each other and a spark runs through both.',
+  icon: { strokes: [stadium(-0.3, 0.3, 0.75, 0.26, -PI / 4), stadium(0.3, -0.3, 0.75, 0.26, -PI / 4)], dots: [] },
+  hold(u, H) { H.spark = frac(u * 2); H.s = 1 - 0.05 * Math.sin(PI * u); } },
+{ id: 'uploading', label: 'Uploading', hue: 225, hueName: 'blue', group: 'General', period: 3.2,
+  idea: 'An arrow over a tray. Held, pixels keep leaving the tray and running up the shaft and out the arrowhead.',
+  icon: { strokes: [[{ x: 0, y: 0.45 }, { x: 0, y: -0.1 }, { x: 0, y: -0.78 }], [{ x: -0.45, y: -0.33 }, { x: 0, y: -0.78 }, { x: 0.45, y: -0.33 }], [{ x: -0.82, y: 0.45 }, { x: -0.82, y: 0.88 }, { x: 0.82, y: 0.88 }, { x: 0.82, y: 0.45 }]], dots: [] },
+  hold(u, H) { H.runner = { x: 0, y: 0.6 - frac(u * 2.5) * 1.5 }; } },
+{ id: 'downloading', label: 'Downloading', hue: 215, hueName: 'blue', group: 'General', period: 3.2,
+  idea: 'The same arrow pointing into the tray. Held, pixels fall down the shaft and land.',
+  icon: { strokes: [[{ x: 0, y: -0.78 }, { x: 0, y: -0.1 }, { x: 0, y: 0.45 }], [{ x: -0.45, y: 0 }, { x: 0, y: 0.45 }, { x: 0.45, y: 0 }], [{ x: -0.82, y: 0.45 }, { x: -0.82, y: 0.88 }, { x: 0.82, y: 0.88 }, { x: 0.82, y: 0.45 }]], dots: [] },
+  hold(u, H) { H.runner = { x: 0, y: -0.9 + frac(u * 2.5) * 1.5 }; } },
+{ id: 'done', label: 'Done', hue: 145, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
+  idea: 'The pixels rush in, the string stitches them into a tick, and it pops. Then it rests and glows. In a product this one stops at the tick and stays.',
+  icon: { strokes: [[{ x: -0.85, y: 0.05 }, { x: -0.5, y: 0.4 }, { x: -0.2, y: 0.7 }, { x: 0.25, y: 0.1 }, { x: 0.85, y: -0.65 }]], dots: [] },
+  hold(u, H) { H.s = 1 + 0.16 * bump(u, 0.08, 0.07); H.spark = u < 0.5 ? u * 2 : null; } },
+{ id: 'error', label: 'Something went wrong', hue: 15, hueName: 'red', group: 'General', period: 3.2,
+  idea: 'A warning triangle with the exclamation mark set in pixels. Held, the mark blinks and the whole sign shivers for a moment.',
+  icon: { strokes: [[{ x: 0, y: -0.88 }, { x: 0.45, y: -0.08 }, { x: 0.9, y: 0.72 }, { x: 0, y: 0.72 }, { x: -0.9, y: 0.72 }, { x: -0.45, y: -0.08 }, { x: 0, y: -0.88 }]], dots: [{ x: 0, y: -0.3 }, { x: 0, y: -0.05 }, { x: 0, y: 0.2 }, { x: 0, y: 0.5 }] },
+  hold(u, H) { H.blink = frac(u * 3) < 0.5; H.dx = (u > 0.3 && u < 0.5) ? (hash(Math.floor(u * 60), 2, 2) - 0.5) * 0.25 : 0; } },
+{ id: 'building', label: 'Building', hue: 55, hueName: 'orange', group: 'Code', period: 3.4,
+  idea: 'A hammer: the handle string first, then the head closes around it. Held, it swings from the end of the handle and strikes twice.',
+  icon: { strokes: [[{ x: -0.88, y: 0.88 }, { x: -0.4, y: 0.4 }, { x: 0.12, y: -0.12 }], [{ x: -0.12, y: -0.52 }, { x: 0.38, y: -0.02 }, { x: 0.86, y: -0.46 }, { x: 0.36, y: -0.92 }, { x: -0.12, y: -0.52 }]], dots: [], pivot: { x: -0.88, y: 0.88 } },
+  hold(u, H) { H.r = -0.45 * Math.abs(Math.sin(TAU * u)) ; H.strike = frac(u * 2) > 0.9; } },
+{ id: 'debugging', label: 'Debugging', hue: 45, hueName: 'orange', group: 'Code', period: 3.6,
+  idea: 'A bug: body, head, six legs and antennae. Held, the legs twitch and the head bobs.',
+  icon: (() => { const legs = [[{ x: -0.4, y: -0.22 }, { x: -0.88, y: -0.5, w: 1 }], [{ x: -0.43, y: 0.15 }, { x: -0.92, y: 0.15, w: 1 }], [{ x: -0.38, y: 0.5 }, { x: -0.85, y: 0.78, w: 1 }], [{ x: -0.12, y: -0.72 }, { x: -0.35, y: -0.98, w: 1 }]]; return { strokes: [circle(0, 0.15, 0.42, 10, -PI / 2, 0.55), circle(0, -0.56, 0.22, 6, -PI / 2), [{ x: 0, y: -0.35 }, { x: 0, y: 0.68 }], ...legs, ...legs.map(mirror)], dots: [] }; })(),
+  hold(u, H) { H.wobble = 0.1; H.wobbleT = u; } },
+{ id: 'heartbeat', label: 'Reading your heartbeat', hue: 28, hueName: 'coral', group: 'Health', period: 4,
+  idea: 'A heart outline with the ECG trace running through it. Held, it beats with a real lub-dub and a spark runs the trace on every beat.',
+  icon: { strokes: [heartPts(16), [{ x: -0.95, y: 0.05 }, { x: -0.45, y: 0.05 }, { x: -0.28, y: -0.32 }, { x: -0.06, y: 0.45 }, { x: 0.1, y: 0.05 }, { x: 0.95, y: 0.05 }]], dots: [] },
+  hold(u, H) { const b = frac(u * 2); H.s = 1 + 0.13 * bump(b, 0.08, 0.05) + 0.07 * bump(b, 0.26, 0.07); H.spark = b; H.sparkStroke = 1; } },
+{ id: 'scanning', label: 'Scanning', hue: 28, hueName: 'coral', group: 'Health', period: 3.6,
+  idea: 'A strand of DNA: two strings twisting past each other with pixel rungs between. Held, the rungs light up one after another, bottom to top, like sequencing.',
+  icon: (() => { const A = dnaStrand(1), B = dnaStrand(-1), rungs = [1, 3, 5, 7].map(k => [A[k], B[k]]); return { strokes: [A, B, ...rungs], dots: [] }; })(),
+  hold(u, H) { H.hotStroke = 2 + Math.floor(frac(u * 1.5) * 3.99); H.hotAmt = 1; } },
+{ id: 'breathing', label: 'Breathe', hue: 28, hueName: 'coral', group: 'Health', period: 4.4,
+  idea: 'Lungs: trachea, bronchi and two lobes closed by strings. Held, they fill on a slow inhale and empty on the exhale.',
+  icon: (() => { const lobe = [{ x: -0.3, y: 0.05 }, { x: -0.7, y: -0.12 }, { x: -0.92, y: 0.45 }, { x: -0.65, y: 0.9 }, { x: -0.28, y: 0.75 }, { x: -0.3, y: 0.05 }]; return { strokes: [[{ x: 0, y: -0.95 }, { x: 0, y: -0.25 }], [{ x: -0.3, y: 0.05 }, { x: 0, y: -0.25 }, { x: 0.3, y: 0.05 }], lobe, mirror(lobe)], dots: [] }; })(),
+  hold(u, H) { H.s = 1 + 0.11 * (0.5 - 0.5 * Math.cos(TAU * u)); } },
+{ id: 'calculating', label: 'Calculating', hue: 160, hueName: 'green', group: 'Finance', period: 3.4,
+  idea: 'A sigma, the sign for a sum, drawn as one string through five pixels. Held, a spark runs it twice and the total blinks at the right.',
+  icon: { strokes: [[{ x: 0.72, y: -0.85 }, { x: -0.7, y: -0.85 }, { x: 0.12, y: 0 }, { x: -0.7, y: 0.85 }, { x: 0.72, y: 0.85 }]], dots: [{ x: 0.85, y: -0.4 }, { x: 0.85, y: 0.4 }] },
+  hold(u, H) { H.spark = frac(u * 2); H.blink = frac(u * 2) > 0.6; } },
+];
+
+/* ---------- assembly: pixels fly in, strings stitch them, the icon forms, lives, dissolves ---------- */
+const GATHER = 0.4, FORM = 0.48, HOLD_END = 0.84;
+function compileIcon(st, c) {
+  const pts = [], key = p => Math.round(p.x * 40) + ':' + Math.round(p.y * 40), idx = {};
+  const add = p => { const k = key(p); if (!(k in idx)) { idx[k] = pts.length; pts.push({ x: p.x, y: p.y, w: p.w ? 1 : 0 }); } else if (p.w) pts[idx[k]].w = 1; return idx[k]; };
+  const strokes = st.icon.strokes.map(s => s.map(add)), dots = st.icon.dots.map(add);
+  const n = pts.length, origin = [], ctrl = [], delay = [], out = [];
+  for (let k = 0; k < n; k++) {
+    const T = pts[k], a = Math.atan2(T.y, T.x) + (hash(k, 1, 11) - 0.5) * 1.3, r = 1.02 + hash(k, 2, 11) * 0.22;
+    const O = { x: Math.cos(a) * r, y: Math.sin(a) * r }; origin.push(O);
+    const mx = (O.x + T.x) / 2, my = (O.y + T.y) / 2, px = -(T.y - O.y), py = T.x - O.x, sgn = hash(k, 3, 11) - 0.5;
+    ctrl.push({ x: mx + px * sgn * 0.9, y: my + py * sgn * 0.9 });
+    delay.push(hash(k, 4, 11) * 0.4);
+    const oa = Math.atan2(T.y, T.x) + (hash(k, 5, 11) - 0.5) * 0.8; out.push({ x: Math.cos(oa), y: Math.sin(oa) });
+  }
+  let total = 0; const segs = [];
+  for (const s of strokes) for (let i = 0; i < s.length - 1; i++) { const a = pts[s[i]], b = pts[s[i + 1]], L = Math.hypot(b.x - a.x, b.y - a.y); segs.push({ a: s[i], b: s[i + 1], L, start: total, stroke: strokes.indexOf(s) }); total += L; }
+  return { pts, strokes, dots, origin, ctrl, delay, out, segs, total, pivot: st.icon.pivot || { x: 0, y: 0 } };
+}
+function assemble(st, t, c, o) {
+  const I = c.cache('icon:' + st.id, () => compileIcon(st, c)), K = c.Rf * 0.92, u = t / st.period;
+  const H = { s: 1, r: 0, dx: 0, dy: 0 };
+  let phase, pos = new Array(I.pts.length), prog = new Array(I.pts.length).fill(1), amp = 1;
+  if (u < GATHER) {
+    phase = 'gather'; const ug = u / GATHER;
+    for (let k = 0; k < I.pts.length; k++) { const p = easeInOut(clamp((ug - I.delay[k]) / (1 - I.delay[k]), 0, 1)); prog[k] = p; const O = I.origin[k], C = I.ctrl[k], T = I.pts[k], q = 1 - p; pos[k] = { x: q * q * O.x + 2 * q * p * C.x + p * p * T.x, y: q * q * O.y + 2 * q * p * C.y + p * p * T.y }; }
+  } else if (u < FORM) { phase = 'form'; for (let k = 0; k < I.pts.length; k++) pos[k] = I.pts[k]; }
+  else if (u < HOLD_END) { phase = 'hold'; st.hold((u - FORM) / (HOLD_END - FORM), H, c); for (let k = 0; k < I.pts.length; k++) pos[k] = I.pts[k]; }
+  else { phase = 'dissolve'; const ud = (u - HOLD_END) / (1 - HOLD_END), e = easeIn(ud); amp = 1 - ud; for (let k = 0; k < I.pts.length; k++) pos[k] = { x: I.pts[k].x + I.out[k].x * e * 1.4, y: I.pts[k].y + I.out[k].y * e * 1.4 }; }
+  /* hold transform: scale and rotate about the pivot, then offset; leg wobble */
+  const cs = Math.cos(H.r), sn = Math.sin(H.r), P = I.pivot;
+  const wob = (k) => (H.wobble && I.pts[k].w) ? { x: (hash(k, Math.floor(H.wobbleT * 14), 6) - 0.5) * H.wobble * 2, y: (hash(k, Math.floor(H.wobbleT * 14), 7) - 0.5) * H.wobble * 2 } : { x: 0, y: 0 };
+  const W = (p, k) => { const w = k == null ? { x: 0, y: 0 } : wob(k); const x = (p.x + w.x - P.x) * H.s, y = (p.y + w.y - P.y) * H.s; return { x: (x * cs - y * sn + P.x + H.dx) * K, y: (x * sn + y * cs + P.y + H.dy) * K }; };
+  const world = pos.map((p, k) => W(p, k));
+  /* pixels */
+  const isDot = new Set(I.dots);
+  for (let k = 0; k < world.length; k++) {
+    let i = 0.55 + 0.45 * prog[k];
+    if (phase === 'gather' && prog[k] > 0.92) i = 1.25;
+    if (phase === 'form') i = 1.0;
+    if (phase === 'hold') { i = isDot.has(k) ? 0.75 : 0.9; if (H.twinkle != null && isDot.has(k)) i = 0.4 + 0.9 * (hash(k, Math.floor(H.twinkle * 10), 8) > 0.5 ? 1 : 0.2); if (H.readDot != null && isDot.has(k)) { const d = I.dots.indexOf(k); i = d === H.readDot ? 1.3 : d < H.readDot ? 0.95 : 0.35; } if (H.blink != null && isDot.has(k)) i = H.blink ? 1.25 : 0.5; }
+    o.points.push({ x: world[k].x, y: world[k].y, i: i * amp, s: 0.34 });
+  }
+  /* strings */
+  for (const sg of I.segs) {
+    const A = world[sg.a], B = world[sg.b];
+    if (phase === 'gather') { const f = clamp((Math.min(prog[sg.a], prog[sg.b]) - 0.4) / 0.6, 0, 1); if (f <= 0) continue; const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2; o.lines.push({ x1: A.x, y1: A.y, x2: lerp(A.x, mx, f), y2: lerp(A.y, my, f), i: 0.5 * f }, { x1: B.x, y1: B.y, x2: lerp(B.x, mx, f), y2: lerp(B.y, my, f), i: 0.5 * f }); }
+    else { let i = phase === 'form' ? 0.75 : 0.55 * amp; if (phase === 'hold' && H.hotStroke === sg.stroke) i = 0.6 + 0.6 * H.hotAmt; o.lines.push({ x1: A.x, y1: A.y, x2: B.x, y2: B.y, i }); }
+  }
+  /* spark: a white-hot point running along the strings */
+  let sparkPos = null, sparkSegs = I.segs;
+  if (phase === 'form') sparkPos = (u - GATHER) / (FORM - GATHER);
+  else if (phase === 'hold' && H.spark != null) { if (H.sparkStroke != null) sparkSegs = I.segs.filter(s => s.stroke === H.sparkStroke); sparkPos = H.spark; }
+  if (sparkPos != null && sparkSegs.length) {
+    const tot = sparkSegs.reduce((a, s) => a + s.L, 0); let d = sparkPos * tot;
+    for (const sg of sparkSegs) { if (d <= sg.L || sg === sparkSegs[sparkSegs.length - 1]) { const f = clamp(d / sg.L, 0, 1), A = world[sg.a], B = world[sg.b]; o.points.push({ x: lerp(A.x, B.x, f), y: lerp(A.y, B.y, f), i: 1.3, s: 0.38 }); break; } d -= sg.L; }
+  }
+  /* state extras during hold */
+  if (phase === 'hold') {
+    if (H.runner) { const p = W(H.runner); o.points.push({ x: p.x, y: p.y, i: 1.25, s: 0.4 }); }
+    if (H.ink != null) { const p = W({ x: -0.9 + 0.12, y: 0.9 + 0.02 }); o.points.push({ x: p.x + (frac(H.ink * 2)) * K * 0.3, y: p.y, i: 0.7, s: 0.3 }); }
+    if (H.strike) { const p = W({ x: 0.55, y: -0.3 }); for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + 0.4; o.points.push({ x: p.x + Math.cos(a) * K * 0.45, y: p.y + Math.sin(a) * K * 0.45, i: 1.1, s: 0.3 }); } }
+  }
+}
+for (const st of STATES) { st.still = st.period * (FORM + 0.02); st.draw = function (t, c, o) { assemble(this, t, c, o); }; }
 const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
 
 /* ---------- color ramps: hue -> cell color at intensity 0..1.3 (hue, then white-hot) ---------- */
@@ -467,7 +407,7 @@ function ramp(hue, light) {
   const fills = [], alphas = [];
   for (let i = 0; i < RAMP_N; i++) {
     const v = i / (RAMP_N - 1) * 1.3; let L, C;
-    if (!light) { if (v <= 0.75) { const u = v / 0.75; L = lerp(0.42, 0.82, u); C = lerp(0.1, 0.165, u); } else { const u = (v - 0.75) / 0.55; L = lerp(0.82, 0.985, u); C = lerp(0.165, 0.025, u); } }
+    if (!light) { if (v <= 0.75) { const u = v / 0.75; L = lerp(0.42, 0.82, u); C = lerp(0.1, 0.165, u); } else { const u = (v - 0.75) / 0.55; L = lerp(0.82, 0.97, u); C = lerp(0.165, 0.01, u); } }
     else { if (v <= 0.75) { const u = v / 0.75; L = lerp(0.86, 0.6, u); C = lerp(0.08, 0.19, u); } else { const u = (v - 0.75) / 0.55; L = lerp(0.6, 0.36, u); C = lerp(0.19, 0.13, u); } }
     fills.push(`oklch(${L.toFixed(3)} ${C.toFixed(3)} ${hue})`);
     alphas.push(+(S.bed + (1 - S.bed) * clamp(v / 0.6, 0, 1)).toFixed(3));
@@ -532,7 +472,7 @@ class Matrix {
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const d2 = (x - cx) ** 2 + (y - cy) ** 2, w = Math.exp(-d2 * inv); if (w > 0.03) tg[y * N + x] += i * w; }
     };
     for (const p of o.points) splat(p.x, p.y, p.i, p.s || 0.5);
-    for (const l of o.lines) { const len = Math.hypot(l.x2 - l.x1, l.y2 - l.y1), n = Math.max(1, Math.ceil(len / 0.45)); for (let k = 0; k <= n; k++) { const u = k / n; splat(lerp(l.x1, l.x2, u), lerp(l.y1, l.y2, u), l.i * 0.55, 0.33); } }
+    for (const l of o.lines) { const len = Math.hypot(l.x2 - l.x1, l.y2 - l.y1), n = Math.max(1, Math.ceil(len / 0.45)); for (let k = 0; k <= n; k++) { const u = k / n; splat(lerp(l.x1, l.x2, u), lerp(l.y1, l.y2, u), l.i * 0.5, 0.27); } }
     for (let i = 0; i < tg.length; i++) if (tg[i] > 1.3) tg[i] = 1.3;
   }
   temporal(dt) {
@@ -652,7 +592,7 @@ function tokensJson() {
   return JSON.stringify({
     grid: { cells: S.grid, cellUnits: CELL, gapUnits: GAP, radiusUnits: 0.55 },
     size: { pillGlyphPx: S.size, glyphToLabelEm: 1.25, gapEm: 0.75 },
-    render: { splatSigmaCells: 0.5, perspectiveDistanceCells: S.grid * 1.7, depthIntensity: [0.3, 1], levels: S.levels || 'smooth', timeStepMs: S.step || 'smooth' },
+    render: { splatSigmaCells: 0.34, stringSigmaCells: 0.27, perspectiveDistanceCells: S.grid * 1.7, depthIntensity: [0.3, 1], levels: S.levels || 'smooth', timeStepMs: S.step || 'smooth' },
     ramp: { space: 'oklch', dark: { base: [0.42, 0.1], peak: [0.82, 0.165], hot: [0.985, 0.025] }, light: { base: [0.86, 0.08], peak: [0.6, 0.19], hot: [0.36, 0.13] }, hotStartsAt: 0.75, bed: S.bed },
     color: { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
     motion: { riseMs: S.rise, trailMs: S.decay, trailMul: Object.fromEntries(STATES.filter(s => s.decayMul).map(s => [s.id, s.decayMul])), periodS: Object.fromEntries(STATES.map(s => [s.id, s.period])) },
