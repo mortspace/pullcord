@@ -634,7 +634,7 @@ const STATES = [
   frames: [{ s: [[[0,4],[1,5],[2,6],[3,7],[4,6],[5,5],[6,4],[7,3],[8,2]]], d: [] }],
   hold(u, H) { if (u < 0.45) H.spark = u / 0.45; } },
 { id: 'error', label: 'Something went wrong', hue: 10, hueName: 'red', group: 'General', period: 3.2,
-  idea: 'A warning sign that glitches like a bad signal: bands of rows tear sideways, a row drops out, stray cells flicker, and it snaps back whole.',
+  idea: 'A little monitor with a calm face hiccups, gasps and jumps on its stand as its eyes snap to crosses and sparks fly, then sits knocked out while a puff of smoke rises off its top. It reboots: a point of light opens into a line, splits into two eyes, and the smile comes back.',
   frames: [{ s: [tri], d: [[4,3],[4,4],[4,5],[4,7]] }, { s: [tri], d: [[4,3],[4,4],[4,5]] }],
   hold(u, H) { H.frame = frac(u * 3) < 0.6 ? 0 : 1; H.blink = frac(u * 3) < 0.6; } },
 { id: 'building', label: 'Building', hue: 30, hueName: 'orange', group: 'Code', period: 3.4,
@@ -1025,50 +1025,6 @@ const SKATE = [F(stamp([[0, 3, '#'], [1, 3, '#'], [0, 4, '#'], [1, 4, '#']]), 20
 const flipAt = (w, tone = '#') => stamp(CHECK_PAIRS.flat().map(([x, y]) => [Math.round(6 + (x - 6) * w), y, tone]));
 const FLIP = [F(flipAt(0.08, 'W'), 120), F(flipAt(0.35), 80), F(flipAt(0.7), 70), F(CHECK, 100), F(flipAt(0.85), 60), F(CHECK, 90), ...GLINT_RUN(), F(CHECK, 1150), F(flipAt(0.6), 70), F(flipAt(0.25), 70)];
 
-/* error: a warning triangle with a rounded top, eleven cells wide so it has room to move. The exclamation mark has a
-   four-cell bar, a gap, a dot, and two clear rows above the base. It holds, then gives the shake a Mac gives a wrong
-   password, quick and settling, with the mark white-hot, and the mark blinks once more as it comes to rest */
-const TRI = bm(
-  '.............',
-  '.....###.....',
-  '.....#.#.....',
-  '....#...#....',
-  '....#...#....',
-  '...#.....#...',
-  '...#.....#...',
-  '..#.......#..',
-  '..#.......#..',
-  '.#.........#.',
-  '.#.........#.',
-  '.###########.',
-  '.............');
-const BANG = [[6,3],[6,4],[6,5],[6,6],[6,8]];
-const alarm = (dx, hot) => shift(put(TRI, BANG, hot ? 'W' : '#'), dx, 0);
-
-/* error, Glitch take: the sign breaks up like a bad signal. Bands of rows tear sideways, a row drops out to dim, a
-   few stray white cells flicker, and it snaps back whole; twice, irregularly, then it holds. */
-const SIGN = put(TRI, BANG, '#');
-const glitch = (bands, dim = [], noise = []) => stamp([...SIGN.flatMap((r, y) => { const band = bands.find(([a, b]) => y >= a && y <= b); const dx = band ? band[2] : 0;
-  return r.split('').map((c, x) => c === '.' ? null : [x + dx, y, dim.includes(y) ? ':' : c]).filter(Boolean); }), ...noise.map(([x, y]) => [x, y, 'W'])]);
-const GLITCH = [F(SIGN, 900), F(glitch([[2, 4, 2], [8, 9, -1]], [], [[0, 3], [12, 8]]), 55), F(glitch([[5, 7, -2]], [3]), 45), F(SIGN, 70), F(glitch([[1, 3, -1], [9, 11, 1]], [6], [[11, 2]]), 50),
-  F(glitch([[4, 8, 1]], [], [[1, 6], [2, 6]]), 40), F(SIGN, 600), F(glitch([[6, 8, 2]], [7]), 50), F(SIGN, 300)];
-
-/* error, Build take: the warning sign assembles itself. Both sides run down from the rounded top at once, the base
-   closes from the two corners to the middle, easing as it meets, then the mark pops in white, settles, and the sign
-   gives one small shake. In a loop it erases and builds again. */
-const TRI_LEFT = [[5,1],[5,2],[4,3],[4,4],[3,5],[3,6],[2,7],[2,8],[1,9],[1,10],[1,11]];
-const TRI_SIDES = k => [[6, 1], ...TRI_LEFT.slice(0, k).flatMap(([x, y]) => [[x, y], [12 - x, y]])];
-const TRI_BASE = k => Array.from({ length: k }, (_, i) => [[2 + i, 11], [10 - i, 11]]).flat();
-const buildAt = (k, b = 0, mark) => stamp([...[...TRI_SIDES(k), ...TRI_BASE(b)].map(([x, y]) => [x, y, '#']), ...(mark ? BANG.map(([x, y]) => [x, y, mark]) : [])]);
-const BUILD = [F(buildAt(0), 160), ...[2, 4, 6, 8, 10, 11].map((k, i) => F(buildAt(k), [80, 60, 50, 50, 60, 70][i])), ...[2, 4, 5].map((b, i) => F(buildAt(11, b), [55, 70, 90][i])),
-  F(buildAt(11, 5, 'W'), 110), F(alarm(0), 120), F(alarm(-1), 60), F(alarm(1), 70), F(alarm(0), 1100), F(buildAt(11, 5, ':'), 90), F(buildAt(6, 0), 70)];
-
-/* error, Pulse take: an alarm. The mark flashes white and a dim halo one cell outside the sign flashes with it and
-   fades, twice in quick succession, like a siren, then it holds. */
-const HALO_TRI = ['.....###.....', '.....#.#.....', '....#...#....', '....#...#....', '...#.....#...', '...#.....#...', '..#.......#..', '..#.......#..', '.#.........#.', '.#.........#.', '#...........#', '#...........#', '#############'];
-const pulseAt = (mark, halo) => stamp([...(halo ? cellsOf(HALO_TRI).map(([x, y]) => [x, y, ':']) : []), ...cellsOf(TRI).map(([x, y]) => [x, y, '#']), ...BANG.map(([x, y]) => [x, y, mark])]);
-const PULSE = [F(pulseAt('#'), 900), F(pulseAt('W', true), 110), F(pulseAt('#'), 120), F(pulseAt('W', true), 110), F(pulseAt('#'), 700)];
-
 /* building: a hammer seen from the side drives a real nail into a plank. The nail stands five cells tall and takes two blows,
    sparks flying on each. Then the plank slides along, the finished nail moves off with the others and a new one comes in. */
 const NAIL_GAP = 6;
@@ -1176,48 +1132,6 @@ const KEYPAD = [F(padAt(null, 0), 360), ...PRESSES.flatMap((k, i) => [F(padAt(k,
    under Options. ---------- */
 /* New options for thinking, reading and analyzing. Every name here carries its state's prefix: thk, rdg, anl. */
 
-/* thinking, Bulb take: the idea lighting up. A light bulb with a round glass, a neck, a banded screw base and a tall
-   filament standing on two stems out of the base. It starts cold, the filament dim. It warms up the way an old bulb
-   strikes: it catches, drops out, catches again a little longer, drops out, then holds, and its tip goes white-hot.
-   The light spreads from the tip until the whole glass glows, and rays fan out around it, the top one first, then the
-   diagonals, then the sides. It holds lit, then the rays go, the glow pulls back into the filament and it cools. */
-const thkGLASS = cellsOf([
-  '.............',
-  '.............',
-  '....#####....',
-  '...#.....#...',
-  '..#.......#..',
-  '..#.......#..',
-  '..#.......#..',
-  '...#.....#...',
-  '....#...#....',
-  '....#####....',
-  '.............',
-  '....#####....',
-  '.....###.....']);
-const thkFIL = [[6, 4], [5, 5], [7, 5], [5, 6], [7, 6], [5, 7], [7, 7], [5, 8], [7, 8]], thkTIP = [6, 4];
-const thkGLOW = cellsOf([
-  '.............',
-  '.............',
-  '.............',
-  '....:::::....',
-  '...:::::::...',
-  '...:::::::...',
-  '...:::::::...',
-  '....:::::....',
-  '.....:::.....']);
-const thkRAYS = [[6, 0], [2, 1], [10, 1], [0, 5], [12, 5]];
-/* fil: the filament's tone; hot: white tip; glow: how far the light has spread from the tip; rays: a tone per ray */
-const thkBulb = (fil, { hot = false, glow = 0, rays = [] } = {}) => stamp([...thkGLASS, ...thkFIL.map(([x, y]) => [x, y, fil]), ...(hot ? [[...thkTIP, 'W']] : []),
-  ...thkGLOW.filter(([x, y]) => Math.hypot(x - 6, y - 4.5) <= glow), ...rays.map((t, k) => t ? [...thkRAYS[k], t] : null).filter(Boolean)]);
-const thkLIT = { hot: true, glow: 9 };
-const thkBULB = [
-  F(thkBulb(':'), 450), F(thkBulb('#'), 70), F(thkBulb(':'), 110), F(thkBulb('#'), 60), F(thkBulb(':'), 180), F(thkBulb('#'), 100),
-  F(thkBulb('#', { hot: true }), 90), F(thkBulb('#', { hot: true, glow: 1.6 }), 60), F(thkBulb('#', { hot: true, glow: 2.6, rays: [':'] }), 60),
-  F(thkBulb('#', { ...thkLIT, rays: ['#', ':', ':'] }), 70), F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', ':', ':'] }), 70),
-  F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', '#', '#'] }), 1000),
-  F(thkBulb('#', { ...thkLIT, rays: [':', ':', ':', ':', ':'] }), 110), F(thkBulb('#', { hot: true, glow: 2.6 }), 90), F(thkBulb('#', { glow: 1.6 }), 90), F(thkBulb('#'), 120)];
-
 /* reading, Book take: an open book, two pages with rounded outer corners dipping into the spine, three lines of text on
    each. The lines are read one after another, left page then right, each one lighting as it is read. Then the right
    page turns: its corner lifts, it rises and narrows toward the spine, stands on edge, and comes down over the left
@@ -1304,7 +1218,6 @@ const anlTREND = [...[1, 2, 3, 4].map(d => F(anlChart(0, { dots: d }), [100, 70,
   ...[-1, -3, -6, -10].map((dx, i) => F(anlChart(anlEND, { barbs: 3, dx }), [120, 80, 60, 60][i])), F(EMPTY, 120)];
 
 const OPTS_A = {
-  thinking_bulb: Object.assign(seq(...thkBULB), { rest: 11 }),
   reading_book: Object.assign(seq(...rdgBOOK), { still: rdgBook(3, 1) }),
   reading_specs: Object.assign(seq(...rdgReadLine(0), ...rdgReadLine(1), ...rdgReadLine(2, true)), { still: rdgSpecs(0, 1, 0) }),
   analyzing_trend: Object.assign(seq(...anlTREND), { still: anlChart(anlEND, { barbs: 3 }), trail: 0.7 }),
@@ -1398,57 +1311,11 @@ const wrtCARET = [...wrtType(0, '', wrtDRAFT), F(wrtPage(0, wrtDRAFT, 0, null), 
   ...wrtType(0, '###.##.', wrtLINES[0]), F(wrtPage(0, wrtLINES[0], 0, [12, 10]), 150), ...wrtReturn(0, 12),
   ...wrtType(1, '', wrtLINES[1]), F(wrtPage(1, wrtLINES[1], 0, [11, 10]), 150), ...wrtReturn(1, 11)];
 
-/* writing, Signature take: a signature written in one breath. Wet ink leaves the pen white-hot and dries to a line
-   behind it. Two looped letters lean into each other: up the slope fast, slowing round the top of each loop, down the
-   stem and through the crossing, a quick link to the next. The pen lifts, comes in from the right and sweeps a long
-   underline back beneath the name, quick through the middle and easing out at its tail. The signature holds, then the
-   ink dims and is gone, ready to be signed again */
-const wrtSIGN = [[0,9],[1,8],[2,7],[3,6],[4,5],[4,4],[4,3],[3,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[3,9],[4,9],[5,8],[6,7],[7,6],[8,5],[8,4],[8,3],[7,2],[6,3],[6,4],[6,5],[6,6],[6,7],[6,8],[7,9],[8,9],[9,8],[10,7]];
-const wrtUNDER = [[12,9],[11,10],[10,11],[9,11],[8,11],[7,11],[6,11],[5,11],[4,11],[3,11],[2,11],[1,11]];
-const wrtINK = [...wrtSIGN, ...wrtUNDER];
-/* how long the pen takes to reach each cell: slow where the stroke turns, quick along a straight run */
-const wrtTurn = (pts, i) => { if (i === 0 || i === pts.length - 1) return 1; const [a, b, c] = [pts[i - 1], pts[i], pts[i + 1]]; return (b[0] - a[0]) !== (c[0] - b[0]) || (b[1] - a[1]) !== (c[1] - b[1]) ? 1 : 0; };
-const wrtSignAt = (to, tone = '#') => stamp(wrtINK.slice(0, to).map(([x, y], k) => [x, y, tone === '#' && k === to - 1 && to < wrtINK.length && to !== wrtSIGN.length ? 'W' : tone]));
-const wrtSIGNED = wrtSignAt(wrtINK.length);
-const wrtSIGNATURE = [
-  ...wrtSIGN.map((_, i) => F(wrtSignAt(i + 1), i === 0 ? 110 : wrtTurn(wrtSIGN, i) ? 55 : 30)), F(wrtSignAt(wrtSIGN.length), 130),
-  ...wrtUNDER.map((_, i) => F(wrtSignAt(wrtSIGN.length + i + 1), ease(wrtUNDER.length, 80, 30)[i])), F(wrtSIGNED, 850),
-  F(wrtSignAt(wrtINK.length, ':'), 170), F(EMPTY, 190)];
-
 const OPTS_B = {
   searching_radar: Object.assign(seq(...srhRADAR), { rest: 0, trail: 1.3 }),
   generating_gather: Object.assign(seq(...genGATHER_LOOP), { still: genSPARK }),
   writing_caret: Object.assign(seq(...wrtCARET), { still: wrtPage(1, '##.##', 0, [6, 10]), trail: 0.3 }),
-  writing_signature: Object.assign(seq(...wrtSIGNATURE), { still: wrtSIGNED, trail: 0.7 }),
 };
-
-/* syncing, Loop take: the sync symbol everyone knows, two arrows chasing each other around a ring, eased so it reads as
-   effort and release rather than a spinner. The ring is the radius-5 circle, 28 cells, and each arrow covers twelve of
-   them with a 45 degree arrowhead at a diagonal, so the pose a quarter turn on is the same icon turned. At rest the
-   arrows hold. Then each one coils: its tail draws up into its head while the head stays put and tucks its barbs in,
-   like a spring loading. Released, the head flings half a turn round the ring with a white tip, the tail following and
-   the arc lengthening back out, overshoots a cell, and the barbs open again as it settles where the other arrow began */
-const SYN_RING = (() => {
-  const cs = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const r = Math.hypot(x - 6, y - 6); if (r > 4.6 && r < 5.5) cs.push([x, y]); }
-  const ang = ([x, y]) => (Math.atan2(x - 6, 6 - y) + 2 * Math.PI) % (2 * Math.PI);
-  return cs.sort((a, b) => ang(a) - ang(b));
-})();
-const synAt = i => SYN_RING[((i % SYN_RING.length) + SYN_RING.length) % SYN_RING.length];
-/* the barbs of an arrowhead pointing down-right from a tip at ring cell 4, turned a quarter at a time for the other diagonals */
-const SYN_BARBS = [[0, -1], [-1, 0], [0, -2], [-2, 0]];
-const synTurn = ([dx, dy], k) => { for (let j = 0; j < ((k % 4) + 4) % 4; j++) [dx, dy] = [-dy, dx]; return [dx, dy]; };
-/* one arrow along the ring from cell t to its tip at cell h. head: 'open' (full barbs), 'tuck' (short barbs) or 'hot'
-   (no barbs, a white tip, for when it is flying) */
-const synArc = (t, h, head) => {
-  const cs = [];
-  for (let i = t; i <= h; i++) cs.push([...synAt(i), '#']);
-  const [hx, hy] = synAt(h), diag = ((h - 4) % 7 + 7) % 7 === 0;
-  if (head === 'hot') cs.push([hx, hy, 'W']);
-  else if (diag) SYN_BARBS.slice(0, head === 'open' ? 4 : 2).forEach(b => { const [dx, dy] = synTurn(b, (h - 4) / 7); cs.push([hx + dx, hy + dy, '#']); });
-  return cs;
-};
-const synLoop = (t, h, head) => stamp([...synArc(t, h, head), ...synArc(t + 14, h + 14, head)]);
 
 /* building, Bricks take: a brick wall laid course by course in running bond, the way a mason builds it. Each brick
    drops in from above, gathering speed, squashes flat on landing with a puff of dust either side and settles back into
@@ -1520,10 +1387,6 @@ const dbgSpider = (pose, dy, eyes = 'c') => {
 };
 
 const OPTS_C = {
-  syncing_loop: Object.assign(seq(
-    F(synLoop(-7, 4, 'open'), 560), F(synLoop(-6, 4, 'open'), 110), F(synLoop(-4, 4, 'open'), 70), F(synLoop(-2, 4, 'open'), 60), F(synLoop(-1, 4, 'tuck'), 90),
-    F(synLoop(0, 6, 'hot'), 70), F(synLoop(2, 9, 'hot'), 50), F(synLoop(4, 13, 'hot'), 40), F(synLoop(6, 16, 'hot'), 45), F(synLoop(8, 19, 'hot'), 65),
-    F(synLoop(7, 18, 'tuck'), 70), F(synLoop(7, 18, 'open'), 60)), { still: synLoop(-7, 4, 'open') }),
   building_bricks: Object.assign(seq(F(bldWall(0), 160), ...BLD_BRICKS.flatMap((_, k) => bldDrop(k)), ...[1, 3, 5, 8, 10, 12].map(c => F(bldShine(c), 40)), F(bldWall(7), 460),
     ...[-1, -3, -6, -10, -14].map((d, i) => F(bldWall(7, d), [110, 75, 55, 50, 60][i]))), { still: bldWall(7) }),
   building_crane: Object.assign(seq(
@@ -2384,8 +2247,6 @@ const mcBarFrames = () => MC_SETS.flatMap((from, s) => {
   while (cur.some((v, i) => v !== to[i])) { for (let i = 0; i < 3; i++) cur[i] += Math.sign(to[i] - cur[i]); out.push([mcBars([...cur]), 70]); }
   return [...out, [mcBars(to, big), 110], [mcBars(to), 260]];
 });
-/* searching: a small lens with its handle circles, lingering at the top, the glass catching the light there */
-const mcLens = (cx, cy, glint) => c5([[cx - 1, cy - 1, glint ? 'W' : ':'], [cx, cy - 1, '#'], [cx + 1, cy - 1, ':'], [cx - 1, cy, '#'], [cx + 1, cy, '#'], [cx - 1, cy + 1, ':'], [cx, cy + 1, '#'], [cx + 1, cy + 1, '#'], [cx + 2, cy + 2, '#']]);
 /* generating: a sparkle grows out of a point and flicks a quarter turn while a small one twinkles in the corner */
 const mcStar = (r, corner, hot) => c5([[2, 2, hot ? 'W' : '#'], ...Array.from({ length: r }, (_, k) => [[2, 1 - k, '#'], [2, 3 + k, '#'], [1 - k, 2, '#'], [3 + k, 2, '#']]).flat(), ...(corner ? [[4, 0, corner]] : [])]);
 const mcStarX = () => c5([[2, 2, '#'], [1, 1, '#'], [3, 1, '#'], [1, 3, '#'], [3, 3, '#']]);
@@ -2406,8 +2267,6 @@ const mcStream = (t, up) => c5([...MC_TRAY(!up && t === 0), ...[-1, 0, 1].flatMa
 const MC_CHECK = [[0, 2], [1, 3], [2, 2], [3, 1], [4, 0]];
 const mcDots = (tone, dy = 0) => c5([0, 2, 4].map(x => [x, 2 + dy, tone]));
 const mcCheck = (cells, hot = -1) => c5(cells.map(([x, y], i) => [x, y, i === hot ? 'W' : '#']));
-/* error: the mark jolts left and right like a refused password and settles, its dot blinking */
-const mcBang = (dx, hot, dot = '#') => c5([[2 + dx, 0, hot ? 'W' : '#'], [2 + dx, 1, '#'], [2 + dx, 2, '#'], [2 + dx, 4, dot]]);
 /* building: bricks drop with weight and land in a running bond, then the course slides off and the next begins */
 const MC_SLOTS = [[0, 4], [2, 4], [1, 3]];
 const mcBrick = ([x, y], c = '#') => [[x, y, c], [x + 1, y, c]];
@@ -2435,7 +2294,6 @@ const MICRO_SPRITES = {
   thinking_micro: micro([...[0, 1, 2, 3, 4].map(k => [mcThink(k), 130]), [mcThink(5), 300]]),
   reading_micro: micro([...[0, 1, 2, 3].map(j => [mcRead(j), [180, 110, 110, 140][j]]), [mcRead(4), 160], [mcRead(4, -1), 90], [mcRead(0, -2), 90]].map(([b, ms], i, a) => i === a.length - 1 ? [mcRead(0), ms] : [b, ms])),
   analyzing_micro: micro(mcBarFrames()),
-  searching_micro: micro([[mcLens(1, 1, true), 190], [mcLens(2, 1), 120], [mcLens(2, 2), 170], [mcLens(1, 2), 120]]),
   generating_micro: micro([[mcStar(0, '#'), 150], [mcStar(1, ':'), 110], [mcStar(2, null, true), 210], [mcStar(1), 120], [mcStarX(), 110], [mcStar(0, 'W'), 140]]),
   writing_micro: micro([...[0, 1, 2, 3, 4].map(c => [mcType(c), [170, 110, 120, 110, 160][c]]), [mcTypeScroll(0), 120], [mcTypeScroll(1), 90], [mcTypeScroll(2), 90]]),
   syncing_micro: micro(Array.from({ length: 8 }, (_, p) => [mcChase(p), [110, 80, 60, 50, 50, 60, 80, 110][p]])),
@@ -2444,7 +2302,6 @@ const MICRO_SPRITES = {
   downloading_micro: micro(Array.from({ length: 5 }, (_, t) => [mcStream(t, false), 120])),
   done_micro: micro([[mcDots(':'), 200], [mcDots('#'), 110], [mcDots('#', 1), 90], [c5([[0, 2, '#'], [1, 3, '#'], [4, 1, '#']]), 70], [mcCheck([MC_CHECK[0], MC_CHECK[1], MC_CHECK[4]], 1), 90],
     [mcCheck(MC_CHECK), 90], ...[0, 1, 2, 3, 4].map(i => [mcCheck(MC_CHECK, i), 55]), [mcCheck(MC_CHECK), 420], [mcCheck([MC_CHECK[0], MC_CHECK[1], MC_CHECK[4]]), 70], [c5([[0, 2, '#'], [1, 3, '#'], [4, 1, '#']]), 70], [mcDots('#'), 90]]),
-  error_micro: micro([[mcBang(0), 380], [mcBang(-1, true), 60], [mcBang(1, true), 60], [mcBang(-1, true), 70], [mcBang(0, true), 110], [mcBang(0), 200], [mcBang(0, false, ':'), 110], [mcBang(0), 160]]),
   building_micro: micro(mcBuild()),
   debugging_micro: micro([...[3, 2].map(y => [mcCrawl(y), 120]), [mcCrawl(1), 140], [mcCrawl(1, true), 110], [mcCrawl(1), 110], [mcCrawl(1, true), 110], ...[0, -1, -2].map(y => [mcCrawl(y), 95])]),
   heartbeat_micro: micro([[m5(MC_HEART.s), 420], [m5(MC_HEART.l), 80], [m5(MC_HEART.m), 80], [m5(MC_HEART.s), 120], [m5(MC_HEART.l), 70], [m5(MC_HEART.m), 80], [m5(MC_HEART.s), 380]]),
@@ -2477,10 +2334,6 @@ const SPRITES = {
   done_flip: restAtLongest(seq(...FLIP)),
   done_stroke: restAtLongest(seq(...CHECK_PAIRS.map((_, k) => F(strokeTo(0, k + 1, true), [80,70,60,55,50,45,45,45,50,55,65,80][k])), F(CHECK, 520), ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 900), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 40)), F(EMPTY, 280))),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -7), 60), F(shift(CHECK, 0, -4), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[3], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 3), 60), F(shift(CHECK, 0, 7), 60), F(EMPTY, 320))),
-  error_shake: Object.assign(seq(F(alarm(0), 1000), F(alarm(-1, true), 65), F(alarm(1, true), 65), F(alarm(-1, true), 75), F(alarm(1, true), 90), F(alarm(0, true), 130), F(alarm(0), 130), F(alarm(0, true), 130), F(alarm(0), 420)), { rest: 0, trail: 0.35 }),
-  error: Object.assign(seq(...GLITCH), { rest: 0, trail: 0.3 }),
-  error_build: restAtLongest(seq(...BUILD)),
-  error_pulse: Object.assign(seq(...PULSE), { rest: 0 }),
   building: Object.assign(seq(F(workshop(0, 6), 420), F(workshop(1, 6), 90), F(workshop(3, 8, 0, true), 90), F(workshop(3, 8), 130), F(workshop(1, 8), 90), F(workshop(0, 8), 150), F(workshop(3, 8), 90), F(workshop(5, 10, 0, true), 90), F(workshop(5, 10), 150), F(workshop(3, 10), 90), F(workshop(1, 10), 90), F(workshop(0, 10), 120), ...[1, 2, 3, 4, 5].map(k => F(workshop(0, 10, k), ease(5, 135, 80)[k - 1]))), { rest: 0 }),
   debugging: Object.assign(seq(...antLoop()), { still: stamp(antCells('all')), trail: 0.5 }),
   heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(halo(HEART_M), 90), F(halo(HEART_S), 110), F(HEART_S, 40), F(HEART_L, 70), F(halo(HEART_M), 80), F(halo(HEART_S), 120), F(HEART_S, 560)),
@@ -2494,16 +2347,9 @@ Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_
 Object.assign(SPRITES, GLOW_SPRITES, MICRO_SPRITES);
 
 /* ---------- reworked takes: these replace earlier drafts of the same ids ---------- */
-/* Seven reworked takes, each with a purpose, a little story and one moment of delight. Every name here carries the
+/* Reworked takes, each with a purpose, a little story and one moment of delight. Every name here carries the
    prefix tk2. */
 
-/* shared: a foreground object drawn over a background, with a clear one-cell moat round it so the two never merge
-   into one blob, the way a sticker sits on a page */
-const tk2Front = (back, front, moat = true) => {
-  const key = ([x, y]) => x + ',' + y, mine = new Set(front.map(key)), gap = new Set();
-  if (moat) for (const [x, y] of front) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) gap.add((x + dx) + ',' + (y + dy));
-  return [...back.filter(c => !mine.has(key(c)) && !gap.has(key(c))), ...front];
-};
 /* shared: film a motion. fn(t) draws the picture at t ms; the loop is sampled every millisecond, a frame is cut wherever
    the picture changes, and any frame shorter than 30 ms is folded into its neighbour, so the holds carry the easing */
 const tk2Film = (fn, total) => { const raw = [];
@@ -2513,12 +2359,6 @@ const tk2Film = (fn, total) => { const raw = [];
   raw.forEach((f, i) => { if (f.ms < 30 && i < raw.length - 1) raw[i + 1].ms += f.ms; else out.push(f); });
   if (out.length > 1 && out[out.length - 1].ms < 30) out[out.length - 2].ms += out.pop().ms;
   return out; };
-const tk2Clamp = p => p < 0 ? 0 : p > 1 ? 1 : p;
-const tk2InOut = p => (1 - Math.cos(Math.PI * tk2Clamp(p))) / 2;
-const tk2Out = p => 1 - (1 - tk2Clamp(p)) * (1 - tk2Clamp(p));
-const tk2In = p => tk2Clamp(p) * tk2Clamp(p);
-/* a value that moves from a to b between t0 and t1 with easing e */
-const tk2Tween = (t, t0, t1, a, b, e = tk2InOut) => a + (b - a) * e((t - t0) / (t1 - t0));
 
 /* shared: a four-point star at its spot. r 0 is a point, 1 a plus, 2 a plus with longer arms, 3 the sparkle with its
    sides curving in; core lights its heart white */
@@ -2530,55 +2370,8 @@ const tk2Star = ([cx, cy], r, core, tone = '#') => { if (r < 0) return []; if (r
 /* a flare: the heart of a big star white across three cells */
 const tk2Flare = ([cx, cy]) => [[cx - 1, cy, 'W'], [cx + 1, cy, 'W'], [cx, cy - 1, 'W'], [cx, cy + 1, 'W']];
 
-/* syncing, Devices take: a phone and a laptop side by side, and a file tossed between them. The phone's screen glows
-   with a new change. The glow gathers, and a page pops up out of the top of the phone like toast, the phone giving a
-   little kick as it goes. The page grows as it rises toward you, hangs at the top of its arc and drops onto the laptop,
-   quick at the end like anything falling. It lands flat on the screen with a white flash, bounces once, and the screen
-   lights from where it landed: in sync. Then the laptop lifts the next change off its screen and tosses it back, and
-   the page drops into the top of the phone, which bobs as it swallows it and lights up */
-const tk2PHONE_ROWS = ['####', '#..#', '#..#', '#..#', '#..#', '#..#', '#::#', '####'];
 /* the phone with its top at row top (5 at rest), its screen lit by lit rows from the top (0 to 5) in tone t */
-const tk2Phone = (top = 5, lit = 0, t = ':') => [...cellsOf(tk2PHONE_ROWS, 0, top), ...Array.from({ length: lit }, (_, k) => [[1, top + 1 + k, t], [2, top + 1 + k, t]]).flat()];
 const tk2LAP_IN = []; for (let y = 7; y <= 10; y++) for (let x = 6; x <= 10; x++) tk2LAP_IN.push([x, y]);
-/* the laptop, its screen lit out to r cells from where a page lands, in tone t */
-const tk2Laptop = (r = -1, t = ':') => [...cellsOf(['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#######'], 5, 6), ...Array.from({ length: 9 }, (_, i) => [4 + i, 12, '#']),
-  ...tk2LAP_IN.filter(([x, y]) => Math.abs(x - 8) + Math.abs(y - 8.5) <= r).map(([x, y]) => [x, y, t])];
-/* the page: small on the way in and out, m whole in the air, flat lying on the laptop's screen */
-const tk2DOC = { small: ['#:', '##', '##'], m: ['##:', '###', '###', '###'], flat: ['##:', '###'] };
-/* a frame: phone and laptop, and the page at [kind, x, y, how]. how is 'front' (a clear moat round it), 'behind' (the
-   phone hides it) or 'on' (drawn on the screen) */
-const tk2Sync = (phone, laptop, page, extra = []) => {
-  let cells = page ? cellsOf(tk2DOC[page[0]], page[1], page[2]) : [];
-  const ptop = phone[0];
-  if (page && page[3] === 'behind') cells = cells.filter(([x, y]) => !(x <= 3 && y >= ptop));
-  return stamp(inGrid(tk2Front([...tk2Phone(...phone), ...tk2Laptop(...laptop)], [...cells, ...extra], !!page && page[3] === 'front')));
-};
-/* phone to laptop, then back: [phone [top, lit, tone], laptop [r, tone], page, ms, extra] */
-const tk2SYNC_STEPS = [
-  [[5, 5], [], null, 420],
-  [[5, 5, '#'], [], null, 110],
-  [[6, 3], [], ['small', 1, 3, 'behind'], 70],
-  [[5, 0], [], ['small', 1, 1, 'behind'], 70],
-  [[5, 0], [], ['small', 3, 0], 90],
-  [[5, 0], [], ['m', 4, 0], 170],
-  [[5, 0], [], ['small', 7, 1], 80],
-  [[5, 0], [], ['small', 7, 4, 'front'], 55],
-  [[5, 0], [0], ['flat', 7, 8, 'on'], 70, [[8, 8, 'W']]],
-  [[5, 0], [1], ['flat', 7, 7, 'on'], 80],
-  [[5, 0], [2], ['flat', 7, 8, 'on'], 90],
-  [[5, 0], [3], ['flat', 7, 8, 'on'], 80],
-  [[5, 0], [9], null, 520],
-  [[5, 0], [9, '#'], ['flat', 7, 8, 'on'], 110],
-  [[5, 0], [2], ['small', 8, 4, 'front'], 70],
-  [[5, 0], [], ['small', 8, 1], 80],
-  [[5, 0], [], ['m', 5, 0], 170],
-  [[5, 0], [], ['small', 3, 0], 90],
-  [[5, 0], [], ['small', 1, 2, 'behind'], 60],
-  [[6, 0], [], ['small', 1, 4, 'behind'], 70],
-  [[6, 1, '#'], [], null, 90],
-  [[5, 3], [], null, 90],
-];
-const tk2SYNC = tk2SYNC_STEPS.map(([ph, lp, page, ms, extra]) => F(tk2Sync(ph, lp, page, extra), ms));
 
 /* analyzing, Pie take: a pie chart, and its biggest slice weighed up. Four slices sit closed with thin cuts between
    them, the biggest three eighths of the whole. It is worked loose: it lifts a cell, sticks and drops back, then pulls
@@ -2613,49 +2406,6 @@ const tk2PIE = [
   F(tk2Pie([2, -2], tk2HELD), 300),
   F(tk2Pie([1, -1], tk2HELD), 60), F(tk2Pie([0, 0], { rest: [0, -1] }), 70), F(tk2Pie(), 90), F(tk2Pie([0, -1]), 70), F(tk2Pie(), 140),
 ];
-
-/* generating, Wand take: the magic wand with its stars, the way the toolbar draws it: a slim stick held at the bottom
-   left with a heavier grip and a white-hot tip, a big four-point star beyond the tip and two small ones either side.
-   The stars twinkle out one after another, the big one last. The wand winds back, slow, up to nearly upright, waits a
-   beat, then flicks: it whips round fast, overshoots past flat and springs back to rest. As it whips, sparks fly off
-   the tip and are flung outward, slowing as they go. Two wink out; the other three light up where they come to rest
-   and the big one blooms, overshooting a size before it settles: a fresh set of stars, made by the flourish */
-const tk2PIVOT = [1, 11], tk2WAND_L = 7.1;
-const tk2Ang = d => d * Math.PI / 180;
-/* the wand at angle a degrees: a thin line from the hand to a white tip, the grip doubled for its first three cells */
-const tk2WandCells = a => { const tip = [tk2PIVOT[0] + tk2WAND_L * Math.cos(tk2Ang(a)), tk2PIVOT[1] - tk2WAND_L * Math.sin(tk2Ang(a))];
-  const line = pathCells([tk2PIVOT, tip], true), side = a < 30 ? [0, -1] : [1, 0];
-  return [...line.map(([x, y], i) => [x, y, i === line.length - 1 ? 'W' : '#']), ...line.slice(0, 3).map(([x, y]) => [x + side[0], y + side[1], '#'])]; };
-/* the sparks thrown by the flick: the angle at which each leaves the tip, how far out it comes to rest, and what it
-   becomes: a small star, the big star, or nothing (it winks out) */
-const tk2SPARKS = [[76, 10.4, 'small'], [60, 9.4, 'wink'], [45, 11.3, 'big'], [30, 9.4, 'wink'], [16, 10.4, 'small']];
-const tk2SparkAt = (a, r) => [Math.round(tk2PIVOT[0] + r * Math.cos(tk2Ang(a))), Math.round(tk2PIVOT[1] - r * Math.sin(tk2Ang(a)))];
-/* the timeline, in ms */
-const tk2W = { fadeA: 260, fadeB: 350, fadeBig: 440, wind: [640, 980], flick: [1060, 1220], back: [1220, 1500], loop: 1880 };
-const tk2WandAngle = t => t < tk2W.wind[0] ? 45 : t < tk2W.wind[1] ? tk2Tween(t, ...tk2W.wind, 45, 84) : t < tk2W.flick[0] ? 84
-  : t < tk2W.flick[1] ? tk2Tween(t, ...tk2W.flick, 84, -6, tk2In) : t < tk2W.back[1] ? tk2Tween(t, ...tk2W.back, -6, 45, tk2Out) : 45;
-/* when the whipping wand passes angle a */
-const tk2PassAt = a => tk2W.flick[0] + (tk2W.flick[1] - tk2W.flick[0]) * Math.sqrt((84 - a) / 90);
-/* a star that twinkles out from time t0: a white flare, a point, dim, gone */
-const tk2Fade = (pos, t, t0, r) => t < t0 ? tk2Star(pos, r, r >= 2) : t < t0 + 70 ? [...tk2Star(pos, r, true), ...(r >= 2 ? tk2Flare(pos) : [])] : t < t0 + 130 ? tk2Star(pos, r >= 2 ? 1 : 0, r >= 2)
-  : t < t0 + 190 ? tk2Star(pos, 0, false, r >= 2 ? '#' : ':') : t < t0 + 240 && r >= 2 ? tk2Star(pos, 0, false, ':') : [];
-const tk2Magic = t => {
-  const cells = [...tk2WandCells(tk2WandAngle(t))];
-  /* the resting set, twinkling out at the start of the loop */
-  const rest = { small: [tk2SparkAt(76, 10.4), tk2SparkAt(16, 10.4)], big: tk2SparkAt(45, 11.3) };
-  cells.push(...tk2Fade(rest.small[0], t, tk2W.fadeA, 1), ...tk2Fade(rest.small[1], t, tk2W.fadeB, 1), ...tk2Fade(rest.big, t, tk2W.fadeBig, 3));
-  for (const [a, r, kind] of tk2SPARKS) {
-    const born = tk2PassAt(a); if (t < born) continue;
-    const u = t - born, fly = tk2Out(u / 200), rr = 7.1 + (r - 7.1) * fly, pos = tk2SparkAt(a, rr);
-    if (u < 200) { cells.push([...pos, u < 60 ? 'W' : '#']); continue; }
-    const v = u - 200;
-    if (kind === 'wink') { if (v < 60) cells.push(...tk2Star(pos, 1, true)); else if (v < 120) cells.push([...pos, ':']); continue; }
-    if (kind === 'small') { cells.push(...(v < 70 ? tk2Star(pos, 1, true) : tk2Star(pos, 1, false))); continue; }
-    cells.push(...(v < 45 ? tk2Star(pos, 1, true) : v < 90 ? tk2Star(pos, 2, true) : v < 160 ? [...tk2Star(pos, 3, true), ...tk2Flare(pos)] : tk2Star(pos, 3, true)));
-  }
-  return stamp(inGrid(cells));
-};
-const tk2WAND = tk2Film(tk2Magic, tk2W.loop);
 
 /* searching, Eye take: an eye looking for something. An almond with pointed corners and a round iris with a dark
    pupil. It searches the way eyes really do, in quick darts with still looks between, and every dart overshoots a cell
@@ -2693,42 +2443,6 @@ const tk2EYE = [
   F(tk2Eye({ dx: 1 }), 35), F(tk2Eye({ dx: 3 }), 55), F(tk2Eye({ dx: 2, u: 3 }), 90), F(tk2Eye({ dx: 2, u: 2, l: 3 }), 420),
   F(tk2Eye({ dx: 2, u: 5, l: 5, glint: true }), 70), F(tk2Eye({ dx: 2, glint: true }), 560),
   F(tk2Eye({ dx: 1, u: 1, l: 3 }), 45), F(tk2Eye({ u: 0, l: 1 }), 80), F(tk2Eye({ u: 2, l: 4 }), 50),
-];
-
-/* thinking, Cloud take: a thought cloud with its bubble trailing down to the thinker, and an idea forming inside it.
-   Three dim dots sit in the cloud, the ellipsis of a thought in progress. They light one after another as the thought
-   gathers, then the outer two drift in and the three run together into one bright point. The point climbs to the low
-   shoulder of the cloud and pushes it up into a bump, breaks through it, and bursts above the cloud into a sparkle with
-   a white flare: the idea. The shoulder springs back. The idea hangs there glowing, then twinkles out as the next dots
-   appear in the cloud */
-const tk2CLOUD_ROWS = ['....###......', '..##...#.....', '.#......###..', '#..........#.', '#...........#', '.##........#.', '...########..'];
-const tk2SHOULDER = [[8, 6], [9, 6], [10, 6]];
-/* the cloud, its shoulder flat, bumped up in the middle, or broken open where the idea comes through */
-const tk2Cloud = (shoulder = 'flat') => {
-  const cells = cellsOf(tk2CLOUD_ROWS, 0, 4).filter(([x, y]) => !tk2SHOULDER.some(([sx, sy]) => sx === x && sy === y));
-  if (shoulder === 'flat') cells.push(...tk2SHOULDER.map(([x, y]) => [x, y, '#']));
-  if (shoulder === 'bump') cells.push([8, 6, '#'], [9, 5, '#'], [10, 6, '#']);
-  if (shoulder === 'open') cells.push([8, 6, '#'], [10, 6, '#']);
-  return cells; };
-const tk2TRAIL = cellsOf(['##', '##'], 0, 11);
-/* the idea: a four-point sparkle centred at (10, 2): 0 a point, 1 a plus, 2 the full sparkle with its corners */
-const tk2IDEA_AT = [10, 2];
-const tk2Idea = (r, { flare = false, tone = '#' } = {}) => { const [cx, cy] = tk2IDEA_AT;
-  if (r < 0) return []; if (r === 0) return [[cx, cy, tone === '#' ? 'W' : tone]];
-  const cells = [...[-r, -r + 1, 0, r - 1, r].flatMap(k => [[cx + k, cy, tone], [cx, cy + k, tone]]), ...(r >= 2 ? [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => [cx + a, cy + b, tone]) : [])];
-  if (tone === '#') cells.push([cx, cy, 'W'], ...(flare ? tk2Flare([cx, cy]) : []));
-  return cells; };
-const tk2Thought = (dots, shoulder = 'flat', idea = []) => stamp(inGrid([...tk2Cloud(shoulder), ...tk2TRAIL, ...dots, ...idea]));
-const tk2DOTS = (t1, t2, t3, xs = [3, 6, 9]) => [[xs[0], 8, t1], [xs[1], 8, t2], [xs[2], 8, t3]];
-const tk2CLOUDF = [
-  F(tk2Thought(tk2DOTS(':', ':', ':')), 300),
-  F(tk2Thought(tk2DOTS('#', ':', ':')), 150), F(tk2Thought(tk2DOTS('#', '#', ':')), 150), F(tk2Thought(tk2DOTS('#', '#', '#')), 220),
-  F(tk2Thought(tk2DOTS('#', '#', '#', [4, 6, 8])), 90), F(tk2Thought(tk2DOTS('#', '#', '#', [5, 6, 7])), 70),
-  F(tk2Thought([[6, 8, 'W'], [5, 8, ':'], [7, 8, ':']]), 80), F(tk2Thought([[6, 8, 'W']]), 150),
-  F(tk2Thought([[7, 7, 'W'], [6, 8, ':']]), 60), F(tk2Thought([[8, 7, 'W']]), 50), F(tk2Thought([[9, 6, 'W'], [8, 7, ':']], 'bump'), 90),
-  F(tk2Thought([[9, 5, 'W'], [9, 6, ':']], 'open'), 40), F(tk2Thought([[10, 4, 'W']], 'flat'), 40),
-  F(tk2Thought([], 'flat', tk2Idea(1)), 50), F(tk2Thought([], 'flat', tk2Idea(2, { flare: true })), 70), F(tk2Thought([], 'flat', tk2Idea(2)), 560),
-  F(tk2Thought([[3, 8, ':']], 'flat', tk2Idea(1)), 90), F(tk2Thought([[3, 8, ':'], [6, 8, ':']], 'flat', tk2Idea(0)), 90), F(tk2Thought(tk2DOTS(':', ':', ':'), 'flat', tk2Idea(0, { tone: ':' })), 90),
 ];
 
 /* breathing, Balloon take: a breath filling a balloon. It is tied off at a little knot with its string hanging below.
@@ -2799,15 +2513,522 @@ const tk2FLOAT = [
 ];
 
 const OPTS_TK2 = {
-  thinking_cloud: Object.assign(seq(...tk2CLOUDF), { still: tk2Thought(tk2DOTS(':', ':', ':'), 'flat', tk2Idea(2)) }),
   analyzing_pie: Object.assign(seq(...tk2PIE), { still: tk2Pie([2, -2]) }),
   searching_eye: Object.assign(seq(...tk2EYE), { still: tk2Eye({ dx: 2, u: 2, l: 3 }), trail: 0.6 }),
-  generating_wand: Object.assign(seq(...tk2WAND), { still: tk2Magic(0) }),
-  syncing_devices: Object.assign(seq(...tk2SYNC), { still: tk2Sync([5, 5], [], ['m', 4, 0]) }),
   breathing_balloon: Object.assign(seq(...tk2BALLOON), { still: tk2Balloon(tk2BAL[6], { gleam: 2, lift: 1 }) }),
   breathing_float: Object.assign(seq(...tk2FLOAT), { still: tk2Sit('in', 'W', 6) }),
 };
 Object.assign(SPRITES, OPTS_TK2);
+
+/* ---------- round twenty: loaders redrawn after review. Each block replaces earlier drafts of the same ids ---------- */
+/* Round 20, thinking: a new Bulb, and Aha in place of the retired Cloud. Every name here carries the prefix th2. */
+
+/* thinking, Bulb take: an idea, switched on by a pull cord. A light bulb drawn the way everyone knows it: a round glass,
+   symmetric about the centre column, that tapers along clean 45 degree lines into a screw base of two lit ribs and a
+   dim groove, and inside it a filament on two thin stems. A pull cord hangs from the base with a bead on the end.
+   The bulb is dark. The bead lifts a little as a hand takes it, then the cord is yanked: it pulls tight and runs out
+   of the frame, and the bulb dips a cell on it. Released, the bulb springs up past its rest and comes back down with a
+   click: the coil goes white-hot, a flash fills the glass, and rays shoot out, white at first, the top three and then
+   the outer four, and cool to lit. While it glows, the cord still swings from the yank, side to side, and comes to
+   rest. Then the rays go dim, the coil cools to lit and to dark, and the hand reaches for the cord again. */
+const th2GLASS = cellsOf([
+  '.............',
+  '.............',
+  '....#####....',
+  '...#.....#...',
+  '..#.......#..',
+  '..#.......#..',
+  '...#.....#...',
+  '....#...#....',
+  '....#####....',
+  '.....:::.....',
+  '....#####....']);
+const th2INSIDE = [[3, 4, 8], [4, 3, 9], [5, 3, 9], [6, 4, 8], [7, 5, 7]].flatMap(([y, a, b]) => Array.from({ length: b - a + 1 }, (_, i) => [a + i, y]));
+const th2COIL = [[5, 4], [6, 4], [7, 4]], th2STEMS = [[5, 5], [7, 5], [5, 6], [7, 6], [5, 7], [7, 7]];
+/* the rays, the top three first: straight up, the inner cells of the two diagonals, then their outer cells and the
+   two sides */
+const th2RAYS = [[6, 0], [2, 1], [10, 1], [1, 0], [11, 0], [0, 4], [12, 4]];
+/* dy: how far the bulb sits below its rest; coil, stems: filament tones; flash: the glass full of light; rays: how many
+   are out, the first `burst` of them in rayTone and the newest white; cord: a number swings the bead sideways on a
+   slack cord, 'lifted' has the bead raised to the base, 'taut' has the cord pulled tight out of the frame */
+const th2Bulb = (dy, { coil = ':', stems = ':', flash = false, rays = 0, burst = rays, rayTone = '#', cord = 0 } = {}) => {
+  const cordCells = cord === 'taut' ? [[6, 11, '#'], [6, 12, '#']] : cord === 'lifted' ? [[6, 11, '#']] : [[6, 11, ':'], [6 + cord, 12, '#']];
+  return stamp(inGrid([...th2GLASS, ...th2COIL.map(([x, y]) => [x, y, coil]), ...th2STEMS.map(([x, y]) => [x, y, stems]),
+    ...(flash ? th2INSIDE.map(([x, y]) => [x, y, ':']) : []), ...cordCells].map(([x, y, t]) => [x, y + dy, t])
+    .concat(th2RAYS.slice(0, rays).map(([x, y], k) => [x, y, k < burst ? rayTone : 'W']))));
+};
+const th2LIT = { coil: 'W', rays: 7 };
+const th2BULB = [
+  F(th2Bulb(0), 420),
+  F(th2Bulb(0, { cord: 'lifted' }), 110), F(th2Bulb(0, { cord: 'taut' }), 70), F(th2Bulb(1, { cord: 'taut' }), 190),
+  F(th2Bulb(-1), 60),
+  F(th2Bulb(0, { coil: 'W', stems: '#', flash: true, cord: 1 }), 60),
+  F(th2Bulb(0, { coil: 'W', rays: 3, burst: 0, cord: 1 }), 50), F(th2Bulb(0, { coil: 'W', rays: 7, burst: 3, cord: 1 }), 60),
+  F(th2Bulb(0, { ...th2LIT, cord: 1 }), 80), F(th2Bulb(0, th2LIT), 110), F(th2Bulb(0, { ...th2LIT, cord: -1 }), 170),
+  F(th2Bulb(0, th2LIT), 150), F(th2Bulb(0, { ...th2LIT, cord: 1 }), 150), F(th2Bulb(0, th2LIT), 200),
+  F(th2Bulb(0, { ...th2LIT, rayTone: ':' }), 90), F(th2Bulb(0, { coil: '#', rays: 3, rayTone: ':' }), 90), F(th2Bulb(0, { coil: '#' }), 120),
+];
+
+/* thinking, Aha take: a question worked out until it becomes an answer. A dim question mark: the question, not yet
+   understood. A point of light follows it the way a pen draws it, from the end of the curl, up and over the top and
+   down into the stem, slow where it sets off, quick round the curve, slowing into the stem, and the curve it has passed
+   stays lit; then it taps the dot white. The question mark is whole. Its dot taps twice, the way a thinker drums a
+   pencil, and on the third tap it dips and holds: the anticipation. Then the curl springs open and straight, the
+   stroke shoots up a cell past its height, white at the tip, the dot bounces back up white under it, and it settles as
+   an exclamation mark: got it. The answer holds, dims, and bends back over into the next question */
+const th2MARK = {
+  ask: ['.............', '.....###.....', '....#...#....', '...#.....#...', '...#.....#...', '.........#...', '........#....', '.......#.....', '......#......', '......#......'],
+  open: ['...#.........', '....###......', '.......#.....', '........#....', '........#....', '........#....', '.......#.....', '......#......', '......#......', '......#......'],
+  bow: ['.....#.......', '......#......', '......#......', '.......#.....', '.......#.....', '.......#.....', '.......#.....', '......#......', '......#......', '......#......'],
+  tall: ['......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......'],
+  bang: ['.............', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......', '......#......'],
+};
+/* the order a pen draws the question mark: from the end of the curl, up and over, down into the stem */
+const th2STROKE = [[3, 4], [3, 3], [4, 2], [5, 1], [6, 1], [7, 1], [8, 2], [9, 3], [9, 4], [9, 5], [8, 6], [7, 7], [6, 8], [6, 9]];
+const th2TRACE_MS = [110, 80, 60, 45, 40, 40, 45, 55, 65, 60, 45, 40, 50, 90];
+/* a mark in one tone with its dot at dotY; tip: the top cell of the stroke white */
+const th2Mark = (key, tone = '#', { dot = tone, dotY = 11, tip = false } = {}) => {
+  const cells = cellsOf(th2MARK[key]), top = Math.min(...cells.map(([, y]) => y));
+  return stamp([...cells.map(([x, y]) => [x, y, tip && y === top ? 'W' : tone]), [6, dotY, dot]]);
+};
+/* the question traced up to k cells: lit behind the head, the head white, dim ahead of it */
+const th2Trace = (k, dot = ':') => stamp([...th2STROKE.map(([x, y], i) => [x, y, i < k ? '#' : i === k ? 'W' : ':']), [6, 11, dot]]);
+const th2TAP = { dotY: 12 };
+const th2AHA = [
+  ...th2STROKE.map((_, k) => F(th2Trace(k), th2TRACE_MS[k])), F(th2Trace(th2STROKE.length, 'W'), 120),
+  F(th2Mark('ask'), 200), F(th2Mark('ask', '#', th2TAP), 60), F(th2Mark('ask'), 170), F(th2Mark('ask', '#', th2TAP), 60), F(th2Mark('ask'), 150),
+  F(th2Mark('ask', '#', th2TAP), 110), F(th2Mark('open', '#', th2TAP), 50), F(th2Mark('bow', '#', th2TAP), 45),
+  F(th2Mark('tall', '#', { dot: 'W', tip: true }), 60), F(th2Mark('bang', '#', { dot: 'W', tip: true }), 110), F(th2Mark('bang'), 420),
+  F(th2Mark('bang', ':'), 90), F(th2Mark('bow', ':'), 90), F(th2Mark('open', ':'), 100), F(th2Mark('ask', ':'), 140),
+];
+
+const OPTS_TH2 = {
+  thinking_bulb: Object.assign(seq(...th2BULB), { still: th2Bulb(0, th2LIT) }),
+  thinking_aha: Object.assign(seq(...th2AHA), { still: th2Mark('ask') }),
+};
+
+/* Round 20: the wand that swishes, an endless cursive line, and a micro search that reads at tab size. Every name
+   here carries the prefix wd2. The wand uses the shared tk2 helpers from sprites.js (tk2Film, tk2Star, tk2Flare). */
+
+/* generating, Wand take (reworked): the magic wand with its stars, a slim stick held at the bottom left with a heavier
+   grip and a white-hot tip, a big four-point star beyond the tip with a white heart and two small ones either side.
+   Now it really swishes. It pivots about its grip through clean poses, upright, 67.5, 45 and 22.5 degrees, each one
+   a straight one-cell line. It winds back slowly to upright while the stars twinkle out one after another, the big
+   one last, and waits there a beat. Then it swings down fast through a wide arc, overshoots to 22.5 and springs back
+   to 45. Its white tip leaves a trail along the arc it travelled: while the wand moves the trail glows behind the
+   tip like a comet's tail, and once it stops the arc hangs as a dim track of stardust whose motes twinkle white, lit
+   and dim, fading from the tail of the arc into the tip. As the wand settles a spark flies on from the tip and
+   blooms into the big star, flaring white before it settles, and the small ones pop out after it: a fresh set of
+   stars, made by the swish. They wink while they rest, and twinkle out again as the wand winds up for the next */
+
+/* the poses by angle, hand-drawn so every one is a clean line: 90 upright, 45 the exact diagonal, 67.5 and 22.5 the
+   two-to-one steps between. Every tip lies on the same radius 7 arc round the hand */
+const wd2SHAFT = {
+  90: [[1,11],[1,10],[1,9],[1,8],[1,7],[1,6],[1,5],[1,4]],
+  67.5: [[1,11],[1,10],[2,9],[2,8],[3,7],[3,6],[4,5]],
+  45: [[1,11],[2,10],[3,9],[4,8],[5,7],[6,6]],
+  22.5: [[1,11],[2,11],[3,10],[4,10],[5,9],[6,9],[7,8]] };
+/* the grip: a two by two block that stays put in the hand while the shaft turns out of it */
+const wd2GRIP = [[1,10],[2,10],[1,11],[2,11]];
+const wd2Wand = a => { const s = wd2SHAFT[a];
+  return [...s.map(([x, y], i) => [x, y, i === s.length - 1 ? 'W' : '#']), ...wd2GRIP.map(([x, y]) => [x, y, '#'])]; };
+/* the timeline, in ms. wind: the wand reaches 67.5, then upright. swing: it reaches 67.5, 45 and the overshoot at
+   22.5; settle: back at 45. The spark leaves the tip at settle; fade: the stardust starts to go */
+const wd2T = { wind: [400, 550], swing: [840, 895, 940], settle: 1030, fade: 1070, loop: 1900 };
+const wd2Angle = t => t < wd2T.wind[0] ? 45 : t < wd2T.wind[1] ? 67.5 : t < wd2T.swing[0] ? 90 : t < wd2T.swing[1] ? 67.5
+  : t < wd2T.swing[2] ? 45 : t < wd2T.settle ? 22.5 : 45;
+
+/* the arc the tip sweeps, cell by cell from the top, and the moment the tip has passed each one. The last is where
+   the tip sits at the overshoot, passed when it springs back */
+const wd2ARC = [[1,4],[2,4],[3,4],[4,5],[5,5],[6,6],[7,7],[7,8]];
+const wd2PASSED = [0, 0, 0, 1, 1, 2, 2].map(k => wd2T.swing[k]).concat(wd2T.settle);
+/* the cells from here on lie past the wand's rest, and it sweeps them up as it springs back */
+const wd2SWEPT = 5;
+const wd2TWINKLE = ['W', '#', ':', '#', 'W', '#', ':'];
+/* the trail. Moving, the two cells just behind the tip are lit and the rest of the arc dim. Stopped, every other cell
+   is a mote twinkling through white, lit and dim, the cells between stay a dim track, and the arc goes out from its
+   tail, a cell at a time, each one dimming before it goes */
+const wd2Trail = t => { if (t < wd2T.swing[0]) return [];
+  const passed = wd2PASSED.filter(p => p <= t).length, moving = t < wd2T.settle;
+  return wd2ARC.slice(0, passed).flatMap(([x, y], k) => {
+    if (moving) return [[x, y, k >= passed - 2 ? '#' : ':']];
+    const gone = k >= wd2SWEPT ? wd2T.settle + 50 : wd2T.fade + 60 + 45 * k; if (t >= gone) return [];
+    if (gone - t <= 50 || k % 2) return [[x, y, ':']];
+    return [[x, y, wd2TWINKLE[(Math.floor((t - wd2T.swing[0]) / 50) + 3 * k) % wd2TWINKLE.length]]]; }); };
+
+/* the stars: where each sits, when it twinkles out, when it blooms again. The big one sits on the line of the wand,
+   so the spark that flies on from the tip at settle lands exactly on it */
+const wd2STARS = [{ at: [11, 8], out: 360, bloom: 1190, big: false }, { at: [4, 1], out: 430, bloom: 1260, big: false }, { at: [9, 3], out: 500, bloom: 1110, big: true }];
+const wd2SPARK = [[[7, 5], wd2T.settle], [[8, 4], wd2T.settle + 40]];
+/* while the set rests, the small stars wink in turn, so the pause stays alive */
+const wd2WINK = [[[11, 8], 1640], [[4, 1], 1800]];
+/* a star blooming from t0: a white point, a plus with a white heart, growing, a white flare at full size, settling */
+const wd2Bloom = ({ at, big }, u) => !big ? (u < 50 ? tk2Star(at, 0, true) : u < 120 ? tk2Star(at, 1, true) : tk2Star(at, 1, false))
+  : u < 50 ? tk2Star(at, 0, true) : u < 110 ? tk2Star(at, 1, true) : u < 170 ? tk2Star(at, 2, true) : u < 270 ? [...tk2Star(at, 3, true), ...tk2Flare(at)] : tk2Star(at, 3, true);
+/* a star twinkling out from t0: a white flick, smaller, a dim point, gone */
+const wd2Out = ({ at, big }, u) => !big ? (u < 60 ? tk2Star(at, 1, true) : u < 120 ? tk2Star(at, 0, true) : u < 170 ? tk2Star(at, 0, false, ':') : [])
+  : u < 70 ? [...tk2Star(at, 3, true), ...tk2Flare(at)] : u < 130 ? tk2Star(at, 2, true) : u < 190 ? tk2Star(at, 1, true) : u < 240 ? tk2Star(at, 0, false, '#') : u < 290 ? tk2Star(at, 0, false, ':') : [];
+const wd2Stars = t => [
+  ...wd2STARS.flatMap(s => t >= s.bloom ? wd2Bloom(s, t - s.bloom) : t >= s.out ? wd2Out(s, t - s.out) : tk2Star(s.at, s.big ? 3 : 1, s.big)),
+  ...wd2SPARK.filter(([, t0], i) => t >= t0 && t < (i + 1 < wd2SPARK.length ? wd2SPARK[i + 1][1] : wd2STARS[2].bloom)).map(([p]) => [...p, 'W']),
+  ...wd2WINK.filter(([, t0]) => t >= t0 && t < t0 + 70).map(([p]) => [...p, 'W'])];
+const wd2Magic = t => stamp(inGrid([...wd2Trail(t), ...wd2Stars(t), ...wd2Wand(wd2Angle(t))]));
+const wd2WAND = tk2Film(wd2Magic, wd2T.loop);
+
+/* writing, Cursive take: replaces the Signature take, which is retired. The loopy stroke of the signature, kept going
+   for ever: an endless line of joined cursive letters, l, l, e, written by a white pen tip that stays near the right
+   middle while the paper slides left under it, so the writing never stops. The pen moves like a hand: steady up the
+   slope, slowing round the top of each loop, quick down the stem through the crossing, easy along the join. Wet ink
+   is white at the tip, lit behind it, and dims as it slides off the left edge. Every letter is exactly four cells
+   wide and the paper moves four cells a letter, so the line repeats every three letters with no seam, and nobody can
+   see where it starts again. No baseline: the joins along the bottom already draw one, and a ruled line under them
+   only thickened the bottom edge */
+
+/* the letters, each four cells wide: in from the bottom left, up the slope, round the top, down the stem through the
+   crossing and along the bottom to where the next one starts. The tall l is the signature's own loop, the e a short
+   one. With each cell, how long the pen takes to reach it */
+const wd2L = { path: [[0,10],[1,9],[2,8],[3,7],[4,6],[4,5],[4,4],[3,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[3,10]],
+  pace: [70, 60, 50, 55, 70, 90, 110, 150, 110, 70, 45, 40, 40, 45, 80] };
+const wd2E = { path: [[0,10],[1,9],[2,8],[3,7],[4,6],[3,5],[2,6],[2,7],[2,8],[2,9],[3,10]],
+  pace: [70, 60, 50, 60, 90, 150, 100, 60, 45, 45, 80] };
+const wd2WORD = [wd2L, wd2L, wd2E];
+/* letter width; where the pen writes from; and the phase of the paper's steps against the pen's, chosen so the
+   paper never moves just before or after the pen and the tip never jumps two cells */
+const wd2W = 4, wd2PEN_X = 9, wd2PHASE = 1170;
+const wd2Ms = l => l.pace.reduce((a, b) => a + b, 0);
+const wd2WORD_MS = wd2WORD.reduce((a, l) => a + wd2Ms(l), 0);
+/* the paper's scroll at t: steady, one cell at a time, four cells a letter on average */
+const wd2Scroll = t => { const r = wd2W * wd2WORD.length / wd2WORD_MS; return Math.floor(r * (t + wd2PHASE)) - Math.floor(r * wd2PHASE); };
+/* the line at t: letter n of the word is being written, the pen on cell i of it; the letters before it trail off to
+   the left, the word repeating */
+const wd2Cursive = t => {
+  let n = 0, t0 = 0; while (t >= t0 + wd2Ms(wd2WORD[n])) { t0 += wd2Ms(wd2WORD[n]); n++; }
+  let i = -1, acc = 0; for (const ms of wd2WORD[n].pace) { acc += ms; if (t - t0 >= acc) i++; }
+  const s = wd2Scroll(t), cells = [];
+  for (let j = n - 4; j <= n; j++) { const l = wd2WORD[((j % wd2WORD.length) + wd2WORD.length) % wd2WORD.length];
+    l.path.forEach(([x, y], k) => { if (j === n && k > i) return;
+      const sx = wd2PEN_X + wd2W * j + x - s, tip = (j === n && k === i) || (i < 0 && j === n - 1 && k === l.path.length - 1);
+      cells.push([sx, y, tip ? 'W' : sx <= 1 ? ':' : '#']); }); }
+  return stamp(inGrid(cells)); };
+const wd2CURSIVE = tk2Film(wd2Cursive, wd2WORD_MS);
+
+/* searching, micro (reworked): two eyes looking around for something. Eyes glancing about is the gesture everyone
+   reads as looking for it, and it survives five by five cells, where a lens and handle wandering the box turned to
+   noise. Each eye is two cells wide and three tall, its white dim and its pupil white-hot. They look left, dart
+   right, narrow to peer, glance up into the right corner and across to the left, come back down, blink, and look
+   again. A pupil jumps a whole eye-width at a time, so every look is a clear, still glance */
+/* at: the top row of the eyes; px, py: where the pupil sits (0 or 1 across, 0 to 2 down); lid: how many rows are
+   open, 3 wide open, 2 narrowed by the upper lid, 1 shut to a line */
+const wd2Eyes = ({ at = 1, px = 0, py = 1, lid = 3 } = {}) => c5([0, 3].flatMap(ex => {
+  const rows = lid === 3 ? [0, 1, 2] : lid === 2 ? [1, 2] : [1];
+  return rows.flatMap(r => [0, 1].map(c => [ex + c, at + r, lid === 1 ? '#' : c === px && r === py ? 'W' : ':']));
+}));
+const wd2SEEK = [
+  [wd2Eyes({ px: 0 }), 380],
+  [wd2Eyes({ px: 1 }), 300],
+  [wd2Eyes({ px: 1, lid: 2 }), 260],
+  [wd2Eyes({ px: 1, py: 0, at: 0 }), 280],
+  [wd2Eyes({ px: 0, py: 0, at: 0 }), 240],
+  [wd2Eyes({ px: 0 }), 120],
+  [wd2Eyes({ px: 0, lid: 2 }), 60],
+  [wd2Eyes({ lid: 1 }), 80],
+  [wd2Eyes({ px: 0, lid: 2 }), 60],
+];
+
+const OPTS_WD2 = {
+  generating_wand: Object.assign(seq(...wd2WAND), { still: wd2Magic(0) }),
+  writing_cursive: Object.assign(seq(...wd2CURSIVE), { still: wd2Cursive(300), trail: 0.7 }),
+  searching_micro: Object.assign(micro(wd2SEEK), { still: wd2Eyes({ px: 1 }) }),
+};
+
+/* ---------- error, round 20: an aligned sign, and new ways to say "something went wrong". Every name here carries the
+   prefix er2. ---------- */
+
+/* the warning sign, redrawn. It fills the grid, thirteen cells wide and thirteen tall, with the apex and both base
+   corners rounded, and its sides climb two rows a column so they stay clean steps. The mark sits on the axis, column
+   6, and low, where a triangle's weight is: a five-cell bar with three clear rows above it under the apex and two
+   cells of air either side, a one-row gap, the dot, and a clear row above the base. One-cell strokes throughout, so
+   the mark has the same weight as the sign */
+const er2TRI = ['.....###.....', '.....#.#.....', '....#...#....', '....#...#....', '...#.....#...', '...#.....#...', '..#.......#..', '..#.......#..', '.#.........#.', '.#.........#.', '#...........#', '#...........#', '.###########.'];
+const er2BAR = [4, 5, 6, 7, 8].map(y => [6, y]), er2DOT = [6, 10], er2MARK = [...er2BAR, er2DOT];
+/* the sign with its mark in a tone (null leaves it out) */
+const er2Sign = (mark = '#') => stamp([...cellsOf(er2TRI), ...(mark ? er2MARK.map(([x, y]) => [x, y, mark]) : [])]);
+const er2SIGN = er2Sign();
+
+/* error, Glitch take: the sign breaks up like a bad signal. The picture is cut into clean horizontal slices, cut where
+   the sides step so every slice keeps whole pieces of the outline, and they slip sideways against each other, never
+   off the grid; sometimes a slice drops to dim, the signal fading out of it. Each tear is a whole slice of the sign
+   moved, nothing scattered and no stray cells. It snaps back whole with the mark flaring white, holds, then a smaller
+   aftershock tears the middle once more and leaves a dim ghost of the sign beside it for an instant before it snaps
+   back again */
+/* the sign torn: bands [top row, bottom row, dx, dim]; the mark can be lit white or dimmed */
+const er2Torn = (bands, mark = '#') => { const base = er2Sign(mark);
+  return stamp(base.flatMap((r, y) => { const band = bands.find(([a, b]) => y >= a && y <= b), dx = band ? band[2] : 0, dim = band && band[3];
+    return r.split('').map((c, x) => c === '.' ? null : [x + dx, y, dim && c !== 'W' ? ':' : c]).filter(Boolean); })); };
+/* the whole sign with a dim double of itself dx cells to the side, the ghost of a signal that arrives twice */
+const er2Echo = (dx, mark = '#') => stamp([...cellsOf(er2Sign(mark)), ...cellsOf(er2SIGN).map(([x, y]) => [x + dx, y, ':'])]);
+const er2GLITCH = [
+  F(er2SIGN, 600),
+  F(er2Torn([[0, 5, 2]]), 60),
+  F(er2Torn([[0, 3, -1], [4, 7, 1, true]]), 45),
+  F(er2Torn([[6, 9, -1]]), 40),
+  F(er2Sign('W'), 80),
+  F(er2SIGN, 420),
+  F(er2Torn([[4, 9, -2]], 'W'), 50),
+  F(er2Echo(1), 45),
+  F(er2Sign('W'), 90),
+];
+
+/* error, Build take: the sign is drawn the way a hand would draw it. The apex appears, both sides run down from it at
+   once, slow off the top and quickening as they fall, and the base closes from the two corners to the middle,
+   easing as the ends meet. A beat, then the mark is written: the bar strokes down from the top, quick, with a white
+   tip, and a drop of ink gathers at the bottom of the stroke, lets go and lands as the dot, white for an instant. It
+   holds, then rubs out the way it came, the mark first, and builds again */
+const er2SIDE = [[5, 0], [5, 1], [4, 2], [4, 3], [3, 4], [3, 5], [2, 6], [2, 7], [1, 8], [1, 9], [0, 10], [0, 11]];
+const er2Sides = k => [[6, 0], ...er2SIDE.slice(0, k).flatMap(([x, y]) => [[x, y], [12 - x, y]])];
+const er2Base = k => Array.from({ length: k }, (_, i) => [[1 + i, 12], [11 - i, 12]]).flat();
+const er2Drawn = (k, b = 0, bar = 0, dot = null, tip = false) => stamp([
+  ...[...er2Sides(k), ...er2Base(b)].map(([x, y]) => [x, y, '#']),
+  ...er2BAR.slice(0, bar).map(([x, y], i) => [x, y, tip && i === bar - 1 ? 'W' : '#']),
+  ...(dot ? [[...er2DOT, dot]] : [])]);
+const er2BUILD = [
+  F(er2Drawn(0), 150),
+  ...[1, 2, 4, 6, 8, 10, 12].map((k, i) => F(er2Drawn(k), [110, 80, 60, 50, 45, 50, 60][i])),
+  ...[2, 4, 5, 6].map((b, i) => F(er2Drawn(12, b), [45, 55, 75, 110][i])),
+  F(er2Drawn(12, 6), 220),
+  ...[1, 3, 5].map((n, i) => F(er2Drawn(12, 6, n, null, true), [70, 50, 60][i])),
+  F(er2Drawn(12, 6, 5), 130),
+  F(stamp([[6, 9, 'W']], er2Drawn(12, 6, 5)), 70),
+  F(er2Drawn(12, 6, 5, 'W'), 90),
+  F(er2Drawn(12, 6, 5, '#'), 600),
+  F(er2Drawn(12, 6, 5, ':'), 90),
+  F(er2Drawn(12, 6, 0), 90),
+  ...[4, 2, 0].map((b, i) => F(er2Drawn(12, b), [60, 50, 50][i])),
+  ...[8, 4, 1].map((k, i) => F(er2Drawn(k), [50, 55, 80][i])),
+];
+
+/* error, Crash take (the default): the computer crashes, the way everyone pictures it. A little monitor on its stand
+   wears a calm face and blinks while it works. Then its picture hiccups a cell sideways, its eyes go round and its
+   mouth drops open, a beat of alarm, and it jumps on its stand, its neck stretching, as its eyes snap to crosses with
+   white hearts and two sparks fly off its top corners. It lands with its foot spread, its mouth wobbling, and a puff
+   of smoke pops up off its top, billows and thins away while it sits there knocked out, crossed eyes over a flat
+   mouth. Then it reboots: the face goes out, a single point of light comes on, opens into a line, the line splits
+   into two shut eyes, they open, and the smile is back. Crossed eyes and smoke are the oldest picture of a machine
+   that broke, so it reads at any size, and it recovers on its own, the way a retry does */
+const er2MON = ['.###########.', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '#...........#', '.###########.'];
+/* the face parts, in screen cells (the screen's top-left inside corner is 0,0; it is 11 by 7, its middle column 5) */
+const er2FACE = {
+  open: [[3, 1], [3, 2], [7, 1], [7, 2]], shut: [[2, 2], [3, 2], [4, 2], [6, 2], [7, 2], [8, 2]], line: [[3, 2], [4, 2], [5, 2], [6, 2], [7, 2]], dot: [[5, 2]],
+  round: [[3, 1], [2, 2], [4, 2], [3, 3], [7, 1], [6, 2], [8, 2], [7, 3]],
+  cross: [[2, 1], [4, 1], [3, 2], [2, 3], [4, 3], [6, 1], [8, 1], [7, 2], [6, 3], [8, 3]],
+  smile: [[3, 4], [4, 5], [5, 5], [6, 5], [7, 4]], flat: [[4, 5], [5, 5], [6, 5]], gasp: [[5, 4], [4, 5], [6, 5], [5, 6]], wobble: [[3, 5], [4, 4], [5, 5], [6, 4], [7, 5]],
+};
+/* a puff of smoke over the monitor's top right, k 0 to 4: it pops up small, billows, lifts and thins out */
+const er2PUFF = [[[9, 1]], [[8, 1], [9, 1], [9, 0]], [[8, 1], [9, 1], [10, 1], [8, 0], [9, 0], [10, 0]], [[9, 1], [8, 0], [9, 0], [10, 0], [11, 0]], [[9, 0], [10, 0]]];
+/* the monitor with its top at row top, a face of [part, tone] pairs, extra cells, and the stand: a neck that stretches
+   when the monitor jumps and a foot that spreads when it lands */
+const er2Monitor = (top, parts, { extra = [], squash = false, slip = 0 } = {}) => stamp(inGrid([...cellsOf(er2MON, 0, top),
+  ...Array.from({ length: 3 - top }, (_, k) => [6, top + 9 + k, '#']), ...(squash ? [3, 4, 5, 6, 7, 8, 9] : [4, 5, 6, 7, 8]).map(x => [x, 12, '#']),
+  ...parts.flatMap(([name, tone]) => er2FACE[name].map(([x, y]) => [x + 1 + slip, y + top + 1, tone])), ...extra]));
+const er2Smoke = k => k < 0 ? [] : er2PUFF[k].map(([x, y]) => [x, y, ':']);
+const er2KO = [['cross', '#'], ['flat', '#']];
+const er2CALM = [['open', '#'], ['smile', '#']];
+const er2CRASH = [
+  F(er2Monitor(2, er2CALM), 520),
+  F(er2Monitor(2, [['shut', '#'], ['smile', '#']]), 90),
+  F(er2Monitor(2, er2CALM), 380),
+  F(er2Monitor(2, er2CALM, { slip: 1 }), 50),
+  F(er2Monitor(2, er2CALM), 70),
+  F(er2Monitor(2, [['round', '#'], ['gasp', '#']]), 240),
+  F(er2Monitor(1, [['cross', '#'], ['wobble', '#']], { extra: [[4, 4, 'W'], [8, 4, 'W'], [0, 0, 'W'], [12, 0, 'W']] }), 70),
+  F(er2Monitor(2, [['cross', '#'], ['wobble', '#']], { squash: true }), 80),
+  F(er2Monitor(2, [['cross', '#'], ['wobble', '#']]), 120),
+  ...[0, 1, 2, 3, 4].map((k, i) => F(er2Monitor(2, er2KO, { extra: er2Smoke(k) }), [100, 120, 150, 160, 130][i])),
+  F(er2Monitor(2, er2KO), 140),
+  F(er2Monitor(2, [['cross', ':'], ['flat', ':']]), 110),
+  F(er2Monitor(2, []), 100),
+  F(er2Monitor(2, [['dot', 'W']]), 90),
+  F(er2Monitor(2, [['line', '#'], ['dot', 'W']]), 70),
+  F(er2Monitor(2, [['shut', '#']]), 130),
+  F(er2Monitor(2, [['open', '#']]), 100),
+];
+
+/* error, Tear take: a document rips in two. A page with a turned corner and two dim lines of text sits whole. A
+   white nick opens in its top edge, and the rip runs down the page, quick, a white point at its front, along a ragged
+   line of straight drops and exact diagonals. Through the bottom edge, the two halves pop apart and slip past each
+   other, the left dropping a row and the right riding up one, so the torn edges no longer match: a broken file. They
+   hang there, then ease back together, and the seam is mended from the top down by a run of white light that zips
+   along it and fades, and the page is whole again */
+const er2PAGE = ['######...', '#....##..', '#....#.#.', '#....####', '#.......#', '#.......#', '#.......#', '#.......#', '#.......#', '#.......#', '#########'];
+const er2PAGE_TEXT = [[6, [2, 3, 4, 5, 6]], [8, [2, 3, 4, 5]]];
+/* the page's cells, its top-left corner at (2, 1) */
+const er2PAGE_CELLS = [...cellsOf(er2PAGE, 2, 1), ...er2PAGE_TEXT.flatMap(([y, xs]) => xs.map(x => [x + 2, y + 1, ':']))];
+/* the rip: the column it crosses in each row of the page, a ragged line of straight drops and exact diagonals that
+   keeps clear of the turned corner */
+const er2RIP = [5, 5, 5, 4, 5, 6, 6, 6, 5, 4, 4];
+/* the page ripped down to page row tip (-1 for none, 11 for through); the halves moved: left [dx, dy], right [dx, dy];
+   seam(y): the rip's tone while the page is whole */
+const er2Ripped = (tip, { l = [0, 0], r = [0, 0], seam = null, line = '#', edge = '#' } = {}) => {
+  const cells = [], whole = !l[0] && !l[1] && !r[0] && !r[1];
+  for (const [x, y, c] of er2PAGE_CELLS) { const py = y - 1, rx = er2RIP[py];
+    if (whole || py >= tip) { if (!(py < tip && x === rx)) cells.push([x, y, c]); continue; }
+    if (x < rx) cells.push([x + l[0], y + l[1], c]); else if (x > rx) cells.push([x + r[0], y + r[1], c]); }
+  for (let py = 0; py < Math.min(tip, 11); py++) { const x = er2RIP[py], y = py + 1;
+    if (whole) cells.push([x, y, py === tip - 1 && tip < 11 ? 'W' : seam ? seam(py) : line]);
+    else if (edge) cells.push([x + l[0], y + l[1], edge], [x + r[0], y + r[1], edge]); }
+  return stamp(inGrid(cells));
+};
+const er2TEAR = [
+  F(er2Ripped(-1), 560),
+  F(er2Ripped(1), 140),
+  ...[3, 5, 7, 9, 11].map((k, i) => F(er2Ripped(k), [60, 45, 40, 45, 60][i])),
+  F(er2Ripped(11, { l: [-2, 0], r: [2, 0] }), 90), F(er2Ripped(11, { l: [-2, 1], r: [2, 0] }), 80), F(er2Ripped(11, { l: [-2, 1], r: [2, -1] }), 520),
+  F(er2Ripped(11, { l: [-2, 0], r: [2, 0] }), 110), F(er2Ripped(11, { line: '#' }), 90),
+  ...[0, 3, 6, 9, 12].map((z, i) => F(er2Ripped(11, { seam: y => y >= z - 2 && y <= z ? 'W' : y < z - 2 ? ':' : '#' }), 45)),
+  F(er2Ripped(11, { line: ':' }), 90),
+];
+
+/* error, Fizzle take: a launch that does not make it. A little rocket stands on the ground, nose up, a round window
+   in its side and two swept fins. The engine lights: the ground glows under it, smoke puffs out either side and the
+   rocket crouches. It lifts, slower each row, its flame shrinking; the flame sputters out in a puff and the rocket
+   hangs there for a moment. Then it drops, lands with a squash and a scuff of dust, teeters one way, back, and
+   over it goes, onto its side with a bump. A wisp of smoke curls up from its nozzle. Then it hops back up onto its
+   fins, ready to try again. While the engine burns its window glows white; on the ground it is dark */
+const er2RKT = ['...#...', '..###..', '..###..', '..#.#..', '..###..', '..###..', '.#####.', '##.#.##', '#..:..#'];
+/* the rocket squashed on landing (one body row shorter), on its side (nose right), and halfway over */
+const er2RKT_SQ = er2RKT.filter((_, i) => i !== 4);
+const er2RKT_SIDE = ['##.......', '.##......', '..######.', ':####.###', '..######.', '.##......', '##.......'];
+const er2RKT_TIP = ['.......#', '......##', '.....###', '....#.#.', '...###..', '.#.##...', '..##....', '.#.:#...', '#...#...'];
+const er2GROUND = Array.from({ length: N }, (_, x) => [x, 12, ':']);
+/* the rocket upright, lifted lift rows, leaning lean cells at the nose; or the other poses at their spots */
+const er2Upright = (lift = 0, lean = 0, rows = er2RKT, lit = false) => [...rows.flatMap((r, i) => r.split('').map((c, x) => c === '.' ? null : [3 + x + Math.round(lean * (rows.length - 1 - i) / (rows.length - 1)), 12 - rows.length + i - lift, c]).filter(Boolean)),
+  ...(lit ? [[6, 12 - rows.length + 3 - lift, 'W']] : [])];
+const er2Rocket = (body, extra = []) => stamp(inGrid([...er2GROUND, ...body, ...extra]));
+const er2Side = (dy = 0) => cellsOf(er2RKT_SIDE, 3, 5 + dy), er2Tip = () => cellsOf(er2RKT_TIP, 3, 3);
+/* the flame under a nozzle at row ny, strength 0 to 3; the glow it throws on the ground */
+const er2Flame = (ny, k) => [[[6, ny + 1, ':']], [[6, ny + 1, '#'], [6, ny + 2, ':']], [[6, ny + 1, 'W'], [6, ny + 2, '#'], [6, ny + 3, ':']], [[6, ny + 1, 'W'], [6, ny + 2, 'W'], [6, ny + 3, '#']]][k].filter(([, y]) => y < 12);
+const er2FIZZLE = [
+  F(er2Rocket(er2Upright()), 360),
+  F(er2Rocket(er2Upright(0, 0, er2RKT_SQ), [[6, 12, '#'], [5, 12, '#'], [7, 12, '#'], [2, 11, ':'], [10, 11, ':']]), 140),
+  F(er2Rocket(er2Upright(0, 0, er2RKT_SQ, true), [[6, 12, 'W'], [5, 12, '#'], [7, 12, '#'], [1, 11, ':'], [11, 11, ':'], [2, 10, ':'], [10, 10, ':']]), 100),
+  F(er2Rocket(er2Upright(1, 0, er2RKT, true), [...er2Flame(10, 3), [5, 12, '#'], [7, 12, '#'], [1, 10, ':'], [11, 10, ':']]), 80),
+  F(er2Rocket(er2Upright(2, 0, er2RKT, true), [...er2Flame(9, 2), [6, 12, '#']]), 100),
+  F(er2Rocket(er2Upright(3, 0, er2RKT, true), er2Flame(8, 1)), 140),
+  F(er2Rocket(er2Upright(3), er2Flame(8, 0)), 110),
+  F(er2Rocket(er2Upright(3), [[5, 9, ':'], [7, 9, ':'], [6, 10, ':']]), 130),
+  F(er2Rocket(er2Upright(2), [[5, 8, ':'], [7, 8, ':']]), 80),
+  F(er2Rocket(er2Upright(0, 0, er2RKT_SQ), [[1, 11, ':'], [11, 11, ':']]), 80),
+  F(er2Rocket(er2Upright()), 120),
+  F(er2Rocket(er2Upright(0, 1)), 150), F(er2Rocket(er2Upright()), 100), F(er2Rocket(er2Upright(0, 1)), 110),
+  F(er2Rocket(er2Tip()), 50),
+  F(er2Rocket(er2Side(-1)), 50), F(er2Rocket(er2Side(), [[1, 11, ':'], [12, 11, ':']]), 90), F(er2Rocket(er2Side()), 140),
+  ...[[[2, 7, ':']], [[2, 7, ':'], [2, 6, ':']], [[2, 6, ':'], [1, 5, ':']], [[1, 5, ':'], [1, 4, ':']], [[1, 4, ':']]].map((sm, i) => F(er2Rocket(er2Side(), sm), [100, 120, 130, 130, 110][i])),
+  F(er2Rocket(er2Tip()), 60), F(er2Rocket(er2Upright(1)), 70), F(er2Rocket(er2Upright(0, 0, er2RKT_SQ)), 70), F(er2Rocket(er2Upright()), 60),
+];
+
+/* error, micro: the Crash take as a 5x5 face. It smiles and blinks, its eyes go tall and its mouth drops open, then
+   the zap: two crossed eyes, white at their hearts, and the smile turns over into a frown. Sad, it fades to a single
+   point, the point opens into a line, the line splits into two eyes, and the smile comes back */
+const er2MC = { eyes: [[1, 1], [3, 1]], tall: [[1, 0], [1, 1], [3, 0], [3, 1]], cross: [[0, 0], [2, 0], [4, 0], [1, 1], [3, 1], [0, 2], [2, 2], [4, 2]],
+  smile: [[0, 3], [1, 4], [2, 4], [3, 4], [4, 3]], gasp: [[2, 3]], frown: [[1, 3], [2, 3], [3, 3], [0, 4], [4, 4]], dot: [[2, 2]], line: [[1, 2], [2, 2], [3, 2]] };
+/* a face of [part, tone] pairs; the crossed eyes keep their two middles a tone apart so they read as two crosses */
+const er2Mc = (...parts) => c5(parts.flatMap(([name, tone]) => er2MC[name].map(([x, y]) => [x, y, name === 'cross' && !(x % 2) && tone !== ':' ? '#' : tone])));
+const er2MICRO = [
+  [er2Mc(['eyes', '#'], ['smile', '#']), 420], [er2Mc(['smile', '#']), 90], [er2Mc(['eyes', '#'], ['smile', '#']), 280],
+  [er2Mc(['tall', '#'], ['gasp', '#']), 220],
+  [er2Mc(['cross', 'W'], ['frown', '#']), 130], [er2Mc(['eyes', '#'], ['frown', '#']), 520],
+  [er2Mc(['eyes', ':'], ['frown', ':']), 120], [er2Mc(['dot', 'W']), 110], [er2Mc(['line', '#']), 90], [er2Mc(['eyes', '#']), 130],
+];
+
+/* Crash is the state's default, its frames copied fresh from the film */
+const er2CrashSprite = () => Object.assign(seq(...er2CRASH.map(f => F(f.b, f.ms))), { still: er2Monitor(2, er2KO, { extra: er2Smoke(2) }) });
+
+const OPTS_ER2 = {
+  error: er2CrashSprite(),
+  error_tear: Object.assign(seq(...er2TEAR), { still: er2Ripped(11, { l: [-2, 1], r: [2, -1] }) }),
+  error_fizzle: Object.assign(seq(...er2FIZZLE), { still: er2Rocket(er2Side(), [[2, 6, ':'], [1, 5, ':']]) }),
+  error_glitch: Object.assign(seq(...er2GLITCH), { rest: 0, trail: 0.3 }),
+  error_build: Object.assign(seq(...er2BUILD), { still: er2SIGN }),
+  error_micro: Object.assign(micro(er2MICRO), { rest: 5 }),
+};
+
+/* syncing, Loop take: the sync icon everyone knows, two arrows chasing each other round a ring, moving the way an
+   inchworm does rather than spinning. The ring is the radius-6 circle, and an arrowhead only ever sits on one of its
+   45 degree corners, where a solid right-angled head fits cleanly, so every frame is the crisp icon. At rest each
+   arrow gathers itself: its tail draws up behind it and its head crouches back a cell. Then it lunges a quarter turn
+   to the next corner in one bound, a white tip in front and a dim streak where it passed, landing just behind the
+   other arrow's tail. Stretched long, its tail snaps up after it, the head runs a cell past its mark and settles
+   back. Twice per loop, so the pair works its way right round */
+const sy2RING = (() => {
+  const s = new Set(); let x = 0, y = 6, d = -5;
+  while (x <= y) { for (const [a, b] of [[x, y], [y, x], [-x, y], [-y, x], [x, -y], [y, -x], [-x, -y], [-y, -x]]) s.add((6 + a) + ',' + (6 + b));
+    if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; } x++; }
+  const ang = ([cx, cy]) => (Math.atan2(cx - 6, 6 - cy) + 2 * Math.PI) % (2 * Math.PI);
+  return [...s].map(k => k.split(',').map(Number)).sort((a, b) => ang(a) - ang(b));
+})();
+const sy2M = sy2RING.length;
+const sy2At = i => sy2RING[((i % sy2M) + sy2M) % sy2M];
+const sy2Quarter = ([x, y, c]) => [12 - y, x, c];
+/* the head with its tip at ring cell tip: tips 4, 5 and 6 lie on the top-right corner, and every 8 cells on is the same
+   corner a quarter turn round */
+const sy2Head = (tip, hot) => {
+  const q = Math.floor((tip - 4) / 8), local = tip - 8 * q, [tx, ty] = sy2At(local);
+  if (local < 4 || local > 6) throw new Error('sy2Head: no clean head at ' + tip);
+  let cs = [[tx, ty, hot ? 'W' : '#'], [tx - 1, ty, '#'], [tx - 2, ty, '#'], [tx, ty - 1, '#'], [tx, ty - 2, '#'], [tx - 1, ty - 1, '#']];
+  for (let k = 0; k < ((q % 4) + 4) % 4; k++) cs = cs.map(sy2Quarter);
+  return cs;
+};
+/* both arrows: one from ring cell tail to its head at tip, the other the same turned half way round. Cells from
+   streak[0] to streak[1] are dim, the path a lunging head has just swept */
+const sy2Loop = (tail, tip, { streak, hot } = {}) => {
+  while (tail > tip) tail -= sy2M;
+  const swept = i => streak && i >= streak[0] && i <= streak[1];
+  const one = [...Array.from({ length: tip - tail }, (_, k) => [...sy2At(tail + k), swept(tail + k) ? ':' : '#']), ...sy2Head(tip, hot)];
+  return stamp([...one, ...one.map(([x, y, c]) => [12 - x, 12 - y, c])]);
+};
+/* one beat: rest, gather, crouch, lunge a quarter turn, catch up, overshoot; the next beat starts from the settled pose */
+const sy2Beat = o => [
+  F(sy2Loop(o - 7, o + 5), 440), F(sy2Loop(o - 6, o + 5), 140), F(sy2Loop(o - 5, o + 5), 100), F(sy2Loop(o - 4, o + 4), 150),
+  F(sy2Loop(o - 2, o + 12, { streak: [o + 5, o + 11], hot: true }), 55), F(sy2Loop(o - 1, o + 12), 50), F(sy2Loop(o, o + 13), 60), F(sy2Loop(o + 2, o + 14), 80)];
+
+/* syncing, Devices take: a phone and a watch, drawn the way their icons are: a tall rounded phone with its island and
+   home bar, a watch with its straps, crown and button. Their screens are dark. A change is made on the phone: a bright
+   point drops out of the island and opens into a card like a notification, overshoots a cell and settles. A light
+   leaves the middle of the card and runs across through both bezels to the watch, whose face wakes with the same card
+   while it taps your wrist, two quick buzzes. Both show the same thing, blink white together, in step, and dim
+   together. Then it runs the other way: a tap on the watch face blooms into a card, the light runs back, and the phone
+   shows it with a buzz of its own */
+const sy2PHONE = ['.###.', '#.:.#', '#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '#.:.#', '.###.'];
+const sy2WATCH = ['.###.', '.###.', '#####', '#...##', '#...#', '#...##', '#####', '.###.', '.###.'];
+/* a card: a 3 by 3 glow with a centre that is lit or white. Middle row cy; s 0 is the bare centre, 1 the full card */
+const sy2Card = (cx, cy, mid, s = 1) => [...(s ? [-1, 0, 1].flatMap(dx => [-1, 0, 1].map(dy => [cx + dx, cy + dy, ':'])) : []), [cx, cy, mid]];
+/* a frame: the phone shifted pdx with its card (cy, centre tone, size), the watch shifted wdx with its card, and the light */
+const sy2Dev = ({ p, pdx = 0, w, wdx = 0, light = [] } = {}) => {
+  const pc = p ? sy2Card(2, p[0], p[1], p[2]).filter(([, y]) => y >= 3 && y <= 10) : [];
+  const wc = w ? sy2Card(9, 7, w[0], w[1]) : [];
+  return stamp(inGrid([...cellsOf(sy2PHONE, pdx, 1), ...pc.map(([x, y, c]) => [x + pdx, y, c]), ...cellsOf(sy2WATCH, 7 + wdx, 3), ...wc.map(([x, y, c]) => [x + wdx, y, c]), ...light]));
+};
+/* the light at column x with a dim cell behind it, running right (d 1) or left (d -1) */
+const sy2Ray = (x, d) => [[x, 7, 'W'], [x - d, 7, ':']];
+const sy2DEVICES = [
+  F(sy2Dev(), 260),
+  F(sy2Dev({ p: [3, 'W', 0] }), 70), F(sy2Dev({ p: [5, 'W'] }), 60), F(sy2Dev({ p: [8, 'W'] }), 55), F(sy2Dev({ p: [7, 'W'] }), 130),
+  ...[3, 4, 5, 6, 7].map((x, i) => F(sy2Dev({ p: [7, '#'], light: sy2Ray(x, 1) }), [70, 50, 40, 40, 50][i])),
+  F(sy2Dev({ p: [7, '#'], w: ['W', 0], wdx: -1 }), 55), F(sy2Dev({ p: [7, '#'], w: ['W'] }), 55), F(sy2Dev({ p: [7, '#'], w: ['#'], wdx: -1 }), 55), F(sy2Dev({ p: [7, '#'], w: ['#'] }), 420), F(sy2Dev({ p: [7, 'W'], w: ['W'] }), 90), F(sy2Dev({ p: [7, '#'], w: ['#'] }), 160),
+  F(sy2Dev({ p: [7, ':', 0], w: [':', 0] }), 90),
+  F(sy2Dev(), 260),
+  F(sy2Dev({ w: ['W', 0] }), 100), F(sy2Dev({ w: ['W'] }), 120),
+  ...[8, 7, 6, 5, 4].map((x, i) => F(sy2Dev({ w: ['#'], light: sy2Ray(x, -1) }), [70, 50, 40, 40, 50][i])),
+  F(sy2Dev({ p: [7, 'W', 0], pdx: 1, w: ['#'] }), 55), F(sy2Dev({ p: [7, 'W'], w: ['#'] }), 55), F(sy2Dev({ p: [7, '#'], pdx: 1, w: ['#'] }), 55), F(sy2Dev({ p: [7, '#'], w: ['#'] }), 420), F(sy2Dev({ p: [7, 'W'], w: ['W'] }), 90), F(sy2Dev({ p: [7, '#'], w: ['#'] }), 160),
+  F(sy2Dev({ p: [7, ':', 0], w: [':', 0] }), 90),
+];
+
+const OPTS_SY2 = {
+  syncing_loop: Object.assign(seq(...sy2Beat(0), ...sy2Beat(8)), { still: sy2Loop(-7, 5), trail: 0.6 }),
+  syncing_devices: Object.assign(seq(...sy2DEVICES), { still: sy2Dev({ p: [7, '#'], w: ['#'] }), trail: 0.6 }),
+};
+
+Object.assign(SPRITES, OPTS_TH2, OPTS_WD2, OPTS_ER2, OPTS_SY2);
 
 /* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
    such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
@@ -2876,7 +3097,7 @@ const USE = {
   generating: 'an AI making an image, text or code.', writing: 'drafting, autosaving notes, an assistant writing for you.',
   syncing: 'syncing devices, backing up, merging changes.', connecting: 'joining a network, reaching a server, turning on a VPN.',
   uploading: 'sending files, publishing, backing up to the cloud.', downloading: 'fetching files, installing, updating.',
-  done: 'a finished task, a saved change, a payment that went through.', error: 'a failed request, a validation error, anything to retry.',
+  done: 'a finished task, a saved change, a payment that went through.', error: 'a failed request, a crashed job, a server error, anything that broke and can be retried.',
   building: 'compiling, deploying, a CI build.', debugging: 'running tests, tracing a bug, inspecting.',
   heartbeat: 'reading a heart rate, any live health sensor.', scanning: 'Face ID, a document or barcode scan, a security check.',
   breathing: 'a guided breath, a calm pause, meditation.', calculating: 'a quote, a total, taxes, any sum the user is waiting on.',
@@ -3116,8 +3337,8 @@ ensureFilters();
    others are variants that borrow its label and colour */
 const OPTIONS = {
   thinking: [['thinking', 'Wave', 'Three dots ride an overlapping wave in a speech bubble, the reply-is-coming pattern from messaging.'],
-    ['thinking_bulb', 'Bulb', 'A light bulb strikes like an old filament: it catches, drops out, catches again, then its tip goes white and the glow spreads through the glass as rays fan out around it.'],
-    ['thinking_cloud', 'Cloud', 'Three dim dots in a thought cloud light one by one, drift together and run into one bright point. It climbs to the cloud\'s low shoulder, pushes it up into a bump and breaks through, bursting above the cloud into a sparkle with a white flare, which hangs there and twinkles out as new dots appear.', 'an assistant working out an answer before it replies, the beat between the question and the idea.']],
+    ['thinking_bulb', 'Bulb', 'A dark light bulb hangs a pull cord with a bead. The cord is yanked and the bulb dips, then springs back and clicks on: the coil goes white-hot, rays shoot out and the cord swings while it glows, until it cools and the cord is pulled again.', 'brainstorming, an assistant coming up with ideas, names or suggestions'],
+    ['thinking_aha', 'Aha', 'A dim question mark is traced round its curl by a point of light, and its dot taps twice like a drummed pencil. Then the curl springs straight into an exclamation mark, white at the tip, and later bends back over into the next question.', 'an assistant working out an answer, reasoning through a question before it replies']],
   reading: [['reading', 'Peel', 'A reading cursor runs the lines of a page, then the page peels off like paper and the next is underneath.'],
     ['reading_book', 'Book', 'An open book reads its lines left page then right, then the right page lifts, stands on edge and lands on the left, shaded like paper with a glint on its edge.'],
     ['reading_specs', 'Specs', 'Eyes behind reading glasses follow a line word by word, each word lighting as they reach it, flick back as the page scrolls up, and pause to blink at the end of the page.']],
@@ -3129,13 +3350,13 @@ const OPTIONS = {
     ['searching_eye', 'Eye', 'An eye searches in quick darts that overshoot and settle: left, right, a glance down with the lid following. Then a double take: it snaps back, narrows to peer, pops wide with a white glint in its pupil, blinks and looks again.', 'hunting for one particular thing, like finding a face in a photo library or a message in a long thread.']],
   generating: [['generating', 'Twinkle', 'Two sparkles pulse in opposite phase, each popping past its size with a white core; the big one flicks a quarter turn.'],
     ['generating_gather', 'Gather', 'Six scattered motes fall into the middle one at a time, and each one that lands grows the sparkle a size until it is whole. A light runs out along its rays, then it lets go and the motes fly back out.'],
-    ['generating_wand', 'Wand', 'The stars by a magic wand twinkle out one by one. The wand winds back nearly upright, waits, then whips round, overshoots and springs back, flinging sparks off its tip that slow as they fly; two wink out and three light up where they land, the big one blooming with a white flare.', 'making something new from a prompt, like generating an image or drafting a reply with AI.']],
+    ['generating_wand', 'Wand', 'The wand winds back to upright as its stars twinkle out, then swishes down through a wide arc, overshoots and springs back. Its white tip leaves a trail of twinkling stardust that fades into the tip, and a spark flies on and blooms into a fresh set of stars.', 'an AI making something, like an image or a draft']],
   writing: [['writing', 'Pencil', 'A two-tone pencil writes a line of handwriting as the page slides under it, and stops to dot an i.'],
     ['writing_caret', 'Caret', 'A white caret types lines of words in a rhythm. It stops on a word, blinks, deletes it and types a better one, then returns: it sweeps back to the start as the page scrolls up a line.'],
-    ['writing_signature', 'Signature', 'Two looped letters are signed in one flowing stroke, wet ink white at the pen and drying behind it, slow round each loop and quick down the stems. The pen lifts and sweeps a long underline back beneath; it holds, dims and is gone.']],
+    ['writing_cursive', 'Cursive', 'An endless line of looped handwriting, l, l, e, written by a white pen tip that stays put while the paper slides left beneath it. The pen slows round the top of each loop and drops quickly down the stem, and the ink dims as it leaves the page.', 'an assistant writing a long reply, autosaving notes']],
   syncing: [['syncing', 'Handoff', 'Two arrows take turns: each pulls back, dashes off with speed lines, and its replacement slides in and settles.'],
-    ['syncing_loop', 'Loop', 'The sync arrows coil, each tail drawing up into its tucked head, then fling half a turn round the ring with white tips, overshoot a cell and open their arrowheads where the other arrow began.'],
-    ['syncing_devices', 'Devices', 'A phone\'s glowing screen gathers itself and pops a page out of its top like toast. The page grows toward you at the top of its arc and drops onto the laptop, landing flat with a white flash and a bounce as the screen lights from where it landed; then the laptop tosses the next change back and the phone bobs as it swallows it.', 'syncing files or settings across a person\'s devices, like photos moving from phone to laptop.']],
+    ['syncing_loop', 'Loop', 'The sync icon, two arrows chasing round a ring like inchworms: each gathers its tail, crouches, lunges a quarter turn to the next corner with a white tip and lands just behind the other one, its tail snapping up after it.', 'syncing across devices, a backup running, merging changes, a library refreshing'],
+    ['syncing_devices', 'Devices', 'A phone and a watch: a card drops out of the phone\'s island, a light runs across to the watch, which taps your wrist and shows the same card, and both blink together; then a tap on the watch sends one back.', 'a change reaching your other devices, phone and watch syncing, Handoff, settings syncing']],
   connecting: [['connecting', 'Rise', 'The dot jumps and spreads into an arc where it peaks; a new dot jumps higher, three times, until the Wi-Fi fan is whole.'],
     ['connecting_ripple', 'Ripple', 'A drop of signal falls onto the dot and the splash spreads out as the arcs, one after another.'],
     ['connecting_plug', 'Plug', 'A plug and a socket ease together, click home with sparks, and light runs out along both cables.']],
@@ -3151,10 +3372,11 @@ const OPTIONS = {
     ['done_flip', 'Flip', 'The check turns over like a coin: a bright edge, then the full face, then it turns away again.'],
     ['done_stroke', 'Stroke', 'A bold two-cell check draws itself with a bright pen tip, a light passes over it, then it leaves the way it came.'],
     ['done_spring', 'Spring', 'The bold check drops in, overshoots one cell and settles.']],
-  error: [['error', 'Glitch', 'The sign breaks up like a bad signal: bands of rows tear sideways, a row drops to dim, stray cells flicker, and it snaps back whole.'],
-    ['error_build', 'Build', 'The sign draws itself from the rounded top, the base closes in the middle, the mark pops in white and it gives one shake.'],
-    ['error_pulse', 'Pulse', 'An alarm: the mark flashes and a dim halo flashes around the sign with it, twice, like a siren.'],
-    ['error_shake', 'Shake', 'The quick, settling shake a Mac gives a wrong password, with the mark white-hot.']],
+  error: [['error', 'Crash', 'A little monitor with a calm face hiccups, gasps and jumps on its stand as its eyes snap to crosses and sparks fly, then sits knocked out while a puff of smoke rises off its top. It reboots: a point of light opens into a line, splits into two eyes, and the smile comes back.'],
+    ['error_glitch', 'Glitch', 'The warning sign breaks up like a bad signal: clean slices of it slip sideways against each other and one drops to dim, then it snaps back whole with the mark flaring white, and a smaller aftershock follows.', 'a dropped connection or a stream that broke off, when the signal itself failed'],
+    ['error_tear', 'Tear', 'A page rips from a white nick in its top edge down to the bottom in a quick ragged line, and the two halves pop apart and slip past each other so the torn edges no longer match. They ease back together and a run of white light zips down the seam and mends it.', 'a file that would not open, upload or save, a document or a page that failed to load'],
+    ['error_fizzle', 'Fizzle', 'A little rocket lights up, crouches and lifts, slower each row, until its flame sputters out and it hangs in the air. It drops with a squash, teeters and topples onto its side with a puff of dust while smoke curls from its nozzle, then hops back up onto its fins.', 'a deploy, a publish or a send that did not go out'],
+    ['error_build', 'Build', 'The warning sign draws itself: both sides run down from the apex and the base closes in the middle, then the mark is written, a quick stroke down and a drop of ink that falls from it to make the dot. It holds, rubs out the way it came and draws again.', 'a form or a check that came back with a problem, a validation error to fix']],
   building: [['building', 'Hammer', 'A hammer drives a nail into a plank in two blows with sparks, then the plank slides on.'],
     ['building_bricks', 'Bricks', 'Bricks drop in one by one and squash with a puff of dust into a running bond wall; a light runs along the top course and the wall slides away for the next.'],
     ['building_crane', 'Crane', 'A trolley brings a new floor along the jib, the load swings past and settles, is lowered onto the tower and its windows light up, then the tower sinks a floor as it grows.']],
@@ -3177,11 +3399,11 @@ const OPTIONS = {
 /* every state also comes as a 5x5 micro glyph, its last take */
 const MICRO_IDEAS = {
   thinking: 'Three dots ride a wave, each lifting while the next starts.', reading: 'A teleprompter: the middle line is read word by word, then the page scrolls up a line.',
-  analyzing: 'Three bars of live data step to new values, the one that moved most catching the light.', searching: 'A small lens with its handle circles, the glass catching the light at the top.',
+  analyzing: 'Three bars of live data step to new values, the one that moved most catching the light.', searching: 'Two little eyes look around for something: left, right, a narrowed peer, up into the corners, then a blink before they look again.',
   generating: 'A sparkle grows out of a point and flicks a quarter turn while a small one twinkles in the corner.', writing: 'A caret types a line in words; the line scrolls up and dims and the caret starts the next.',
   syncing: 'Two lights chase each other round the edge, surging and coasting.', connecting: 'Two ends reach for each other, the link closes with a flash, holds, and lets go.',
   uploading: 'A stream of small arrows rises out of a tray.', downloading: 'A stream of small arrows drops into a tray, its walls giving as each lands.',
-  done: 'Three dots dip, fly to the points of a check, and the arms join them; a light runs along it.', error: 'The mark jolts left and right like a refused password and settles, its dot blinking.',
+  done: 'Three dots dip, fly to the points of a check, and the arms join them; a light runs along it.', error: 'A tiny face smiles, gasps, and is zapped: two crossed eyes and a frown. It fades to a point that opens into a line, splits into two eyes, and smiles again.',
   building: 'Bricks drop with weight into a running bond, then the course slides off and the next begins.', debugging: 'A little bug crawls up, stops to twitch its feelers, and carries on as the next comes in.',
   heartbeat: 'A small heart beats big, medium, small on a lub-dub.', scanning: 'Brackets frame the target and a scan line glides between them and back.',
   breathing: 'The glyph breathes in from a point to a soft square and out again, slowly.', calculating: 'The operators turn into one another: plus, times, minus, divide, equals.',
