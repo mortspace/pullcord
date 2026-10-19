@@ -96,6 +96,9 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .pl-group { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.5rem; }
 .pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 272px), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .pl-grid:last-child { margin-bottom: 0; }
+.take { display: grid; gap: 0.5rem; align-content: start; min-width: 0; }
+.take b { font-weight: 600; font-size: 0.84rem; }
+.take span.cap { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
 
 /* Ruling: every dimension of a button derives from the glyph size G (--g). */
 .pill {
@@ -400,7 +403,7 @@ const STATES = [
   frames: [{ s: [[[4,0],[4,5]], [[2,3],[4,5],[6,3]], tray], d: [] }],
   hold(u, H) { H.runner = [4, Math.floor(frac(u * 2.5) * 7)]; } },
 { id: 'done', label: 'Done', hue: 130, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
-  idea: 'A progress bar fills along the bottom, then bends itself into a check: the thing that was loading becomes the thing that is finished. Flash, hold, straighten, empty. In a product it stops on the check.',
+  idea: 'A two-cell check with exact 45 degree arms. It draws itself with a bright pen tip, a light passes over it, then it leaves the way it came. In a product it stops on the check.',
   frames: [{ s: [[[0,4],[1,5],[2,6],[3,7],[4,6],[5,5],[6,4],[7,3],[8,2]]], d: [] }],
   hold(u, H) { if (u < 0.45) H.spark = u / 0.45; } },
 { id: 'error', label: 'Something went wrong', hue: 10, hueName: 'red', group: 'General', period: 3.2,
@@ -505,11 +508,20 @@ const put = (b, cells, ch = 'W') => b.map((r, i) => r.split('').map((v, c) => ce
 const F = (b, ms) => ({ b, ms });
 const seq = (...frames) => ({ frames, period: frames.reduce((a, f) => a + f.ms, 0) / 1000 });
 
-/* done: a progress bar fills along the bottom, then bends into a check. Flash, hold, straighten, empty. */
-const CHECK_COLS = [[5,6],[6,7],[7,8],[5,6],[4,5],[3,4],[2,3],[1,2],[0,1]];
-const bar = k => put(EMPTY, Array.from({ length: k }, (_, x) => [x, 8]), '#');
-const morph = u => put(EMPTY, CHECK_COLS.flatMap((ys, x) => ys.map(y => [x, Math.round(8 + (y - 8) * u)])), '#');
-const CHECK = morph(1);
+/* done: a two-cell check. Both arms are exact 45 degree diagonals, the short arm three steps, the long arm five.
+   Three takes share the same check: Stroke (the default), Seal and Spring. */
+const CHECK_PAIRS = [[[0,5],[1,5]],[[1,6],[2,6]],[[2,7],[3,7]],[[3,6],[4,6]],[[4,5],[5,5]],[[5,4],[6,4]],[[6,3],[7,3]],[[7,2],[8,2]]];
+const strokeTo = (from, to, tip) => put(put(EMPTY, CHECK_PAIRS.slice(from, to).flat(), '#'), tip ? CHECK_PAIRS[to - 1] : [], 'W');
+const CHECK = strokeTo(0, 8, false);
+const glint = c => put(CHECK, CHECK_PAIRS.flat().filter(([x]) => x === c || x === c + 1), 'W');
+const DISC_1 = put(EMPTY, [[4,4]], '#');
+const DISC_3 = bm('.........','.........','.........','...###...','...###...','...###...','.........','.........','.........');
+const DISC_5 = bm('.........','.........','...###...','..#####..','..#####..','..#####..','...###...','.........','.........');
+const DISC_7 = bm('.........','..#####..','.#######.','.#######.','.#######.','.#######.','.#######.','..#####..','.........');
+const DISC = bm('..#####..','.#######.','#########','#########','#########','#########','#########','.#######.','..#####..');
+const KO_PAIRS = [[[1,4],[2,4]],[[2,5],[3,5]],[[3,6],[4,6]],[[4,5],[5,5]],[[5,4],[6,4]],[[6,3],[7,3]]];
+const knock = (b, k) => put(b, KO_PAIRS.slice(0, k).flat(), '.');
+const restAtLongest = sp => (sp.rest = sp.frames.reduce((bi, f, i, a) => f.ms > a[bi].ms ? i : bi, 0), sp);
 /* building: a hammer, head top-left, handle entering the middle of the head and running to the grip bottom-right */
 const HAM_RAISED = bm(
   '...##....',
@@ -664,7 +676,9 @@ function bars(t) {
   return g.map(r => r.join(''));
 }
 const SPRITES = {
-  done: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(bar(k), 60)), F(bar(9), 160), F(morph(0.33), 80), F(morph(0.66), 80), F(hot(CHECK), 120), F(CHECK, 1500), F(morph(0.66), 70), F(morph(0.33), 70), F(bar(9), 120), ...[8,7,6,5,4,3,2,1].map(k => F(bar(k), 40))),
+  done: restAtLongest(seq(...[90,70,55,50,50,55,65,85].map((ms, k) => F(strokeTo(0, k + 1, true), ms)), F(CHECK, 520), ...[-1,0,1,2,3,4,5,6,7,8].map(c => F(glint(c), 40)), F(CHECK, 900), ...[1,2,3,4,5,6,7].map(k => F(strokeTo(k, 8, false), 45)), F(EMPTY, 280))),
+  done_seal: Object.assign(restAtLongest(seq(F(DISC_1, 70), F(DISC_3, 70), F(DISC_5, 70), F(DISC_7, 70), F(DISC, 110), ...KO_PAIRS.map((_, k) => F(knock(DISC, k + 1), 70)), F(hot(knock(DISC, 6)), 110), F(knock(DISC, 6), 1500), F(knock(DISC_7, 6), 70), F(knock(DISC_5, 6), 70), F(DISC_3, 70), F(DISC_1, 70), F(EMPTY, 280))), { glow: 0.45 }),
+  done_spring: restAtLongest(seq(F(shift(CHECK, 0, -5), 60), F(shift(CHECK, 0, -3), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(hot(CHECK), 100), F(CHECK, 1500), F(shift(CHECK, 0, 2), 60), F(shift(CHECK, 0, 5), 60), F(EMPTY, 320))),
   building: seq(F(HAM_RAISED, 620), F(HAM_MID, 90), F(put(HAM_STRIKE, [[3,4],[0,1]]), 100), F(HAM_STRIKE, 220), F(HAM_MID, 110)),
   syncing: seq(...[0,1,2,3,4,5,6,7,8].map(k => F(over(wrapX(ARROW_R, k), wrapX(ARROW_L, -k)), 130))),
   searching: seq(F(LENS, 420), ...[1,2,3,4,5].map(x => F(put(LENS, LENS_COL(x)), 150)), F(LENS, 200), F(put(LENS, [[2,2]]), 180)),
@@ -684,7 +698,7 @@ const SPRITES = {
   calculating: seq(...SIGMA_PATH.map(c => F(put(SIGMA, [c]), 60)), F(put(SIGMA, EQ, '#'), 480), F(SIGMA, 200), F(put(SIGMA, EQ, '#'), 480), F(SIGMA, 200)),
 };
 for (const st of STATES) st.sprite = SPRITES[st.id];
-function restTime(sp) { const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms / 2; } acc += f.ms; } return at / 1000; }
+function restTime(sp) { if (sp.rest != null) { let acc = 0; for (let i = 0; i < sp.rest; i++) acc += sp.frames[i].ms; return (acc + sp.frames[sp.rest].ms / 2) / 1000; } const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms / 2; } acc += f.ms; } return at / 1000; }
 function spriteScene(st, t, c, o) {
   const sp = st.sprite, off = (c.N - ART) / 2; let ms = (t * 1000) % (sp.period * 1000), fr = sp.frames[sp.frames.length - 1];
   for (const f of sp.frames) { if (ms < f.ms) { fr = f; break; } ms -= f.ms; }
@@ -794,7 +808,7 @@ class Matrix {
   paint(o) {
     const light = isLight() && !this.forceDark, rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
-    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1);
+    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1) * ((this.variant === 'pixels' && this.state.sprite && this.state.sprite.glow) || 1);
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
@@ -831,6 +845,8 @@ class Matrix {
 
 /* ---------- page wiring ---------- */
 ensureFilters();
+const TAKES = [['done', 'Stroke', 'The check draws itself with a bright pen tip, a light passes over it, then it leaves the way it came.'], ['done_seal', 'Seal', 'A disc presses in and the check is cut out of it, like the filled system checkmark.'], ['done_spring', 'Spring', 'The finished check drops in, overshoots one cell and settles.']];
+for (const [id] of TAKES.slice(1)) { byId[id] = { ...byId.done, id, sprite: SPRITES[id] }; IOS_MAP[id] = 'green'; }
 const $ = id => document.getElementById(id);
 const stateEls = {};
 const GROUPS = [...new Set(STATES.map(s => s.group))];
@@ -850,6 +866,18 @@ function buildStates() {
       const m = new Matrix(l, st.id, S.grid, { variant: 'pixels' });
       stateEls[st.id] = { pill, m };
     }
+  }
+  const h = document.createElement('p'); h.className = 'pl-group'; h.textContent = 'Done, three takes'; root.appendChild(h);
+  const grid = document.createElement('div'); grid.className = 'pl-grid'; root.appendChild(grid);
+  for (const [id, name, cap] of TAKES) {
+    const wrap = document.createElement('div'); wrap.className = 'take';
+    const pill = document.createElement('div'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
+    const l = document.createElement('span'); l.className = 'loader';
+    const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = 'Done';
+    pill.append(l, lbl);
+    const t = document.createElement('div'); t.innerHTML = `<b>${name}</b> <span class="cap">${cap}</span>`;
+    wrap.append(pill, t); grid.appendChild(wrap);
+    stateEls['take:' + id] = { pill, m: new Matrix(l, id, S.grid, { variant: 'pixels' }) };
   }
 }
 /* ---------- use cases: small product mocks sequenced on the page clock ---------- */
