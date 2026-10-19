@@ -149,15 +149,20 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .di-c, .di-x { position: absolute; inset: 0; opacity: 0; transition: opacity .18s ease; }
 .phone13[data-mode="compact"] .di-c, .phone13[data-mode="done"] .di-c { opacity: 1; transition-delay: .2s; }
 .phone13[data-mode="expanded"] .di-x { opacity: 1; transition-delay: .24s; }
-.di-lead { position: absolute; left: 7px; top: 6.5px; line-height: 0; }
-.di-lead .loader { --s: 24px; }
+/* every glyph in the island is centred on the centre of a rounded end and sized so its blurred outline fits a circle inset from
+   the edge: 12.5 px in the 37 px capsule, 17 px in the expanded island's 44 px corner. That keeps it concentric with the shape */
+.di-lead { position: absolute; left: 0; top: 0; width: 37px; height: 37px; display: flex; align-items: center; justify-content: center; line-height: 0; }
 .di-trail { position: absolute; right: 10px; top: 0; height: 37px; display: flex; align-items: center; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.di-xlead { position: absolute; left: 20px; top: 18px; line-height: 0; }
-.di-xlead .loader { --s: 34px; }
-.di-xtrail { position: absolute; right: 22px; top: 18px; height: 34px; display: flex; align-items: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.di-xlead { position: absolute; left: 0; top: 0; width: 72.4px; height: 72.4px; display: flex; align-items: center; justify-content: center; line-height: 0; }
+.di-xtrail { position: absolute; right: 20px; top: 19.2px; height: 34px; display: flex; align-items: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .di-xcenter { position: absolute; left: 70px; right: 70px; top: 46px; text-align: center; white-space: nowrap; }
 .di-xcenter b { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 .di-xcenter span { display: block; font-size: 13px; color: #98989f; margin-top: 1px; }
+.di-guide { position: absolute; border-radius: 50%; border: 1px dashed rgba(255,255,255,.6); pointer-events: none; opacity: 0; transition: opacity .2s ease; }
+.di-guide.c { left: 6px; top: 6px; width: 25px; height: 25px; }
+.di-guide.x { left: 19.2px; top: 19.2px; width: 34px; height: 34px; }
+.phone13.guides[data-mode="compact"] .di-guide.c, .phone13.guides[data-mode="done"] .di-guide.c, .phone13.guides[data-mode="expanded"] .di-guide.x { opacity: 1; }
+.fit-row { margin-top: 0.8rem; }
 .di-bar { position: absolute; left: 20px; right: 20px; bottom: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.16); overflow: hidden; }
 .di-bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: currentColor; transition: width .6s var(--spring); }
 .inline-l { --s: 1.2em; margin: 0 0.3em; vertical-align: -0.25em; }
@@ -235,10 +240,12 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
         <div class="sb-icons"><span class="sb-sig"><svg width="17" height="11" viewBox="0 0 17 11" aria-hidden="true"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg></span><span class="sb-wifi"><svg width="15" height="11" viewBox="0 0 15 11" aria-hidden="true"><path d="M7.5 2.1c2.2 0 4.2.9 5.7 2.3l1.1-1.2C12.5 1.5 10.1.5 7.5.5S2.5 1.5.7 3.2l1.1 1.2c1.5-1.4 3.5-2.3 5.7-2.3zm0 3.3c1.3 0 2.5.5 3.4 1.3l1.1-1.2C10.8 4.4 9.2 3.8 7.5 3.8s-3.3.6-4.5 1.7l1.1 1.2c.9-.8 2.1-1.3 3.4-1.3zm0 3.2c.5 0 1 .2 1.3.5L7.5 10.5 6.2 9.1c.3-.3.8-.5 1.3-.5z"/></svg></span><svg width="27" height="12" viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="23" height="11" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2"/><path d="M25 4.2v3.6c.8-.3 1.3-1 1.3-1.8S25.8 4.5 25 4.2z" fill-opacity=".45"/></svg></div>
         <div class="di" id="island">
           <div class="di-c"><div class="di-lead" id="diLead"></div><div class="di-trail" id="diTrail"></div></div>
+          <div class="di-guide c" aria-hidden="true"></div><div class="di-guide x" aria-hidden="true"></div>
           <div class="di-x"><div class="di-xlead" id="diXLead"></div><div class="di-xtrail" id="diXTrail"></div><div class="di-xcenter"><b>Uploading photos</b><span id="diXSub"></span></div><div class="di-bar"><i id="diBar"></i></div></div>
         </div>
       </div></div>
-      <p class="cap">A Live Activity, laid out the way the Dynamic Island asks. Compact: the glyph on the leading side and a short count on the trailing side, both hugging the camera and inset to stay concentric with the island. Expanded: the glyph, the count, a title and progress arranged around the camera. It collapses after the check.</p>
+      <div class="fit-row"><button type="button" class="ui-switch" id="fitSwitch" role="switch" aria-checked="false"><span>Show fit circles</span><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button></div>
+      <p class="cap">A Live Activity, laid out the way the Dynamic Island asks. Compact: the glyph on the leading side and a short count on the trailing side, both hugging the camera and inset to stay concentric with the island. Expanded: the glyph, the count, a title and progress arranged around the camera. Each glyph is centred on a rounded end and sized so its blurred outline, across every frame, fits a circle inset from the edge, so it sits concentric with the island. It collapses after the check.</p>
     </div>
 
     <div class="uc">
@@ -1001,6 +1008,19 @@ const phase = (now, period) => ((now - T0) / 1000) % period;
   } });
 })();
 
+/* optical size: union every frame's lit cells, blur them, and measure how far the blurred shape reaches from the centre, in cells.
+   Sizing a glyph from this lets it fit a circle exactly, the way icons sit concentric in the Dynamic Island */
+const OPTICAL = {};
+function opticalRadius(id) {
+  if (OPTICAL[id] != null) return OPTICAL[id];
+  const sp = byId[id].sprite, N = sp.frames[0].b.length, SS = 8, W = N * SS, m = new Float32Array(W * W);
+  for (const b of [...sp.frames.map(f => f.b), ...(sp.still ? [sp.still] : [])]) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (b[y][x] === '#' || b[y][x] === 'W') for (let v = 0; v < SS; v++) for (let u = 0; u < SS; u++) m[(y * SS + v) * W + x * SS + u] = 1;
+  const r = Math.round(0.35 * SS), box = (src, horiz) => { const out = new Float32Array(W * W); for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { let s = 0; for (let k = -r; k <= r; k++) { const xx = horiz ? x + k : x, yy = horiz ? y : y + k; if (xx >= 0 && xx < W && yy >= 0 && yy < W) s += src[yy * W + xx]; } out[y * W + x] = s / (2 * r + 1); } return out; };
+  const b = box(box(box(box(m, true), false), true), false), c = W / 2; let R = 0;
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) if (b[y * W + x] >= 0.3) R = Math.max(R, Math.hypot(x + 0.5 - c, y + 0.5 - c) / SS);
+  return (OPTICAL[id] = R);
+}
+const fitCircle = (m, r) => m.el.style.setProperty('--s', (S.grid * r / opticalRadius(m.stateId)).toFixed(2) + 'px');
 /* dynamic island: a Live Activity in its presentations. Idle is the bare island. Compact puts the glyph on the leading side
    and a short count on the trailing side, both against the camera. Expanded adds the count in words, a title and progress */
 (() => {
@@ -1009,6 +1029,7 @@ const phase = (now, period) => ((now - T0) / 1000) % period;
   const trail = $('diTrail'), xtrail = $('diXTrail'), bar = $('diBar'), xsub = $('diXSub');
   const fit = () => { const w = wrap.clientWidth, k = Math.min(1, w / 393); phone.style.transform = `scale(${k})`; phone.style.marginLeft = Math.max(0, (w - 393 * k) / 2) + 'px'; wrap.style.height = 150 * k + 'px'; };
   new ResizeObserver(fit).observe(wrap); fit();
+  $('fitSwitch').addEventListener('click', e => { const on = phone.classList.toggle('guides'); e.currentTarget.setAttribute('aria-checked', on); });
   const STEPS = [[0, 'idle'], [1.2, 'compact', 2], [2.6, 'compact', 3], [3.9, 'expanded', 3], [5.2, 'expanded', 4], [6.5, 'compact', 4], [7.5, 'compact', 5], [8.3, 'done'], [9.8, 'idle']];
   let shown = '';
   UC.push({ tick(now) {
@@ -1016,8 +1037,8 @@ const phase = (now, period) => ((now - T0) / 1000) % period;
     const [, mode, n] = cur, key = mode + (n || '');
     if (key !== shown) {
       shown = key; phone.dataset.mode = mode;
-      if (mode === 'done') { lead.show('done', true); trail.textContent = 'Done'; }
-      else if (mode !== 'idle') { lead.show('uploading'); leadX.show('uploading'); trail.textContent = n + '/5'; xtrail.textContent = n + ' of 5'; bar.style.width = n * 20 + '%'; xsub.textContent = n >= 4 ? 'About 30 s left' : 'About 1 min left'; }
+      if (mode === 'done') { lead.show('done', true); fitCircle(lead, 12.5); trail.textContent = 'Done'; }
+      else if (mode !== 'idle') { lead.show('uploading'); leadX.show('uploading'); fitCircle(lead, 12.5); fitCircle(leadX, 17); trail.textContent = n + '/5'; xtrail.textContent = n + ' of 5'; bar.style.width = n * 20 + '%'; xsub.textContent = n >= 4 ? 'About 30 s left' : 'About 1 min left'; }
     }
     /* text on the black island takes a lighter tint than the glyph, the way system tints brighten on dark */
     const src = mode === 'done' ? lead : leadX, tint = src.accent || `hsl(${src.hue} 100% 68%)`;
