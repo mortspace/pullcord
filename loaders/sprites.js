@@ -283,12 +283,12 @@ const lerp2 = (a, b, p) => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p];
 
 /* done, Bend take: progress becomes the check. A dim bar fills from the left like a progress bar; full, it bends: the
    left part dips to make the vertex and the right end swings up to the tip, overshooting a cell, and settles as the
-   check. In a loop it straightens back into an empty bar. */
+   check. In a loop it straightens back into the bar, which drains away to the left and fills again. */
 const BAR_Y = 6, SPINE_FLAT = [[0, BAR_Y], [3.5, BAR_Y], [12, BAR_Y]], SPINE_CHECK = [[0.5, 7], [3.5, 10], [11.5, 2]];
 const barAt = fill => stamp(Array.from({ length: N }, (_, x) => [x, BAR_Y, x < fill ? '#' : ':']));
 const bendAt = p => stamp(pathCells(SPINE_FLAT.map((a, i) => lerp2(a, SPINE_CHECK[i], p))).map(([x, y]) => [x, y, '#']));
 const BEND = [F(barAt(0), 260), ...[2, 4, 7, 10, 13].map((k, i) => F(barAt(k), [150, 120, 110, 120, 160][i])), F(bendAt(0.3), 70), F(bendAt(0.65), 60), F(bendAt(1.15), 70), F(CHECK, 90),
-  ...GLINT_RUN(), F(CHECK, 1100), F(bendAt(0.6), 70), F(bendAt(0.25), 70), F(barAt(13), 90)];
+  ...GLINT_RUN(), F(CHECK, 1100), F(bendAt(0.6), 70), F(bendAt(0.25), 70), F(barAt(13), 90), ...[9, 5, 2].map(k => F(barAt(k), 55))];
 
 /* done, Skate take: a dot rides the check into being. It drops onto the end of the short arm, slides down gathering
    speed and leaving the stroke behind it, squashes flat in the vertex, then rides up the long arm slowing as it climbs,
@@ -1447,12 +1447,12 @@ const OPTS_SP3 = {
 };
 
 /* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
-   cells that nearly touch, each with a soft halo and a gradient from light at the top left to deep at the bottom right.
+   cells with a hairline seam, each flat pastel with a faint gradient and a tight, faint halo.
    The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
    renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
-const GL_PASTEL = { peach: '#FFBE8A', apricot: '#FFA06C', salmon: '#FF7F8C', pink: '#FF93C3', lilac: '#BFA2FF', sky: '#7CC6FF', aqua: '#68DDD6', mint: '#86EDB0', butter: '#FFDB74' };
+const GL_PASTEL = { peach: '#FFC394', apricot: '#FFAA78', salmon: '#F7818F', pink: '#F59AC4', lilac: '#C6B2FF', sky: '#8DD0FF', aqua: '#7EDFD8', mint: '#97E9BC', butter: '#FFDC82' };
 const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
-const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.4, scale: 0.78, cycle: 7.5 }, opts);
+const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.1, scale: 0.82, cycle: 7.5 }, opts);
 const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
 const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
 
@@ -1539,4 +1539,26 @@ const SPRITES = {
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
 Object.assign(SPRITES, GLOW_SPRITES);
+
+/* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
+   such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
+   a shine, a white line that sweeps diagonally across its lit cells while it rests, so a pause reads as a breath and
+   never as the animation stopping and starting again. Glow sprites crossfade and need none of this. ---------- */
+const HOLD_MAX = 620, HOLD_CALM = 1000, BLANK_MAX = 90, SHEEN_MIN = 400;
+const sameBitmap = (a, b) => a.length === b.length && a.every((r, i) => r === b[i]);
+function polishLoop(id, sp) {
+  const fr = sp.frames, n = fr.length, cap = id.startsWith('breathing') ? HOLD_CALM : HOLD_MAX;
+  for (const f of fr) if (!/[:#W]/.test(f.b.join(''))) f.ms = Math.min(f.ms, BLANK_MAX);
+  const start = fr.findIndex((f, i) => !sameBitmap(fr[(i - 1 + n) % n].b, f.b));
+  if (start >= 0) for (let k = 0; k < n;) {
+    const i0 = (start + k) % n; let len = 1; while (len < n && sameBitmap(fr[(i0 + len) % n].b, fr[i0].b)) len++;
+    const run = Array.from({ length: len }, (_, j) => (i0 + j) % n), total = run.reduce((a, i) => a + fr[i].ms, 0);
+    if (total > cap) for (const i of run) fr[i].ms = Math.max(30, Math.round(fr[i].ms * cap / total));
+    const held = run.reduce((a, i) => a + fr[i].ms, 0);
+    if (held >= SHEEN_MIN && /#/.test(fr[i0].b.join(''))) { let off = 0; for (const i of run) { fr[i].sheen = [off, held]; off += fr[i].ms; } }
+    k += len;
+  }
+  sp.period = fr.reduce((a, f) => a + f.ms, 0) / 1000;
+}
+for (const [id, sp] of Object.entries(SPRITES)) if (!sp.colors) polishLoop(id, sp);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };

@@ -293,7 +293,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .toast.on { transform: none; opacity: 1; }
 .canvas-pill { height: 132px; display: grid; place-items: start center; padding-top: 18px; background: color-mix(in srgb, var(--ink) 4%, var(--bg)); }
 .spill { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1.25rem 0.8rem 1rem; border-radius: 22px; background: #000; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.25); transition: width .4s cubic-bezier(.32,.72,0,1); }
-.spill .loader { --s: 24px; }
+.spill .loader { --s: 22px; }
 .spill-t { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .spill-t small { font-size: 0.74rem; color: rgba(255,255,255,.55); white-space: nowrap; }
 .spill-t b { font-size: 1rem; font-weight: 600; white-space: nowrap; transition: opacity .2s ease; }
@@ -458,12 +458,13 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
   <section>
     <h2>Legibility</h2>
-    <p>These have to read for someone who has never played a game. Five rules keep them that way.</p>
+    <p>These have to read for someone who has never played a game. Six rules keep them that way.</p>
     <table class="props">
       <tbody>
         <tr><td class="k">Familiar symbol</td><td>Each state uses the symbol people already know from their phone: a magnifier, a speech bubble with dots, the Wi-Fi fan, an arrow into a tray.</td></tr>
         <tr><td class="k">Shape first</td><td>The icon reads when it is frozen. Motion adds meaning, it never carries it alone. Things that travel, like the arrow streams, the circling magnifier and the crawling ant, are whole in the frozen pose, and no loop leaves the frame empty.</td></tr>
         <tr><td class="k">One gesture, eased</td><td>One idea moves at a time: a dot, a cursor, or a wave across a row that reads as one gesture. Motion starts slow, moves quickly through the middle and settles, sometimes a cell past its mark and back. Pixels cannot move by fractions, so the easing lives in how long each step holds.</td></tr>
+        <tr><td class="k">Never stops</td><td>Every loader is one continuous loop. No pose holds longer than about half a second, a blank frame is gone in a blink, and while a pose rests a shine sweeps across it, so a pause reads as a breath and never as the animation stopping and starting again.</td></tr>
         <tr><td class="k">White is an accent</td><td>White marks the moving part, a few cells at most in any frame. A whole shape never flashes white.</td></tr>
         <tr><td class="k">Quiet grid</td><td>The unlit cells sit at 10% and the glow at 0.4, so the outline is sharp and the grid stays texture.</td></tr>
       </tbody>
@@ -983,12 +984,12 @@ const lerp2 = (a, b, p) => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p];
 
 /* done, Bend take: progress becomes the check. A dim bar fills from the left like a progress bar; full, it bends: the
    left part dips to make the vertex and the right end swings up to the tip, overshooting a cell, and settles as the
-   check. In a loop it straightens back into an empty bar. */
+   check. In a loop it straightens back into the bar, which drains away to the left and fills again. */
 const BAR_Y = 6, SPINE_FLAT = [[0, BAR_Y], [3.5, BAR_Y], [12, BAR_Y]], SPINE_CHECK = [[0.5, 7], [3.5, 10], [11.5, 2]];
 const barAt = fill => stamp(Array.from({ length: N }, (_, x) => [x, BAR_Y, x < fill ? '#' : ':']));
 const bendAt = p => stamp(pathCells(SPINE_FLAT.map((a, i) => lerp2(a, SPINE_CHECK[i], p))).map(([x, y]) => [x, y, '#']));
 const BEND = [F(barAt(0), 260), ...[2, 4, 7, 10, 13].map((k, i) => F(barAt(k), [150, 120, 110, 120, 160][i])), F(bendAt(0.3), 70), F(bendAt(0.65), 60), F(bendAt(1.15), 70), F(CHECK, 90),
-  ...GLINT_RUN(), F(CHECK, 1100), F(bendAt(0.6), 70), F(bendAt(0.25), 70), F(barAt(13), 90)];
+  ...GLINT_RUN(), F(CHECK, 1100), F(bendAt(0.6), 70), F(bendAt(0.25), 70), F(barAt(13), 90), ...[9, 5, 2].map(k => F(barAt(k), 55))];
 
 /* done, Skate take: a dot rides the check into being. It drops onto the end of the short arm, slides down gathering
    speed and leaving the stroke behind it, squashes flat in the vertex, then rides up the long arm slowing as it climbs,
@@ -2147,12 +2148,12 @@ const OPTS_SP3 = {
 };
 
 /* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
-   cells that nearly touch, each with a soft halo and a gradient from light at the top left to deep at the bottom right.
+   cells with a hairline seam, each flat pastel with a faint gradient and a tight, faint halo.
    The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
    renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
-const GL_PASTEL = { peach: '#FFBE8A', apricot: '#FFA06C', salmon: '#FF7F8C', pink: '#FF93C3', lilac: '#BFA2FF', sky: '#7CC6FF', aqua: '#68DDD6', mint: '#86EDB0', butter: '#FFDB74' };
+const GL_PASTEL = { peach: '#FFC394', apricot: '#FFAA78', salmon: '#F7818F', pink: '#F59AC4', lilac: '#C6B2FF', sky: '#8DD0FF', aqua: '#7EDFD8', mint: '#97E9BC', butter: '#FFDC82' };
 const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
-const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.4, scale: 0.78, cycle: 7.5 }, opts);
+const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.1, scale: 0.82, cycle: 7.5 }, opts);
 const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
 const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
 
@@ -2239,6 +2240,28 @@ const SPRITES = {
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
 Object.assign(SPRITES, GLOW_SPRITES);
+
+/* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
+   such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
+   a shine, a white line that sweeps diagonally across its lit cells while it rests, so a pause reads as a breath and
+   never as the animation stopping and starting again. Glow sprites crossfade and need none of this. ---------- */
+const HOLD_MAX = 620, HOLD_CALM = 1000, BLANK_MAX = 90, SHEEN_MIN = 400;
+const sameBitmap = (a, b) => a.length === b.length && a.every((r, i) => r === b[i]);
+function polishLoop(id, sp) {
+  const fr = sp.frames, n = fr.length, cap = id.startsWith('breathing') ? HOLD_CALM : HOLD_MAX;
+  for (const f of fr) if (!/[:#W]/.test(f.b.join(''))) f.ms = Math.min(f.ms, BLANK_MAX);
+  const start = fr.findIndex((f, i) => !sameBitmap(fr[(i - 1 + n) % n].b, f.b));
+  if (start >= 0) for (let k = 0; k < n;) {
+    const i0 = (start + k) % n; let len = 1; while (len < n && sameBitmap(fr[(i0 + len) % n].b, fr[i0].b)) len++;
+    const run = Array.from({ length: len }, (_, j) => (i0 + j) % n), total = run.reduce((a, i) => a + fr[i].ms, 0);
+    if (total > cap) for (const i of run) fr[i].ms = Math.max(30, Math.round(fr[i].ms * cap / total));
+    const held = run.reduce((a, i) => a + fr[i].ms, 0);
+    if (held >= SHEEN_MIN && /#/.test(fr[i0].b.join(''))) { let off = 0; for (const i of run) { fr[i].sheen = [off, held]; off += fr[i].ms; } }
+    k += len;
+  }
+  sp.period = fr.reduce((a, f) => a + f.ms, 0) / 1000;
+}
+for (const [id, sp] of Object.entries(SPRITES)) if (!sp.colors) polishLoop(id, sp);
 /* spinners: loaders with no meaning, for any wait. They take a warm neutral, the way a system spinner takes the text colour */
 const SPINNERS = [
   ['spinner_ring', 'Ring', 'A comet runs a loop-the-loop on a dim ring: it creeps over the top, falls and whips round the bottom with its tail stretched long, and coasts back up.'],
@@ -2290,6 +2313,13 @@ function spriteScene(st, t, c, o) {
   const sp = st.sprite; let ms = (t * 1000) % (sp.period * 1000), fr = sp.frames[sp.frames.length - 1];
   for (const f of sp.frames) { if (ms < f.ms) { fr = f; break; } ms -= f.ms; }
   bitmapPoints(fr.b, c, o);
+  /* while a pose rests, a two-cell white band sweeps across its lit cells on the diagonal, easing in and out */
+  if (fr.sheen && !o.noSheen) {
+    const n = fr.b.length, off = (c.N - n) / 2;
+    if (!fr.sheenSpan) { let lo = 99, hi = -1; for (let r = 0; r < n; r++) for (let x = 0; x < n; x++) if (fr.b[r][x] === '#') { lo = Math.min(lo, x + r); hi = Math.max(hi, x + r); } fr.sheenSpan = [lo, hi]; }
+    const [lo, hi] = fr.sheenSpan, u = clamp((fr.sheen[0] + ms) / fr.sheen[1], 0, 1), e = u * u * (3 - 2 * u), d = Math.round(lo - 2 + e * (hi - lo + 3));
+    for (let r = 0; r < n; r++) for (const col of [d - r, d - r + 1]) if (col >= 0 && col < n && fr.b[r][col] === '#') o.points.push({ x: col + off - c.R, y: r + off - c.R, i: 1.3 });
+  }
 }
 for (const st of STATES) { st.still = st.period * (FORM + 0.02); st.draw = function (t, c, o) { assemble(this, t, c, o); }; }
 const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
@@ -2361,7 +2391,7 @@ let filterReady = false;
 function ensureFilters() {
   if (filterReady) return; filterReady = true;
   const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', 0); svg.setAttribute('height', 0); svg.style.position = 'absolute';
-  svg.innerHTML = '<defs><filter id="pxbloom" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.6"/></filter><filter id="pxedge" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.1"/></filter><filter id="pxbloomS" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="1.05"/></filter></defs>';
+  svg.innerHTML = '<defs><filter id="pxbloom" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.6"/></filter><filter id="pxedge" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.1"/></filter><filter id="pxbloomS" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.75"/></filter></defs>';
   document.body.appendChild(svg);
 }
 const live = [];
@@ -2369,7 +2399,7 @@ const io = new IntersectionObserver(es => { for (const e of es) { const m = live
 
 class Matrix {
   constructor(el, stateId, N, opts = {}) {
-    this.el = el; this.stateId = stateId; this.N = N; this.baseN = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings'; this.forceDark = !!opts.forceDark; this.ink = !!opts.ink; this.quiet = !!opts.quiet; this.exact = !!opts.exact; this.frozen = false; this.settling = false;
+    this.el = el; this.stateId = stateId; this.N = N; this.baseN = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings'; this.forceDark = !!opts.forceDark; this.ink = !!opts.ink; this.quiet = !!opts.quiet; this.exact = !!opts.exact; this.frozen = false; this.t0 = null;
     this.hue = null; this.build();
     if (!this.static) { io.observe(el); live.push(this); }
   }
@@ -2378,7 +2408,7 @@ class Matrix {
     /* a glow sprite brings its own coarse grid, cells that nearly touch, and a margin for its halo */
     const sp = this.variant === 'pixels' && this.state.sprite, glowy = !!(sp && sp.colors);
     if (sp && sp.N) this.N = sp.N;
-    const N = this.N, gap = glowy ? (sp.gap != null ? sp.gap : 0.16) : GAP, cw = PITCH - gap, U = PITCH * N - gap, pad = glowy ? U * (1 / (sp.scale || 1) - 1) / 2 : 0;
+    const N = this.N, gap = glowy ? (sp.gap != null ? sp.gap : 0.08) : GAP, cw = PITCH - gap, U = PITCH * N - gap, pad = glowy ? U * (1 / (sp.scale || 1) - 1) / 2 : 0;
     this.el.innerHTML = '';
     const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `${-pad} ${-pad} ${U + 2 * pad} ${U + 2 * pad}`); svg.setAttribute('aria-hidden', 'true');
     const gBloom = document.createElementNS(NS, 'g'); gBloom.setAttribute('filter', glowy ? 'url(#pxbloomS)' : 'url(#pxbloom)');
@@ -2387,7 +2417,7 @@ class Matrix {
     const gEdge = document.createElementNS(NS, 'g');
     this.rects = []; this.brects = [];
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const [g, arr] of [[gBloom, this.brects], [gMain, this.rects]]) {
-      const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x * PITCH); r.setAttribute('y', y * PITCH); r.setAttribute('width', glowy ? cw : CELL); r.setAttribute('height', glowy ? cw : CELL); r.setAttribute('rx', glowy ? 0.34 : 0.3); g.appendChild(r); arr.push(r);
+      const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x * PITCH); r.setAttribute('y', y * PITCH); r.setAttribute('width', glowy ? cw : CELL); r.setAttribute('height', glowy ? cw : CELL); r.setAttribute('rx', glowy ? 0.22 : 0.3); g.appendChild(r); arr.push(r);
     }
     svg.append(gBloom, gMain, gEdgeGlow, gEdge); this.el.appendChild(svg);
     this.gBloom = gBloom; this.gEdge = gEdge; this.gEdgeGlow = gEdgeGlow; this.linePool = []; this.glinePool = [];
@@ -2406,7 +2436,7 @@ class Matrix {
     if (this.ink) this.inkColor = getComputedStyle(this.el).color;
   }
   get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
-  set(stateId, N) { this.stateId = stateId; this.N = N; this.frozen = false; this.settling = false; this.build(); }
+  set(stateId, N) { this.stateId = stateId; this.N = N; this.frozen = false; this.t0 = null; this.build(); }
   get period() { return (this.variant === 'pixels' && this.state.sprite) ? this.state.sprite.period : this.state.period; }
   scene(t) {
     const o = { points: [], lines: [] };
@@ -2420,7 +2450,9 @@ class Matrix {
   }
   temporal(dt) {
     const sp = this.variant === 'pixels' && this.state.sprite, decay = S.decay * ((sp && sp.trail) || this.state.decayMul || 1), kd = Math.exp(-dt / decay), kr = 1 - Math.exp(-dt / (S.rise * ((sp && sp.rise) || 1))), buf = this.buf, tg = this.tg;
-    for (let i = 0; i < buf.length; i++) { let v = buf[i] * kd; const t = tg[i]; if (t > v) v += (t - v) * kr; buf[i] = v; }
+    /* a cell rises toward its target or cools toward it, never both at once, so a held cell reaches its full tone, a white
+       accent shows as white however short the trail, and a cell that goes dark leaves a trail behind it */
+    for (let i = 0; i < buf.length; i++) { const t = tg[i], b = buf[i]; buf[i] = t > b ? b + (t - b) * kr : t + (b - t) * kd; }
   }
   /* glow sprites: the colour drifts through the sprite's palette, each cell lighter at the top left and deeper at the
      bottom right, alpha follows the cell's light smoothly with no quantising, and the halo takes the cell's colour */
@@ -2430,18 +2462,16 @@ class Matrix {
     /* drift round the colour wheel, not through grey: blend hue, saturation and lightness */
     const A = rgbHsl(pal[i0 % pal.length]), B = rgbHsl(pal[(i0 + 1) % pal.length]); let dh = B[0] - A[0]; if (dh > 180) dh -= 360; if (dh < -180) dh += 360;
     const base = hslRgb((A[0] + dh * sm + 360) % 360, A[1] + (B[1] - A[1]) * sm, A[2] + (B[2] - A[2]) * sm);
-    const top = mixRgb(base, [255, 255, 255], light ? 0.06 : 0.16), bot = mixRgb(base, [0, 0, 0], light ? 0.16 : 0.1);
-    const deep = c => { const [hh, ss, ll] = rgbHsl(c); return hslRgb(hh, Math.min(100, ss + 6), Math.max(30, ll - 14)); };
-    const bedA = this.quiet ? 0 : light ? 0.05 : 0.035, glowK = this.ink ? 0 : S.glow * (light ? 0.6 : 1.1) * (sp.glow || 2.4);
+    const top = mixRgb(base, [255, 255, 255], light ? 0.03 : 0.07), bot = mixRgb(base, [0, 0, 0], light ? 0.08 : 0.05);
+    const bedA = this.quiet ? 0 : light ? 0.04 : 0.025, glowK = this.ink ? 0 : S.glow * (light ? 0.55 : 1) * (sp.glow || 2.1);
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66;
       const x = i % N, y = (i / N) | 0; let c = mixRgb(top, bot, (x + y) / Math.max(1, 2 * (N - 1)));
-      /* a half-lit cell is a deeper shade of the colour rather than a fainter one, so it never goes muddy */
-      if (v < 0.6) c = mixRgb(deep(c), c, clamp((v - 0.2) / 0.4, 0, 1));
-      if (v > 0.66) c = mixRgb(c, [255, 255, 255], Math.min(1, (v - 0.66) / 0.64) * (light ? 0.25 : 0.42));
-      const a = clamp(v < 0.6 ? 0.25 + v * 1.25 : v / 0.66, 0, 1) * (v < 0.04 ? 0 : 1), fill = `rgb(${c[0] | 0} ${c[1] | 0} ${c[2] | 0})`;
+      /* a half-lit cell is the same colour, dimmed, the way a pixel on a screen dims */
+      if (v > 0.66) c = mixRgb(c, [255, 255, 255], Math.min(1, (v - 0.66) / 0.64) * (light ? 0.2 : 0.35));
+      const a = clamp(v < 0.6 ? v * 1.15 : v / 0.66, 0, 1) * (v < 0.04 ? 0 : 1), fill = `rgb(${c[0] | 0} ${c[1] | 0} ${c[2] | 0})`;
       this.rects[i].setAttribute('fill', fill); this.rects[i].setAttribute('opacity', Math.max(a, bedA).toFixed(3));
-      this.brects[i].setAttribute('fill', fill); this.brects[i].setAttribute('opacity', (a * glowK).toFixed(3));
+      this.brects[i].setAttribute('fill', fill); this.brects[i].setAttribute('opacity', (Math.max(0, a - 0.35) / 0.65 * glowK).toFixed(3));
     }
   }
   paint(o) {
@@ -2464,21 +2494,15 @@ class Matrix {
       l.setAttribute('opacity', a); g.setAttribute('opacity', (L.i * glow * 0.9).toFixed(3));
     }
   }
-  /* switch to a state. settle plays it from the start once and holds its rest pose, the way a product shows done:
-     the check arrives, then stays */
-  show(stateId, settle = false) {
+  /* switch to a state; it starts from the beginning of its loop and keeps looping, so done arrives and stays alive */
+  show(stateId) {
     if (this.stateId !== stateId) { this.set(stateId, this.baseN); this.el.hidden = false; }
-    if (settle) { if (!this.settling && !this.frozen) { this.settling = true; this.t0 = null; } }
-    else { this.settling = false; this.frozen = false; }
   }
   tick(now) {
     if (!this.visible || this.frozen) return;
     const dt = this.last ? Math.min(50, now - this.last) : 16; this.last = now;
-    let t = (now / 1000) % this.period; if (S.step > 0) t = Math.floor(t / (S.step / 1000)) * (S.step / 1000);
-    if (this.settling) {
-      const sp = this.variant === 'pixels' && this.state.sprite; if (this.t0 == null) this.t0 = now;
-      t = (now - this.t0) / 1000; if (!sp || t >= restTime(sp)) { this.settling = false; this.frozen = true; this.rest(); return; }
-    }
+    if (this.t0 == null) this.t0 = now;
+    let t = ((now - this.t0) / 1000) % this.period; if (S.step > 0) t = Math.floor(t / (S.step / 1000)) * (S.step / 1000);
     const o = this.scene(t); this.raster(o); this.temporal(dt); this.paint(o);
   }
   /* the frozen pose, drawn clean with no trail: the sprite's still pose if it has one, otherwise its rest frame */
@@ -2571,7 +2595,7 @@ const PICKS_KEY = 'pixel-loader-picks';
 S.picks = (() => { try { return JSON.parse(localStorage.getItem(PICKS_KEY)) || {}; } catch (e) { return {}; } })();
 function savePicks() { try { localStorage.setItem(PICKS_KEY, JSON.stringify(S.picks)); } catch (e) {} }
 function refreshPicked(base) {
-  for (const m of live) if (!m.exact && m.stateId === base) { const held = m.frozen || m.settling; m.set(base, m.baseN); if (held) { m.frozen = true; m.rest(); } }
+  for (const m of live) if (!m.exact && m.stateId === base) m.set(base, m.baseN);
 }
 /* the logo is itself a loader */
 const BRAND_GLYPH = 'spinner_blocks';
@@ -2706,7 +2730,7 @@ const phase = (now, period) => ((now - T0) / 1000) % period;
       const d = steps[i][2], start = acc; acc += d;
       const st = t < start ? 'pending' : t < start + d ? 'active' : 'done';
       row.r.className = 'step ' + st;
-      if (st === 'active') row.m.show(row.id); else if (st === 'done') row.m.show('done', true);
+      if (st === 'active') row.m.show(row.id); else if (st === 'done') row.m.show('done');
     });
     if (t >= total) { const n = Math.min(words.length, Math.floor((t - total) / 2.6 * words.length)); answer = words.slice(0, n).join(' '); }
     if ($('answer').textContent !== answer) $('answer').textContent = answer;
@@ -2774,7 +2798,7 @@ const ACTIVITIES = [
     const act = ACTIVITIES[cur], [, mode, p] = P.T[k];
     phone.dataset.mode = mode === 'end' ? 'compact' : mode;
     if (mode === 'minimal') { lead.show(act.two[0]); fitCircle(lead, 12.5); bub.show(act.two[1]); fitCircle(bub, 12.5); }
-    else if (mode === 'end') { const [g, v] = act.end; lead.show(g, g === 'done'); fitCircle(lead, 12.5); trail.textContent = v; trail.style.color = tintOf(lead); }
+    else if (mode === 'end') { const [g, v] = act.end; lead.show(g); fitCircle(lead, 12.5); trail.textContent = v; trail.style.color = tintOf(lead); }
     else if (mode === 'compact') { lead.show(p.glyph || act.glyph); fitCircle(lead, 12.5); trail.textContent = p.v; trail.style.color = tintOf(lead); }
     else if (mode === 'expanded') {
       leadX.show(p.glyph || act.glyph); fitCircle(leadX, 17); const tint = tintOf(leadX);
@@ -2794,7 +2818,7 @@ const stateButton = (btn, labels, busyGlyph, offset) => {
   btn.addEventListener('click', () => { if (mode === 'idle') { mode = 'busy'; at = performance.now(); } });
   UC.push({ tick(now) {
     if (mode === 'idle' && now - lastAuto > 7000) { mode = 'busy'; at = now; }
-    if (mode === 'busy') { if (g.hidden) { m.show(busyGlyph); g.hidden = false; lbl.textContent = labels[1]; } if (now - at > 1900) { mode = 'done'; at = now; m.show('done', true); lbl.textContent = labels[2]; } }
+    if (mode === 'busy') { if (g.hidden) { m.show(busyGlyph); g.hidden = false; lbl.textContent = labels[1]; } if (now - at > 1900) { mode = 'done'; at = now; m.show('done'); lbl.textContent = labels[2]; } }
     else if (mode === 'done' && now - at > 1500) { mode = 'idle'; lastAuto = now; g.hidden = true; lbl.textContent = labels[0]; }
   } });
 };
@@ -2816,7 +2840,7 @@ stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connect
     const t = phase(now, 7.5);
     if (t < 0.6) toast.classList.remove('on');
     else if (t < 3.8) { toast.classList.add('on'); m.show('syncing'); lbl.textContent = 'Syncing 3 files'; }
-    else if (t < 5.6) { toast.classList.add('on'); m.show('done', true); lbl.textContent = 'All files synced'; }
+    else if (t < 5.6) { toast.classList.add('on'); m.show('done'); lbl.textContent = 'All files synced'; }
     else toast.classList.remove('on');
   } });
 })();
@@ -2826,8 +2850,8 @@ stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connect
   const root = $('deploys'), rows = [['main', '2 min ago', 'building', 'Building'], ['staging', '1 h ago', 'done', 'Deployed'], ['feat/pixels', '3 h ago', 'error', 'Failed']].map(([br, when, st, label]) => {
     const r = mk('div', 'row-d'); r.innerHTML = `<div><code>${br}</code><span class="when">${when}</span></div>`; const s = mk('span', 'st'); const m = glyph(s, st); const l = mk('span', '', label); s.appendChild(l); r.appendChild(s); root.appendChild(r); return { m, l, st };
   });
-  rows[1].m.show('done', true);
-  UC.push({ tick(now) { const t = phase(now, 7.5); if (t < 4.6) { rows[0].m.show('building'); rows[0].l.textContent = 'Building'; } else { rows[0].m.show('done', true); rows[0].l.textContent = 'Deployed'; } } });
+  rows[1].m.show('done');
+  UC.push({ tick(now) { const t = phase(now, 7.5); if (t < 4.6) { rows[0].m.show('building'); rows[0].l.textContent = 'Building'; } else { rows[0].m.show('done'); rows[0].l.textContent = 'Deployed'; } } });
 })();
 
 /* terminal */
@@ -2835,12 +2859,12 @@ stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connect
   const term = $('term'); const cmd = '$ pnpm build'; let last = '';
   const l1 = mk('div'), l2 = mk('div'), l3 = mk('div'); term.append(l1, l2, l3);
   const m2 = glyph(l2, 'building', { forceDark: true }); const t2 = mk('span'); l2.appendChild(t2); l2.hidden = true;
-  const m3 = glyph(l3, 'done', { forceDark: true }); const t3 = mk('span'); l3.appendChild(t3); l3.hidden = true; m3.show('done', true);
+  const m3 = glyph(l3, 'done', { forceDark: true }); const t3 = mk('span'); l3.appendChild(t3); l3.hidden = true; m3.show('done');
   UC.push({ tick(now) {
     const t = phase(now, 9.5); let key;
     if (t < 1.3) { const n = Math.floor(t / 1.2 * cmd.length); key = 'type' + n; if (key !== last) { l1.innerHTML = cmd.slice(0, n) + '<span class="cur"></span>'; l2.hidden = true; l3.hidden = true; } }
     else if (t < 4.8) { const mods = Math.min(128, Math.floor((t - 1.3) / 3.2 * 128)); key = 'build' + mods; if (key !== last) { l1.textContent = cmd; l2.hidden = false; m2.show('building'); t2.innerHTML = `Compiling <span class="dim">${mods} / 128 modules</span>`; } }
-    else if (t < 8.6) { key = 'done'; if (key !== last) { l2.hidden = false; m2.show('done', true); t2.innerHTML = 'Compiled <span class="dim">128 modules</span>'; l3.hidden = false; t3.innerHTML = 'Built in <span class="dim">3.2 s</span>'; } }
+    else if (t < 8.6) { key = 'done'; if (key !== last) { l2.hidden = false; m2.show('done'); t2.innerHTML = 'Compiled <span class="dim">128 modules</span>'; l3.hidden = false; t3.innerHTML = 'Built in <span class="dim">3.2 s</span>'; } }
     else { key = 'clear'; if (key !== last) { l1.innerHTML = '$ <span class="cur"></span>'; l2.hidden = true; l3.hidden = true; } }
     last = key;
   } });
