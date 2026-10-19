@@ -10,14 +10,16 @@
 <style>
 /* Layout: a stage on the left (hero + frame strip + every state as a pill), a sticky control rail on the right; rail stacks under the stage on phones. */
 :root {
-  --bg: #0a0a0b;
-  --surface: #141416;
-  --surface-2: #1b1b1f;
+  --bg: #161618;
+  --surface: #1d1d20;
+  --surface-2: #26262a;
   --line: rgba(255,255,255,.07);
-  --fg: #ededf0;
-  --muted: #8a8a93;
-  --dot: rgba(255,255,255,.05);
-  --accent-l: .8; --accent-c: .14;
+  --fg: #f2f2f4;
+  --muted: #8d8d96;
+  --dot: rgba(255,255,255,.06);
+  --pill: #000000;
+  --pill-line: rgba(255,255,255,.06);
+  --accent-l: .78; --accent-c: .19;
   --glow-mul: 1;
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -26,14 +28,14 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
-    --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07);
-    --accent-l: .58; --accent-c: .17; --glow-mul: .5; color-scheme: light;
+    --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07); --pill: #ffffff; --pill-line: rgba(0,0,0,.1);
+    --accent-l: .55; --accent-c: .22; --glow-mul: .5; color-scheme: light;
   }
 }
 :root[data-theme="light"] {
   --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
-  --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07);
-  --accent-l: .58; --accent-c: .17; --glow-mul: .5; color-scheme: light;
+  --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07); --pill: #ffffff; --pill-line: rgba(0,0,0,.1);
+  --accent-l: .55; --accent-c: .22; --glow-mul: .5; color-scheme: light;
 }
 :root[data-font="system"] { --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif; }
 
@@ -74,45 +76,42 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .strip .f .loader { width: 38px; height: 38px; }
 
 .pill {
-  display: inline-flex; align-items: center; gap: .75em;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  padding: .62em 1.05em .62em .8em;
-  font-weight: 600; letter-spacing: -.01em; line-height: 1;
-  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; gap: .7em;
+  background: var(--pill); border: 1px solid var(--pill-line); border-radius: 1.15em;
+  padding: .8em 1.2em .8em .95em;
+  font-weight: 600; letter-spacing: -.015em; line-height: 1;
   color: var(--fg);
 }
-.pill .lbl { opacity: .92; }
-.pill.spill::after {
-  content: ""; position: absolute; inset: 40% -10% -60% -10%; z-index: -1; border-radius: 999px;
-  background: radial-gradient(closest-side, oklch(var(--accent-l) var(--accent-c) var(--h) / calc(.3 * var(--glow-mul))), transparent 70%);
-  filter: blur(14px); pointer-events: none;
-}
+.pill .lbl { white-space: nowrap; }
+.pill .loader { --s: 1.45em; }
 .loader { display: inline-block; vertical-align: middle; width: var(--s, 20px); height: var(--s, 20px); flex: 0 0 auto; }
 .loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .loader.still svg { animation: breathe 2.8s ease-in-out infinite; }
 @keyframes breathe { 0%,100% { opacity: .75 } 50% { opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { .loader.still svg { animation: none; } }
 
-.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-.state { background: transparent; border: 1px solid transparent; border-radius: 16px; padding: 14px 12px 10px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.states { display: flex; flex-wrap: wrap; gap: 14px 10px; align-items: flex-start; }
+.state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; }
+.state .pill { max-width: 100%; }
+.state .pill .lbl { white-space: normal; text-wrap: balance; }
 .state:hover { border-color: var(--line); }
-.state.sel { border-color: oklch(var(--accent-l) var(--accent-c) var(--h) / .5); background: var(--surface-2); }
-.state:focus-visible { outline: 2px solid oklch(var(--accent-l) var(--accent-c) var(--h)); outline-offset: 2px; }
+.state.sel { border-color: hsl(var(--h) 90% 55% / .55); background: var(--surface-2); }
+.state:focus-visible { outline: 2px solid hsl(var(--h) 90% 55%); outline-offset: 2px; }
 .state small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .state small i { font-style: normal; display: inline-flex; align-items: center; gap: 5px; }
-.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: oklch(var(--accent-l) var(--accent-c) var(--h)); }
-.group-title { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
+.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: hsl(var(--h) 100% 56%); }
+.group-title { flex-basis: 100%; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
 
 .contexts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
 .ctx { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .ctx h3 { margin: 0; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ctx p { margin: 0; font-size: 15px; line-height: 1.6; }
-.ctx .inline-l { --s: 1.1em; margin: 0 .25em; position: relative; top: -.06em; }
-.ctx .card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); }
+.ctx .inline-l { --s: 1.2em; margin: 0 .25em; position: relative; top: -.06em; }
+.ctx .card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: var(--pill); border: 1px solid var(--pill-line); }
 .ctx .card .t { font-weight: 600; font-size: 15px; }
 .ctx .card .d { color: var(--muted); font-size: 12.5px; }
 .ctx .bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.ctx .bar i { display: block; height: 100%; width: 38%; background: oklch(var(--accent-l) var(--accent-c) var(--h)); }
+.ctx .bar i { display: block; height: 100%; width: 38%; background: hsl(var(--h) 100% 56%); }
 
 .rail { position: sticky; top: 16px; align-self: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 14px; display: grid; gap: 14px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
 @media (max-width: 880px) { .rail { position: static; max-height: none; } }
@@ -124,7 +123,7 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; padding: 6px 4px; border-radius: 7px; cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
 .seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
-input[type=range] { width: 100%; accent-color: oklch(var(--accent-l) var(--accent-c) var(--h, 300)); margin: 0; }
+input[type=range] { width: 100%; accent-color: hsl(var(--h, 268) 90% 60%); margin: 0; }
 .rail .note { font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.45; }
 .rail .copy { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 12px; font-weight: 500; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
 .rail .copy:focus-visible { outline: 2px solid var(--fg); }
@@ -143,7 +142,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <section>
       <div class="hero" id="hero">
         <div class="hero-row">
-          <div class="pill spill" id="heroPill" style="font-size: 30px;"><span class="loader" id="heroLoader" style="--s: 1.25em"></span><span class="lbl" id="heroLabel">Thinking</span></div>
+          <div class="pill" id="heroPill" style="font-size: 34px;"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div>
         </div>
         <p class="hero-idea" id="heroIdea"></p>
         <div class="hero-meta" id="heroMeta"></div>
@@ -169,7 +168,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
         <div class="ctx" id="ctxCard">
           <h3>Card, 9×9 at 36px</h3>
           <div class="card"><span class="loader" data-grid="9" data-state="heartbeat" style="--s: 36px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
-          <div class="bar" style="--h: 28"><i></i></div>
+          <div class="bar" style="--h: 352"><i></i></div>
         </div>
         <div class="ctx" id="ctxStack">
           <h3>Steps, 7×7 at 22px</h3>
@@ -188,15 +187,14 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
     <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
     <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="7">7×7</button><button data-v="9">9×9</button><button data-v="11">11×11</button></div></div>
-    <div class="ctl"><span class="lab">Pill size</span><div class="seg" data-set="size"><button data-v="16">16</button><button data-v="20">20</button><button data-v="24">24</button><button data-v="32">32</button><button data-v="48">48</button></div></div>
-    <div class="ctl"><span class="lab">Brightness levels</span><div class="seg" data-set="levels"><button data-v="0">Smooth</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></div></div>
+    <div class="ctl"><span class="lab">Glyph size</span><div class="seg" data-set="size"><button data-v="20">20</button><button data-v="24">24</button><button data-v="32">32</button><button data-v="48">48</button><button data-v="64">64</button></div></div>
+    <div class="ctl"><span class="lab">Palette</span><div class="seg" data-set="levels"><button data-v="2">3 colors</button><button data-v="3">4</button><button data-v="4">5</button><button data-v="0">Smooth</button></div></div>
     <div class="ctl"><label for="step">Time step <output id="stepOut">smooth</output></label><input type="range" id="step" min="0" max="240" step="10" value="0"></div>
     <div class="ctl"><label for="rise">Rise <output id="riseMsOut">60 ms</output></label><input type="range" id="rise" min="10" max="300" step="10" value="60"></div>
     <div class="ctl"><label for="decay">Trail <output id="decayOut">260 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="260"></div>
-    <div class="ctl"><label for="glow">Bloom <output id="glowOut">0.60</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.6"></div>
-    <div class="ctl"><label for="bed">Bed <output id="bedOut">0.12</output></label><input type="range" id="bed" min="0" max="0.3" step="0.01" value="0.12"></div>
+    <div class="ctl"><label for="glow">Bloom <output id="glowOut">0.75</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.75"></div>
+    <div class="ctl"><label for="bed">Bed <output id="bedOut">0.16</output></label><input type="range" id="bed" min="0" max="0.5" step="0.01" value="0.16"></div>
     <div class="ctl"><span class="lab">Vector edges</span><div class="seg" data-set="vectors"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
-    <div class="ctl"><span class="lab">Ambient spill</span><div class="seg" data-set="spill"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
     <div class="ctl"><span class="lab">Motion</span><div class="seg" data-set="motion"><button data-v="on">Animated</button><button data-v="reduced">Reduced</button></div></div>
     <button class="copy" id="copyBtn">Copy tokens as JSON</button>
     <details class="tokens"><summary>Current tokens</summary><pre id="tokensPre"></pre></details>
@@ -211,8 +209,8 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 /* ---------- settings ---------- */
 const S = {
   theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
-  grid: 7, size: 20, levels: 5, step: 0, rise: 60, decay: 260, glow: 0.6, bed: 0.12,
-  vectors: 'on', spill: 'on', motion: 'on',
+  grid: 7, size: 32, levels: 2, step: 0, rise: 40, decay: 220, glow: 0.75, bed: 0.16,
+  vectors: 'on', motion: 'on',
 };
 
 /* ---------- math ---------- */
@@ -258,75 +256,75 @@ const heartPts = n => Array.from({ length: n + 1 }, (_, k) => { const th = k / n
 const dnaStrand = sgn => Array.from({ length: 9 }, (_, k) => { const y = -0.9 + k / 8 * 1.8; return { x: sgn * 0.55 * Math.sin(y * PI * 1.1 + 0.4), y }; });
 
 const STATES = [
-{ id: 'thinking', label: 'Thinking', hue: 300, hueName: 'violet', group: 'General', period: 3.4,
+{ id: 'thinking', label: 'Thinking', hue: 268, hueName: 'violet', group: 'General', period: 3.4,
   idea: 'The pixels gather into a light bulb and the strings close its glass. In the held moment the filament glows hot and the rays twinkle.',
   icon: { strokes: [circle(0, -0.3, 0.58, 10, -PI / 2), [{ x: -0.28, y: 0.4 }, { x: -0.28, y: 0.72 }, { x: 0.28, y: 0.72 }, { x: 0.28, y: 0.4 }], [{ x: -0.22, y: 0.22 }, { x: 0, y: -0.1 }, { x: 0.22, y: 0.22 }]], dots: [{ x: -0.95, y: -0.85 }, { x: 0.95, y: -0.85 }, { x: 0, y: -1.02 }] },
   hold(u, H) { H.hotStroke = 2; H.hotAmt = 0.6 + 0.4 * Math.sin(TAU * u * 1.5) ** 2; H.twinkle = u; } },
-{ id: 'reading', label: 'Reading docs', hue: 75, hueName: 'amber', group: 'General', period: 3.6,
+{ id: 'reading', label: 'Reading docs', hue: 40, hueName: 'amber', group: 'General', period: 3.6,
   idea: 'An open book: two pages stitched by strings, lines of text as loose pixels. Held, the words light up one by one in reading order.',
   icon: { strokes: [[{ x: -0.92, y: -0.55 }, { x: -0.92, y: 0.6 }, { x: 0, y: 0.85 }, { x: 0, y: -0.3 }, { x: -0.92, y: -0.55 }], [{ x: 0.92, y: -0.55 }, { x: 0.92, y: 0.6 }, { x: 0, y: 0.85 }, { x: 0, y: -0.3 }, { x: 0.92, y: -0.55 }]], dots: [{ x: -0.62, y: -0.05 }, { x: -0.32, y: 0.05 }, { x: 0.32, y: 0.05 }, { x: 0.62, y: -0.05 }, { x: -0.62, y: 0.3 }, { x: -0.32, y: 0.4 }, { x: 0.32, y: 0.4 }, { x: 0.62, y: 0.3 }] },
   hold(u, H) { H.readDot = Math.floor(u * 8.99); } },
-{ id: 'analyzing', label: 'Analyzing', hue: 205, hueName: 'cyan', group: 'General', period: 3.4,
+{ id: 'analyzing', label: 'Analyzing', hue: 192, hueName: 'cyan', group: 'General', period: 3.4,
   idea: 'Bars of pixels rise into a chart and a string draws the trend line through them, ending in an arrow. Held, a spark runs the trend.',
   icon: { strokes: [[{ x: -0.72, y: 0.35 }, { x: -0.25, y: -0.05 }, { x: 0.22, y: 0.15 }, { x: 0.7, y: -0.55 }], [{ x: 0.32, y: -0.6 }, { x: 0.7, y: -0.55 }, { x: 0.66, y: -0.18 }], [{ x: -0.95, y: 0.9 }, { x: 0.95, y: 0.9 }]], dots: [{ x: -0.72, y: 0.65 }, { x: -0.25, y: 0.3 }, { x: -0.25, y: 0.65 }, { x: 0.22, y: 0.5 }, { x: 0.22, y: 0.75 }, { x: 0.7, y: -0.2 }, { x: 0.7, y: 0.15 }, { x: 0.7, y: 0.5 }] },
   hold(u, H) { H.spark = frac(u * 1.5); H.sparkStroke = 0; } },
-{ id: 'searching', label: 'Searching', hue: 250, hueName: 'blue', group: 'General', period: 3.4,
+{ id: 'searching', label: 'Searching', hue: 214, hueName: 'blue', group: 'General', period: 3.4,
   idea: 'A magnifying glass: the lens ring and the handle. Held, it sweeps a small circle as if looking, and the glint on the glass twinkles.',
   icon: { strokes: [circle(-0.25, -0.25, 0.55, 10, PI / 4), [{ x: 0.15, y: 0.15 }, { x: 0.5, y: 0.5 }, { x: 0.85, y: 0.85 }]], dots: [{ x: -0.48, y: -0.48 }] },
   hold(u, H) { H.dx = 0.14 * Math.cos(TAU * u); H.dy = 0.14 * Math.sin(TAU * u); H.twinkle = u; } },
-{ id: 'generating', label: 'Generating', hue: 290, hueName: 'violet', group: 'General', period: 3.4,
+{ id: 'generating', label: 'Generating', hue: 275, hueName: 'violet', group: 'General', period: 3.4,
   idea: 'A four-point sparkle, the mark of something new. Held, it turns slowly and swells, with two smaller sparks blinking beside it.',
   icon: { strokes: [[{ x: 0, y: -0.92 }, { x: 0.2, y: -0.2 }, { x: 0.92, y: 0 }, { x: 0.2, y: 0.2 }, { x: 0, y: 0.92 }, { x: -0.2, y: 0.2 }, { x: -0.92, y: 0 }, { x: -0.2, y: -0.2 }, { x: 0, y: -0.92 }]], dots: [{ x: 0.72, y: -0.72 }, { x: -0.7, y: 0.68 }] },
   hold(u, H) { H.r = 0.35 * easeInOut(u); H.s = 1 + 0.1 * Math.sin(PI * u); H.twinkle = u; } },
-{ id: 'writing', label: 'Writing', hue: 350, hueName: 'pink', group: 'General', period: 3.6,
+{ id: 'writing', label: 'Writing', hue: 330, hueName: 'pink', group: 'General', period: 3.6,
   idea: 'A quill. The shaft string lands first, the vane closes around it, barbs stitch across. Held, the feather nods as it writes and the nib leaves a dot of ink.',
   icon: { strokes: [[{ x: -0.9, y: 0.9 }, { x: -0.45, y: 0.42 }, { x: 0.05, y: -0.1 }, { x: 0.5, y: -0.6 }, { x: 0.82, y: -0.92 }], [{ x: 0.82, y: -0.92 }, { x: 0.3, y: -0.96 }, { x: -0.2, y: -0.72 }, { x: -0.52, y: -0.3 }, { x: -0.45, y: 0.42 }], [{ x: 0.05, y: -0.1 }, { x: -0.36, y: -0.48 }], [{ x: 0.5, y: -0.6 }, { x: 0.05, y: -0.82 }]], dots: [], pivot: { x: -0.9, y: 0.9 } },
-  hold(u, H) { H.r = 0.09 * Math.sin(TAU * u * 2); H.ink = u; } },
-{ id: 'syncing', label: 'Syncing', hue: 150, hueName: 'green', group: 'General', period: 3.6,
+  hold(u, H) { H.ink = u; H.r = 0.05 * Math.sin(TAU * u * 2); } },
+{ id: 'syncing', label: 'Syncing', hue: 138, hueName: 'green', group: 'General', period: 3.6,
   idea: 'Two arrows chasing each other around a circle. Held, the whole icon turns half a revolution so it lands exactly on itself.',
   icon: { strokes: [...arrowArc(0.78, -2.8, -0.35, 7), ...arrowArc(0.78, 0.34, 2.79, 7)], dots: [] },
   hold(u, H) { H.r = PI * easeInOut(u); } },
-{ id: 'connecting', label: 'Connecting', hue: 235, hueName: 'blue', group: 'General', period: 3.4,
+{ id: 'connecting', label: 'Connecting', hue: 206, hueName: 'blue', group: 'General', period: 3.4,
   idea: 'Two links of a chain. Each loop is its own string. Held, they pull tight toward each other and a spark runs through both.',
   icon: { strokes: [stadium(-0.3, 0.3, 0.75, 0.26, -PI / 4), stadium(0.3, -0.3, 0.75, 0.26, -PI / 4)], dots: [] },
   hold(u, H) { H.spark = frac(u * 2); H.s = 1 - 0.05 * Math.sin(PI * u); } },
-{ id: 'uploading', label: 'Uploading', hue: 225, hueName: 'blue', group: 'General', period: 3.2,
+{ id: 'uploading', label: 'Uploading', hue: 214, hueName: 'blue', group: 'General', period: 3.2,
   idea: 'An arrow over a tray. Held, pixels keep leaving the tray and running up the shaft and out the arrowhead.',
   icon: { strokes: [[{ x: 0, y: 0.45 }, { x: 0, y: -0.1 }, { x: 0, y: -0.78 }], [{ x: -0.45, y: -0.33 }, { x: 0, y: -0.78 }, { x: 0.45, y: -0.33 }], [{ x: -0.82, y: 0.45 }, { x: -0.82, y: 0.88 }, { x: 0.82, y: 0.88 }, { x: 0.82, y: 0.45 }]], dots: [] },
   hold(u, H) { H.runner = { x: 0, y: 0.6 - frac(u * 2.5) * 1.5 }; } },
-{ id: 'downloading', label: 'Downloading', hue: 215, hueName: 'blue', group: 'General', period: 3.2,
+{ id: 'downloading', label: 'Downloading', hue: 214, hueName: 'blue', group: 'General', period: 3.2,
   idea: 'The same arrow pointing into the tray. Held, pixels fall down the shaft and land.',
   icon: { strokes: [[{ x: 0, y: -0.78 }, { x: 0, y: -0.1 }, { x: 0, y: 0.45 }], [{ x: -0.45, y: 0 }, { x: 0, y: 0.45 }, { x: 0.45, y: 0 }], [{ x: -0.82, y: 0.45 }, { x: -0.82, y: 0.88 }, { x: 0.82, y: 0.88 }, { x: 0.82, y: 0.45 }]], dots: [] },
   hold(u, H) { H.runner = { x: 0, y: -0.9 + frac(u * 2.5) * 1.5 }; } },
-{ id: 'done', label: 'Done', hue: 145, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
+{ id: 'done', label: 'Done', hue: 135, hueName: 'green', group: 'General', period: 3.2, oneShot: true,
   idea: 'The pixels rush in, the string stitches them into a tick, and it pops. Then it rests and glows. In a product this one stops at the tick and stays.',
   icon: { strokes: [[{ x: -0.85, y: 0.05 }, { x: -0.5, y: 0.4 }, { x: -0.2, y: 0.7 }, { x: 0.25, y: 0.1 }, { x: 0.85, y: -0.65 }]], dots: [] },
   hold(u, H) { H.s = 1 + 0.16 * bump(u, 0.08, 0.07); H.spark = u < 0.5 ? u * 2 : null; } },
-{ id: 'error', label: 'Something went wrong', hue: 15, hueName: 'red', group: 'General', period: 3.2,
+{ id: 'error', label: 'Something went wrong', hue: 0, hueName: 'red', group: 'General', period: 3.2,
   idea: 'A warning triangle with the exclamation mark set in pixels. Held, the mark blinks and the whole sign shivers for a moment.',
   icon: { strokes: [[{ x: 0, y: -0.88 }, { x: 0.45, y: -0.08 }, { x: 0.9, y: 0.72 }, { x: 0, y: 0.72 }, { x: -0.9, y: 0.72 }, { x: -0.45, y: -0.08 }, { x: 0, y: -0.88 }]], dots: [{ x: 0, y: -0.3 }, { x: 0, y: -0.05 }, { x: 0, y: 0.2 }, { x: 0, y: 0.5 }] },
   hold(u, H) { H.blink = frac(u * 3) < 0.5; H.dx = (u > 0.3 && u < 0.5) ? (hash(Math.floor(u * 60), 2, 2) - 0.5) * 0.25 : 0; } },
-{ id: 'building', label: 'Building', hue: 55, hueName: 'orange', group: 'Code', period: 3.4,
+{ id: 'building', label: 'Building', hue: 28, hueName: 'orange', group: 'Code', period: 3.4,
   idea: 'A hammer: the handle string first, then the head closes around it. Held, it swings from the end of the handle and strikes twice.',
   icon: { strokes: [[{ x: -0.88, y: 0.88 }, { x: -0.4, y: 0.4 }, { x: 0.12, y: -0.12 }], [{ x: -0.12, y: -0.52 }, { x: 0.38, y: -0.02 }, { x: 0.86, y: -0.46 }, { x: 0.36, y: -0.92 }, { x: -0.12, y: -0.52 }]], dots: [], pivot: { x: -0.88, y: 0.88 } },
   hold(u, H) { H.r = -0.45 * Math.abs(Math.sin(TAU * u)) ; H.strike = frac(u * 2) > 0.9; } },
-{ id: 'debugging', label: 'Debugging', hue: 45, hueName: 'orange', group: 'Code', period: 3.6,
+{ id: 'debugging', label: 'Debugging', hue: 22, hueName: 'orange', group: 'Code', period: 3.6,
   idea: 'A bug: body, head, six legs and antennae. Held, the legs twitch and the head bobs.',
   icon: (() => { const legs = [[{ x: -0.4, y: -0.22 }, { x: -0.88, y: -0.5, w: 1 }], [{ x: -0.43, y: 0.15 }, { x: -0.92, y: 0.15, w: 1 }], [{ x: -0.38, y: 0.5 }, { x: -0.85, y: 0.78, w: 1 }], [{ x: -0.12, y: -0.72 }, { x: -0.35, y: -0.98, w: 1 }]]; return { strokes: [circle(0, 0.15, 0.42, 10, -PI / 2, 0.55), circle(0, -0.56, 0.22, 6, -PI / 2), [{ x: 0, y: -0.35 }, { x: 0, y: 0.68 }], ...legs, ...legs.map(mirror)], dots: [] }; })(),
   hold(u, H) { H.wobble = 0.1; H.wobbleT = u; } },
-{ id: 'heartbeat', label: 'Reading your heartbeat', hue: 28, hueName: 'coral', group: 'Health', period: 4,
+{ id: 'heartbeat', label: 'Reading your heartbeat', hue: 352, hueName: 'red', group: 'Health', period: 4,
   idea: 'A heart outline with the ECG trace running through it. Held, it beats with a real lub-dub and a spark runs the trace on every beat.',
   icon: { strokes: [heartPts(16), [{ x: -0.95, y: 0.05 }, { x: -0.45, y: 0.05 }, { x: -0.28, y: -0.32 }, { x: -0.06, y: 0.45 }, { x: 0.1, y: 0.05 }, { x: 0.95, y: 0.05 }]], dots: [] },
   hold(u, H) { const b = frac(u * 2); H.s = 1 + 0.13 * bump(b, 0.08, 0.05) + 0.07 * bump(b, 0.26, 0.07); H.spark = b; H.sparkStroke = 1; } },
-{ id: 'scanning', label: 'Scanning', hue: 28, hueName: 'coral', group: 'Health', period: 3.6,
+{ id: 'scanning', label: 'Scanning', hue: 352, hueName: 'red', group: 'Health', period: 3.6,
   idea: 'A strand of DNA: two strings twisting past each other with pixel rungs between. Held, the rungs light up one after another, bottom to top, like sequencing.',
   icon: (() => { const A = dnaStrand(1), B = dnaStrand(-1), rungs = [1, 3, 5, 7].map(k => [A[k], B[k]]); return { strokes: [A, B, ...rungs], dots: [] }; })(),
   hold(u, H) { H.hotStroke = 2 + Math.floor(frac(u * 1.5) * 3.99); H.hotAmt = 1; } },
-{ id: 'breathing', label: 'Breathe', hue: 28, hueName: 'coral', group: 'Health', period: 4.4,
+{ id: 'breathing', label: 'Breathe', hue: 352, hueName: 'red', group: 'Health', period: 4.4,
   idea: 'Lungs: trachea, bronchi and two lobes closed by strings. Held, they fill on a slow inhale and empty on the exhale.',
   icon: (() => { const lobe = [{ x: -0.3, y: 0.05 }, { x: -0.7, y: -0.12 }, { x: -0.92, y: 0.45 }, { x: -0.65, y: 0.9 }, { x: -0.28, y: 0.75 }, { x: -0.3, y: 0.05 }]; return { strokes: [[{ x: 0, y: -0.95 }, { x: 0, y: -0.25 }], [{ x: -0.3, y: 0.05 }, { x: 0, y: -0.25 }, { x: 0.3, y: 0.05 }], lobe, mirror(lobe)], dots: [] }; })(),
   hold(u, H) { H.s = 1 + 0.11 * (0.5 - 0.5 * Math.cos(TAU * u)); } },
-{ id: 'calculating', label: 'Calculating', hue: 160, hueName: 'green', group: 'Finance', period: 3.4,
+{ id: 'calculating', label: 'Calculating', hue: 150, hueName: 'green', group: 'Finance', period: 3.4,
   idea: 'A sigma, the sign for a sum, drawn as one string through five pixels. Held, a spark runs it twice and the total blinks at the right.',
   icon: { strokes: [[{ x: 0.72, y: -0.85 }, { x: -0.7, y: -0.85 }, { x: 0.12, y: 0 }, { x: -0.7, y: 0.85 }, { x: 0.72, y: 0.85 }]], dots: [{ x: 0.85, y: -0.4 }, { x: 0.85, y: 0.4 }] },
   hold(u, H) { H.spark = frac(u * 2); H.blink = frac(u * 2) > 0.6; } },
@@ -335,8 +333,9 @@ const STATES = [
 /* ---------- assembly: pixels fly in, strings stitch them, the icon forms, lives, dissolves ---------- */
 const GATHER = 0.4, FORM = 0.48, HOLD_END = 0.84;
 function compileIcon(st, c) {
-  const pts = [], key = p => Math.round(p.x * 40) + ':' + Math.round(p.y * 40), idx = {};
-  const add = p => { const k = key(p); if (!(k in idx)) { idx[k] = pts.length; pts.push({ x: p.x, y: p.y, w: p.w ? 1 : 0 }); } else if (p.w) pts[idx[k]].w = 1; return idx[k]; };
+  const K = c.Rf * 0.92, snap = v => Math.round(v * K) / K;
+  const pts = [], key = p => Math.round(snap(p.x) * K) + ':' + Math.round(snap(p.y) * K), idx = {};
+  const add = p => { const k = key(p); if (!(k in idx)) { idx[k] = pts.length; pts.push({ x: snap(p.x), y: snap(p.y), w: p.w ? 1 : 0 }); } else if (p.w) pts[idx[k]].w = 1; return idx[k]; };
   const strokes = st.icon.strokes.map(s => s.map(add)), dots = st.icon.dots.map(add);
   const n = pts.length, origin = [], ctrl = [], delay = [], out = [];
   for (let k = 0; k < n; k++) {
@@ -364,22 +363,21 @@ function assemble(st, t, c, o) {
   /* hold transform: scale and rotate about the pivot, then offset; leg wobble */
   const cs = Math.cos(H.r), sn = Math.sin(H.r), P = I.pivot;
   const wob = (k) => (H.wobble && I.pts[k].w) ? { x: (hash(k, Math.floor(H.wobbleT * 14), 6) - 0.5) * H.wobble * 2, y: (hash(k, Math.floor(H.wobbleT * 14), 7) - 0.5) * H.wobble * 2 } : { x: 0, y: 0 };
-  const W = (p, k) => { const w = k == null ? { x: 0, y: 0 } : wob(k); const x = (p.x + w.x - P.x) * H.s, y = (p.y + w.y - P.y) * H.s; return { x: (x * cs - y * sn + P.x + H.dx) * K, y: (x * sn + y * cs + P.y + H.dy) * K }; };
+  const W = (p, k) => { const w = k == null ? { x: 0, y: 0 } : wob(k); const x = (p.x + w.x - P.x) * H.s, y = (p.y + w.y - P.y) * H.s; return { x: Math.round((x * cs - y * sn + P.x + H.dx) * K), y: Math.round((x * sn + y * cs + P.y + H.dy) * K) }; };
   const world = pos.map((p, k) => W(p, k));
   /* pixels */
   const isDot = new Set(I.dots);
   for (let k = 0; k < world.length; k++) {
-    let i = 0.55 + 0.45 * prog[k];
-    if (phase === 'gather' && prog[k] > 0.92) i = 1.25;
-    if (phase === 'form') i = 1.0;
-    if (phase === 'hold') { i = isDot.has(k) ? 0.75 : 0.9; if (H.twinkle != null && isDot.has(k)) i = 0.4 + 0.9 * (hash(k, Math.floor(H.twinkle * 10), 8) > 0.5 ? 1 : 0.2); if (H.readDot != null && isDot.has(k)) { const d = I.dots.indexOf(k); i = d === H.readDot ? 1.3 : d < H.readDot ? 0.95 : 0.35; } if (H.blink != null && isDot.has(k)) i = H.blink ? 1.25 : 0.5; }
-    o.points.push({ x: world[k].x, y: world[k].y, i: i * amp, s: 0.34 });
+    let i = 0.65;
+    if (phase === 'gather' && prog[k] > 0.9) i = 1.3;
+    if (phase === 'hold') { if (H.twinkle != null && isDot.has(k)) i = hash(k, Math.floor(H.twinkle * 10), 8) > 0.5 ? 1.3 : 0.65; if (H.readDot != null && isDot.has(k)) { const d = I.dots.indexOf(k); i = d === H.readDot ? 1.3 : d < H.readDot ? 0.65 : 0.4; } if (H.blink != null && isDot.has(k)) i = H.blink ? 1.3 : 0.65; }
+    o.points.push({ x: world[k].x, y: world[k].y, i: i * amp });
   }
   /* strings */
   for (const sg of I.segs) {
     const A = world[sg.a], B = world[sg.b];
-    if (phase === 'gather') { const f = clamp((Math.min(prog[sg.a], prog[sg.b]) - 0.4) / 0.6, 0, 1); if (f <= 0) continue; const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2; o.lines.push({ x1: A.x, y1: A.y, x2: lerp(A.x, mx, f), y2: lerp(A.y, my, f), i: 0.5 * f }, { x1: B.x, y1: B.y, x2: lerp(B.x, mx, f), y2: lerp(B.y, my, f), i: 0.5 * f }); }
-    else { let i = phase === 'form' ? 0.75 : 0.55 * amp; if (phase === 'hold' && H.hotStroke === sg.stroke) i = 0.6 + 0.6 * H.hotAmt; o.lines.push({ x1: A.x, y1: A.y, x2: B.x, y2: B.y, i }); }
+    if (phase === 'gather') { const f = clamp((Math.min(prog[sg.a], prog[sg.b]) - 0.4) / 0.6, 0, 1); if (f <= 0) continue; const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2; o.lines.push({ x1: A.x, y1: A.y, x2: lerp(A.x, mx, f), y2: lerp(A.y, my, f), i: 0.8 * f }, { x1: B.x, y1: B.y, x2: lerp(B.x, mx, f), y2: lerp(B.y, my, f), i: 0.8 * f }); }
+    else { let i = phase === 'form' ? 1 : 0.85 * amp; if (phase === 'hold' && H.hotStroke === sg.stroke) i = 1; o.lines.push({ x1: A.x, y1: A.y, x2: B.x, y2: B.y, i }); }
   }
   /* spark: a white-hot point running along the strings */
   let sparkPos = null, sparkSegs = I.segs;
@@ -387,44 +385,44 @@ function assemble(st, t, c, o) {
   else if (phase === 'hold' && H.spark != null) { if (H.sparkStroke != null) sparkSegs = I.segs.filter(s => s.stroke === H.sparkStroke); sparkPos = H.spark; }
   if (sparkPos != null && sparkSegs.length) {
     const tot = sparkSegs.reduce((a, s) => a + s.L, 0); let d = sparkPos * tot;
-    for (const sg of sparkSegs) { if (d <= sg.L || sg === sparkSegs[sparkSegs.length - 1]) { const f = clamp(d / sg.L, 0, 1), A = world[sg.a], B = world[sg.b]; o.points.push({ x: lerp(A.x, B.x, f), y: lerp(A.y, B.y, f), i: 1.3, s: 0.38 }); break; } d -= sg.L; }
+    for (const sg of sparkSegs) { if (d <= sg.L || sg === sparkSegs[sparkSegs.length - 1]) { const f = clamp(d / sg.L, 0, 1), A = world[sg.a], B = world[sg.b]; o.points.push({ x: lerp(A.x, B.x, f), y: lerp(A.y, B.y, f), i: 1.3 }); break; } d -= sg.L; }
   }
   /* state extras during hold */
   if (phase === 'hold') {
-    if (H.runner) { const p = W(H.runner); o.points.push({ x: p.x, y: p.y, i: 1.25, s: 0.4 }); }
-    if (H.ink != null) { const p = W({ x: -0.9 + 0.12, y: 0.9 + 0.02 }); o.points.push({ x: p.x + (frac(H.ink * 2)) * K * 0.3, y: p.y, i: 0.7, s: 0.3 }); }
-    if (H.strike) { const p = W({ x: 0.55, y: -0.3 }); for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + 0.4; o.points.push({ x: p.x + Math.cos(a) * K * 0.45, y: p.y + Math.sin(a) * K * 0.45, i: 1.1, s: 0.3 }); } }
+    if (H.runner) { const p = W(H.runner); o.points.push({ x: p.x, y: p.y, i: 1.3 }); }
+    if (H.ink != null) { const p = W({ x: -0.9 + 0.12, y: 0.9 + 0.02 }); o.points.push({ x: p.x + (frac(H.ink * 2)) * K * 0.3, y: p.y, i: 0.65 }); }
+    if (H.strike) { const p = W({ x: 0.55, y: -0.3 }); for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + 0.4; o.points.push({ x: p.x + Math.cos(a) * K * 0.45, y: p.y + Math.sin(a) * K * 0.45, i: 1.3 }); } }
   }
 }
 for (const st of STATES) { st.still = st.period * (FORM + 0.02); st.draw = function (t, c, o) { assemble(this, t, c, o); }; }
 const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
 
-/* ---------- color ramps: hue -> cell color at intensity 0..1.3 (hue, then white-hot) ---------- */
+/* ---------- color ramp: bed -> vivid lit -> white-hot, in sRGB hsl so the hue stays saturated ---------- */
 const RAMP_N = 40, rampCache = new Map();
 function ramp(hue, light) {
   const key = hue + ':' + (light ? 'l' : 'd') + ':' + S.bed;
   if (rampCache.has(key)) return rampCache.get(key);
   const fills = [], alphas = [];
+  const litL = light ? 46 : 56, hotL = light ? 22 : 97, bedL = light ? 55 : 42;
   for (let i = 0; i < RAMP_N; i++) {
-    const v = i / (RAMP_N - 1) * 1.3; let L, C;
-    if (!light) { if (v <= 0.75) { const u = v / 0.75; L = lerp(0.42, 0.82, u); C = lerp(0.1, 0.165, u); } else { const u = (v - 0.75) / 0.55; L = lerp(0.82, 0.97, u); C = lerp(0.165, 0.01, u); } }
-    else { if (v <= 0.75) { const u = v / 0.75; L = lerp(0.86, 0.6, u); C = lerp(0.08, 0.19, u); } else { const u = (v - 0.75) / 0.55; L = lerp(0.6, 0.36, u); C = lerp(0.19, 0.13, u); } }
-    fills.push(`oklch(${L.toFixed(3)} ${C.toFixed(3)} ${hue})`);
-    alphas.push(+(S.bed + (1 - S.bed) * clamp(v / 0.6, 0, 1)).toFixed(3));
+    const v = i / (RAMP_N - 1); let L, Sat, A;
+    if (v < 0.5) { const u = v / 0.5; L = lerp(bedL, litL, u); Sat = lerp(85, 100, u); A = lerp(S.bed, 1, u); }
+    else { const u = (v - 0.5) / 0.5; L = lerp(litL, hotL, u * u); Sat = 100; A = 1; }
+    fills.push(`hsl(${hue} ${Sat.toFixed(0)}% ${L.toFixed(1)}%)`); alphas.push(+A.toFixed(3));
   }
-  const r = { fills, alphas, edge: fills[Math.round(0.8 / 1.3 * (RAMP_N - 1))] };
+  const r = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
   rampCache.set(key, r); return r;
 }
 const isLight = () => getComputedStyle(document.documentElement).colorScheme.includes('light');
 
 /* ---------- matrix renderer ---------- */
 const NS = 'http://www.w3.org/2000/svg';
-const CELL = 2, GAP = 0.8, PITCH = CELL + GAP;
+const CELL = 2, GAP = 0.7, PITCH = CELL + GAP;
 let filterReady = false;
 function ensureFilters() {
   if (filterReady) return; filterReady = true;
   const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', 0); svg.setAttribute('height', 0); svg.style.position = 'absolute';
-  svg.innerHTML = '<defs><filter id="pxbloom" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.1"/></filter><filter id="pxedge" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="0.9"/></filter></defs>';
+  svg.innerHTML = '<defs><filter id="pxbloom" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.6"/></filter><filter id="pxedge" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.1"/></filter></defs>';
   document.body.appendChild(svg);
 }
 const live = [];
@@ -446,7 +444,7 @@ class Matrix {
     const gEdge = document.createElementNS(NS, 'g');
     this.rects = []; this.brects = [];
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const [g, arr] of [[gBloom, this.brects], [gMain, this.rects]]) {
-      const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x * PITCH); r.setAttribute('y', y * PITCH); r.setAttribute('width', CELL); r.setAttribute('height', CELL); r.setAttribute('rx', 0.55); g.appendChild(r); arr.push(r);
+      const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x * PITCH); r.setAttribute('y', y * PITCH); r.setAttribute('width', CELL); r.setAttribute('height', CELL); r.setAttribute('rx', 0.3); g.appendChild(r); arr.push(r);
     }
     svg.append(gBloom, gMain, gEdgeGlow, gEdge); this.el.appendChild(svg);
     this.gBloom = gBloom; this.gEdge = gEdge; this.gEdgeGlow = gEdgeGlow; this.linePool = []; this.glinePool = [];
@@ -466,13 +464,7 @@ class Matrix {
   }
   raster(o) {
     const N = this.N, R = this.ctx.R, tg = this.tg; tg.fill(0);
-    const splat = (px, py, i, s) => {
-      const cx = px + R, cy = py + R, inv = 1 / (2 * s * s);
-      const x0 = Math.max(0, Math.floor(cx - 1.4)), x1 = Math.min(N - 1, Math.ceil(cx + 1.4)), y0 = Math.max(0, Math.floor(cy - 1.4)), y1 = Math.min(N - 1, Math.ceil(cy + 1.4));
-      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const d2 = (x - cx) ** 2 + (y - cy) ** 2, w = Math.exp(-d2 * inv); if (w > 0.03) tg[y * N + x] += i * w; }
-    };
-    for (const p of o.points) splat(p.x, p.y, p.i, p.s || 0.5);
-    for (const l of o.lines) { const len = Math.hypot(l.x2 - l.x1, l.y2 - l.y1), n = Math.max(1, Math.ceil(len / 0.45)); for (let k = 0; k <= n; k++) { const u = k / n; splat(lerp(l.x1, l.x2, u), lerp(l.y1, l.y2, u), l.i * 0.5, 0.27); } }
+    for (const p of o.points) { const x = Math.round(p.x + R), y = Math.round(p.y + R); if (x < 0 || y < 0 || x >= N || y >= N) continue; const i = y * N + x; if (p.i > tg[i]) tg[i] = p.i; }
     for (let i = 0; i < tg.length; i++) if (tg[i] > 1.3) tg[i] = 1.3;
   }
   temporal(dt) {
@@ -486,16 +478,16 @@ class Matrix {
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
-      if (idx !== this.lastIdx[i]) { this.lastIdx[i] = idx; this.rects[i].setAttribute('fill', rp.fills[idx]); this.rects[i].setAttribute('opacity', rp.alphas[idx]); this.brects[i].setAttribute('fill', rp.fills[idx]); const g = clamp((v - 0.45) / 0.7, 0, 1); this.brects[i].setAttribute('opacity', (g * g * glow).toFixed(3)); }
+      if (idx !== this.lastIdx[i]) { this.lastIdx[i] = idx; this.rects[i].setAttribute('fill', rp.fills[idx]); this.rects[i].setAttribute('opacity', rp.alphas[idx]); this.brects[i].setAttribute('fill', rp.fills[idx]); const g = clamp((v / 1.3 - 0.3) / 0.3, 0, 1); this.brects[i].setAttribute('opacity', (g * glow).toFixed(3)); }
     }
     const lines = S.vectors === 'on' ? o.lines : [], R = this.ctx.R, toU = v => (v + R) * PITCH + CELL / 2;
-    while (this.linePool.length < lines.length) { for (const [g, pool, w] of [[this.gEdgeGlow, this.glinePool, 0.7], [this.gEdge, this.linePool, 0.28]]) { const l = document.createElementNS(NS, 'line'); l.setAttribute('stroke-width', w); l.setAttribute('stroke-linecap', 'round'); g.appendChild(l); pool.push(l); } }
+    while (this.linePool.length < lines.length) { for (const [g, pool, w] of [[this.gEdgeGlow, this.glinePool, 0.8], [this.gEdge, this.linePool, 0.3]]) { const l = document.createElementNS(NS, 'line'); l.setAttribute('stroke-width', w); l.setAttribute('stroke-linecap', 'round'); g.appendChild(l); pool.push(l); } }
     for (let k = 0; k < this.linePool.length; k++) {
       const l = this.linePool[k], g = this.glinePool[k];
       if (k >= lines.length) { if (l.getAttribute('opacity') !== '0') { l.setAttribute('opacity', 0); g.setAttribute('opacity', 0); } continue; }
       const L = lines[k], a = clamp(L.i, 0, 1).toFixed(3);
       for (const e of [l, g]) { e.setAttribute('x1', toU(L.x1)); e.setAttribute('y1', toU(L.y1)); e.setAttribute('x2', toU(L.x2)); e.setAttribute('y2', toU(L.y2)); e.setAttribute('stroke', rp.edge); }
-      l.setAttribute('opacity', a); g.setAttribute('opacity', (L.i * glow * 0.8).toFixed(3));
+      l.setAttribute('opacity', a); g.setAttribute('opacity', (L.i * glow * 0.9).toFixed(3));
     }
   }
   tick(now) {
@@ -527,8 +519,8 @@ function buildStates() {
   for (const st of STATES) {
     if (st.group !== group) { group = st.group; const g = document.createElement('div'); g.className = 'group-title'; g.textContent = group; root.appendChild(g); }
     const b = document.createElement('button'); b.className = 'state'; b.type = 'button'; b.dataset.id = st.id;
-    const pill = document.createElement('span'); pill.className = 'pill' + (S.spill === 'on' ? ' spill' : ''); pill.style.fontSize = (S.size / 1.25) + 'px';
-    const l = document.createElement('span'); l.className = 'loader'; l.style.setProperty('--s', '1.25em');
+    const pill = document.createElement('span'); pill.className = 'pill'; pill.style.fontSize = (S.size / 1.45) + 'px';
+    const l = document.createElement('span'); l.className = 'loader';
     const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
     pill.append(l, lbl);
     const small = document.createElement('small'); small.innerHTML = captionFor(st.id);
@@ -548,7 +540,6 @@ function renderHero() {
   $('heroLabel').textContent = st.label;
   $('heroIdea').textContent = st.idea;
   $('heroPill').style.setProperty('--h', heroLoader.hue);
-  $('heroPill').classList.toggle('spill', S.spill === 'on');
   $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${st.period.toFixed(1)} s</b></span><span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
   const strip = $('strip'); strip.innerHTML = ''; stripMats.length = 0;
   const K = 14;
@@ -573,7 +564,7 @@ function applyAll() {
   for (const m of live) m.applyHue();
   const reduced = S.motion === 'reduced';
   for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.state.still); }
-  for (const id in stateEls) { const { b, m, pill, small } = stateEls[id]; pill.style.fontSize = (S.size / 1.25) + 'px'; pill.classList.toggle('spill', S.spill === 'on'); b.style.setProperty('--h', m.hue); pill.style.setProperty('--h', m.hue); small.innerHTML = captionFor(id); }
+  for (const id in stateEls) { const { b, m, pill, small } = stateEls[id]; pill.style.fontSize = (S.size / 1.45) + 'px'; b.style.setProperty('--h', m.hue); pill.style.setProperty('--h', m.hue); small.innerHTML = captionFor(id); }
   for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.classList.toggle('on', String(S[seg.dataset.set]) === b.dataset.v);
   renderHero();
   $('tokensPre').textContent = tokensJson();
@@ -591,12 +582,12 @@ for (const id in ranges) $(id).addEventListener('input', e => { S[id] = +e.targe
 function tokensJson() {
   return JSON.stringify({
     grid: { cells: S.grid, cellUnits: CELL, gapUnits: GAP, radiusUnits: 0.55 },
-    size: { pillGlyphPx: S.size, glyphToLabelEm: 1.25, gapEm: 0.75 },
-    render: { splatSigmaCells: 0.34, stringSigmaCells: 0.27, perspectiveDistanceCells: S.grid * 1.7, depthIntensity: [0.3, 1], levels: S.levels || 'smooth', timeStepMs: S.step || 'smooth' },
-    ramp: { space: 'oklch', dark: { base: [0.42, 0.1], peak: [0.82, 0.165], hot: [0.985, 0.025] }, light: { base: [0.86, 0.08], peak: [0.6, 0.19], hot: [0.36, 0.13] }, hotStartsAt: 0.75, bed: S.bed },
+    size: { pillGlyphPx: S.size, glyphToLabelEm: 1.45, gapEm: 0.7, pillRadiusEm: 1.15 },
+    render: { pixels: 'snapped to one cell', strings: 'vector lines between cell centers', palette: S.levels ? S.levels + 1 + ' colors' : 'smooth', timeStepMs: S.step || 'smooth' },
+    ramp: { space: 'hsl', dark: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 56%)', hot: 'hsl(h 100% 97%)' }, light: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 46%)', hot: 'hsl(h 100% 22%)' }, bed: S.bed },
     color: { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
     motion: { riseMs: S.rise, trailMs: S.decay, trailMul: Object.fromEntries(STATES.filter(s => s.decayMul).map(s => [s.id, s.decayMul])), periodS: Object.fromEntries(STATES.map(s => [s.id, s.period])) },
-    glow: { bloom: S.glow, bloomBlurUnits: 2.1, edgeBlurUnits: 0.9, spill: S.spill === 'on', vectorEdges: S.vectors === 'on', edgeWidthUnits: 0.28 },
+    glow: { bloom: S.glow, bloomBlurUnits: 2.6, edgeBlurUnits: 1.1, vectorEdges: S.vectors === 'on', edgeWidthUnits: 0.3 },
     type: { family: S.font === 'inter' ? 'Inter' : 'system-ui', weight: 600, letterSpacing: '-0.01em' },
   }, null, 2);
 }
