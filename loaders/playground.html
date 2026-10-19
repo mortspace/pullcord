@@ -833,7 +833,6 @@ const MAG = bm(
   '......##..',
   '.......##.',
   '........##');
-const magAt = (dx, dy) => stamp(cellsOf(MAG, dx, dy));
 const MAG_PATH = [[2,1],[3,1],[3,2],[3,3],[2,3],[1,3],[1,2],[1,1]];
 const MAG_MS = [190, 120, 100, 120, 190, 120, 100, 120];
 const GLINT = [[2,2],[1,3]];
@@ -1141,7 +1140,6 @@ const guide = b => stamp(edgeOf(LUNG_L).map(([x, y]) => [x, y, ':']), b);
 /* calculating: a sigma laid down as a dim track. A white-hot head draws it end to end, slow off the mark, fast through
    the middle and slow into the end; the equals sign pops in white and settles; the result holds; then the stroke erases
    from where it began, the tail chasing the head */
-const SIGMA = bm('.............','#######......','.#...........','..#..........','...#.........','....#........','.....#.......','....#........','...#.........','..#..........','.#...........','#######......','.............');
 const SIGMA_PATH = [[0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[1,2],[2,3],[3,4],[4,5],[5,6],[4,7],[3,8],[2,9],[1,10],[0,11],[1,11],[2,11],[3,11],[4,11],[5,11],[6,11]];
 const EQ = [[9,5],[10,5],[11,5],[9,7],[10,7],[11,7]];
 const sigmaAt = (from, to, eq = '.') => stamp([...SIGMA_PATH.map(([x, y], i) => [x, y, i >= from && i < to ? (i === to - 1 && to < SIGMA_PATH.length ? 'W' : '#') : ':']), ...EQ.map(([x, y]) => [x, y, eq])]);
@@ -1219,38 +1217,6 @@ const thkBULB = [
   F(thkBulb('#', { ...thkLIT, rays: ['#', ':', ':'] }), 70), F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', ':', ':'] }), 70),
   F(thkBulb('#', { ...thkLIT, rays: ['#', '#', '#', '#', '#'] }), 1000),
   F(thkBulb('#', { ...thkLIT, rays: [':', ':', ':', ':', ':'] }), 110), F(thkBulb('#', { hot: true, glow: 2.6 }), 90), F(thkBulb('#', { glow: 1.6 }), 90), F(thkBulb('#'), 120)];
-
-/* thinking, Cloud take: a thought cloud with its trail of bubbles, the one from comic strips. Thoughts rise: the
-   bubble by the cloud floats up into it and through its edge, and goes on inside as a bright point to the middle, while
-   the small bubble below moves up and grows to take its place and a new one appears at the bottom. The first thought
-   leaves a glowing point in the middle of the cloud. The second one meets it and they spark into an idea: a white-hot
-   twinkle that flares out sideways, settles, holds and fades away. */
-const thkCLOUD = cellsOf([
-  '...###.......',
-  '..#...#.###..',
-  '.#.....#...#.',
-  '#...........#',
-  '#...........#',
-  '#...........#',
-  '.#.........#.',
-  '..#########..']);
-const thkBub = (x, y, big, t = '#') => big ? [[x, y, t], [x + 1, y, t], [x, y + 1, t], [x + 1, y + 1, t]] : [[x, y, t]];
-const thkSPARK = [[],
-  [[6, 4, ':']],
-  [[6, 4, 'W'], [5, 4, '#'], [7, 4, '#'], [6, 3, '#'], [6, 5, '#']],
-  [[6, 4, 'W'], [5, 4, '#'], [7, 4, '#'], [6, 3, '#'], [6, 5, '#'], [4, 4, '#'], [8, 4, '#'], [3, 4, ':'], [9, 4, ':']],
-  [[6, 4, '#'], [5, 4, ':'], [7, 4, ':'], [6, 3, ':'], [6, 5, ':']]];
-const thkCloud = (parts, spark = 0) => stamp([...thkCLOUD, ...parts.flat(), ...thkSPARK[spark]]);
-const thkREST = [thkBub(2, 9, true), thkBub(0, 12, false)];
-/* one thought's journey: up into the cloud and through its edge, a point inside gliding to the middle. The trail moves
-   up behind it. `before` is the spark while it travels, `after` once it arrives */
-const thkThought = (before, after, rest) => [
-  F(thkCloud([thkBub(2, 8, true), thkBub(1, 11, false)], before), 130),
-  F(thkCloud([thkBub(2, 6, true), thkBub(1, 10, true)], before), 90),
-  F(thkCloud([[[4, 6, '#']], thkBub(2, 9, true), thkBub(0, 12, false, ':')], before), 60),
-  F(thkCloud([[[5, 5, '#']], ...thkREST], before), 75),
-  F(thkCloud(thkREST, after), rest)];
-const thkCLOUDF = [F(thkCloud(thkREST), 420), ...thkThought(0, 1, 420), ...thkThought(1, 3, 110), F(thkCloud(thkREST, 2), 900), F(thkCloud(thkREST, 4), 120), F(thkCloud(thkREST, 1), 120)];
 
 /* reading, Book take: an open book, two pages with rounded outer corners dipping into the spine, three lines of text on
    each. The lines are read one after another, left page then right, each one lighting as it is read. Then the right
@@ -1337,29 +1303,11 @@ const anlTREND = [...[1, 2, 3, 4].map(d => F(anlChart(0, { dots: d }), [100, 70,
   F(anlChart(anlEND, { over: true }), 70), ...[1, 2].map(b => F(anlChart(anlEND, { barbs: b }), 60)), F(anlChart(anlEND, { barbs: 3 }), 900),
   ...[-1, -3, -6, -10].map((dx, i) => F(anlChart(anlEND, { barbs: 3, dx }), [120, 80, 60, 60][i])), F(EMPTY, 120)];
 
-/* analyzing, Pie take: breaking the whole into its parts. A whole disc of data, dim. Light runs out from its centre
-   along three cuts, up, right and down to the lower left, and leaves them open, so it is a pie chart in three slices.
-   The slices ease apart, each along its own direction, and the top-right quarter, the one that matters, fills with
-   light from the centre out to its rim. It holds, then the slices close up, the light drains and the cuts heal */
-const anlCUT = (dx, dy) => (dx === 0 && dy < 0) || (dy === 0 && dx > 0) || (dx === -dy && dx < 0);
-const anlSlice = (x, y) => { const dx = x - 6, dy = y - 6; if (dx * dx + dy * dy > 30.5) return -1; if ((dx === 0 && dy === 0) || anlCUT(dx, dy)) return 3;
-  const a = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360; return a < 90 ? 0 : a < 225 ? 1 : 2; };
-const anlAPART = [[1, -1], [-1, 0], [0, 1]];
-/* cut: how far out the cuts have run (-1 none, 9 all); open: slices apart or not; lit: the quarter lit out to radius r */
-const anlPie = (cut, open = 0, lit = -1) => { const cs = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-  const s = anlSlice(x, y); if (s < 0) continue;
-  if (s === 3) { const d = Math.max(Math.abs(x - 6), Math.abs(y - 6)); if (d > cut) cs.push([x, y, ':']); else if (d === cut) cs.push([x, y, 'W']); continue; }
-  cs.push([x + anlAPART[s][0] * open, y + anlAPART[s][1] * open, s === 0 && Math.hypot(x - 6, y - 6) <= lit ? '#' : ':']); } return stamp(cs); };
-const anlPIE = [F(anlPie(-1), 420), F(anlPie(1), 60), F(anlPie(3), 50), F(anlPie(5), 60), F(anlPie(9), 90), F(anlPie(9, 1), 110),
-  ...[2, 3.5].map((r, i) => F(anlPie(9, 1, r), [70, 60][i])), F(anlPie(9, 1, 9), 900), F(anlPie(9, 0, 9), 120), F(anlPie(9), 120)];
-
 const OPTS_A = {
   thinking_bulb: Object.assign(seq(...thkBULB), { rest: 11 }),
-  thinking_cloud: Object.assign(seq(...thkCLOUDF), { still: thkCloud(thkREST, 2) }),
   reading_book: Object.assign(seq(...rdgBOOK), { still: rdgBook(3, 1) }),
   reading_specs: Object.assign(seq(...rdgReadLine(0), ...rdgReadLine(1), ...rdgReadLine(2, true)), { still: rdgSpecs(0, 1, 0) }),
   analyzing_trend: Object.assign(seq(...anlTREND), { still: anlChart(anlEND, { barbs: 3 }), trail: 0.7 }),
-  analyzing_pie: Object.assign(seq(...anlPIE), { still: anlPie(9, 1, 9) }),
 };
 
 /* searching, Radar take: a radar scope, the picture of looking for something nearby. A dim bezel and a dim range ring,
@@ -1399,25 +1347,6 @@ const srhRADAR = [F(srhScope(srhSTOP, 0, 'W'), 640),
   ...srhTURN.map((p, k) => F(srhScope(p, Math.min(1, k), p >= srhFOUND_AT ? 'W' : srhTARGET_FADE[k] || null), srhTURN_MS[k])),
   F(srhScope(srhSTOP + 16, 0, 'W', '#'), 90), F(srhScope(srhSTOP + 16, 0, 'W', ':'), 110)];
 
-/* searching, Eye take: an eye looking for something, the eye symbol come to life. A wide almond lid, a round iris
-   with a dark pupil. It searches the way eyes really do, in quick jumps with still looks between: left, then all the
-   way right, then a glance down. Something there: it narrows to peer at it, then opens and turns to you with a white
-   catchlight in the iris: found it. It blinks, and starts looking again */
-const srhLIDS = { 4: ['....#####....', '..##.....##..', '.#.........#.', '#...........#', '#...........#', '#...........#', '.#.........#.', '..##.....##..', '....#####....'],
-  2: ['...#######...', '.##.......##.', '#...........#', '.##.......##.', '...#######...'],
-  1: ['..#########..', '##.........##', '..#########..'], 0: ['##.........##', '..#########..'] };
-const srhIRIS = ['.###.', '#####', '##.##', '#####', '.###.'];
-/* the eye open k rows above and below the middle (4 open, 2 peering, 1 a squint, 0 shut), the iris dx, dy from
-   centre and cut by the lids */
-const srhEye = (k, dx, dy, glint) => { const rows = srhLIDS[k], top = k === 0 ? 6 : 6 - k, cells = cellsOf(rows, 0, top);
-  const inside = (x, y) => { const r = rows[y - top]; return !!r && y > top && y - top < rows.length - 1 && x > r.indexOf('#') && x < r.lastIndexOf('#'); };
-  if (k > 0) cells.push(...cellsOf(srhIRIS, 4 + dx, 4 + dy).filter(([x, y]) => inside(x, y)));
-  if (k > 0 && glint && inside(7 + dx, 5 + dy)) cells.push([7 + dx, 5 + dy, 'W']);
-  return stamp(cells); };
-const srhEYE = [F(srhEye(4, 0, 0), 480), F(srhEye(4, -1, 0), 40), F(srhEye(4, -2, 0), 380), F(srhEye(4, -1, 0), 35), F(srhEye(4, 0, 0), 30), F(srhEye(4, 1, 0), 35), F(srhEye(4, 2, 0), 360),
-  F(srhEye(4, 1, 1), 40), F(srhEye(4, -1, 1), 280), F(srhEye(2, 0, 0), 90), F(srhEye(2, 1, 0), 360), F(srhEye(4, 1, 0, true), 70), F(srhEye(4, 0, 0, true), 600),
-  F(srhEye(1, 0, 0), 45), F(srhEye(0, 0, 0), 80), F(srhEye(1, 0, 0), 45)];
-
 /* generating, Gather take: the sparkle is made of what it gathers. Six motes wait scattered and dim. One at a time
    they set off for the middle, brightening and gathering speed as they fall in, and each one that lands feeds the
    sparkle a size: a point, a plus, then a four-point star whose body fills out as its rays reach for the edges. Whole,
@@ -1443,27 +1372,6 @@ const genSPARK = stamp([...genStar(6), [6, 6, 'W']]);
 const genScatter = (t, R) => stamp([...genStar(R), ...genMOTES.map(([x, y]) => [Math.round(6 + (x - 6) * t), Math.round(6 + (y - 6) * t), t > 0.8 ? ':' : '#'])]);
 const genGATHER_LOOP = [F(stamp(genWaiting(0)), 260), ...genGATHER, ...[2, 4, 6].map(d => F(genRays(d), 40)), F(genSPARK, 760),
   F(genScatter(0.35, 4), 50), F(genScatter(0.65, 2), 60), F(genScatter(0.88, 0), 85), F(genScatter(1, 0), 130)];
-
-/* generating, Wand take: the magic wand from the toolbar, a slim stick with a heavier grip and a white-hot tip, and
-   the stars it makes. At rest a big four-point star and two small ones hang by the tip. They twinkle out one after
-   another, shrinking to a point and going dark. The wand draws back a cell, then flicks forward, and new stars fly
-   off the tip, big one first, each opening from a point into a star with a white heart, and the wand settles back */
-const genStarAt = (cx, cy, R, core, tone = '#') => { if (R < 0) return []; if (R === 0) return [[cx, cy, core || tone]];
-  const w = genW[R], cells = []; for (let dy = -R; dy <= R; dy++) for (let dx = -w[Math.abs(dy)]; dx <= w[Math.abs(dy)]; dx++) cells.push([cx + dx, cy + dy, dx === 0 && dy === 0 && core ? core : tone]);
-  return cells; };
-const genTIP = [6, 6];
-/* the wand with its tip d cells along its own line from rest: forward up and to the right, back down and to the left */
-const genWand = d => { const tx = genTIP[0] + d, ty = genTIP[1] - d; return [[tx, ty, 'W'], ...[1, 2, 3, 4, 5, 6, 7].map(k => [tx - k, ty + k, '#']), ...[5, 6, 7].map(k => [tx - k + 1, ty + k, '#'])]; };
-const genSTARS = [[9, 3], [3, 2], [11, 9]];
-/* each star is null (none), a number (flying out of the tip, that far along), or [R, core, tone] */
-const genMagic = (d, stars) => stamp(inGrid([...genWand(d), ...stars.flatMap((s, i) => { const [cx, cy] = genSTARS[i]; if (s == null) return [];
-  if (typeof s === 'number') { const fx = genTIP[0] + 1, fy = genTIP[1] - 1; return [[Math.round(fx + (cx - fx) * s), Math.round(fy + (cy - fy) * s), 'W']]; }
-  return genStarAt(cx, cy, ...s); })]));
-const genREST = [[3, 'W'], [1], [1]];
-const genWAND = [F(genMagic(0, genREST), 620),
-  F(genMagic(0, [[3], [0], [1]]), 90), F(genMagic(0, [[2], [0, null, ':'], [0]]), 80), F(genMagic(0, [[1], null, [0, null, ':']]), 80), F(genMagic(0, [[0], null, null]), 90), F(genMagic(0, [[0, null, ':'], null, null]), 120),
-  F(genMagic(0, [null, null, null]), 140), F(genMagic(-1, [null, null, null]), 240),
-  F(genMagic(1, [0.5, null, null]), 55), F(genMagic(1, [[1, 'W'], 0.45, null]), 60), F(genMagic(0, [[2, 'W'], 0.8, 0.45]), 70), F(genMagic(0, [[3, 'W'], [1, 'W'], 0.8]), 85), F(genMagic(0, [[3, 'W'], [1], [1, 'W']]), 110)];
 
 /* writing, Caret take: text being written the way it appears on screen, a tall white caret leading lines of words.
    It types in a rhythm, quick through a word and a beat at each space. Halfway through a line it stops on a word,
@@ -1509,9 +1417,7 @@ const wrtSIGNATURE = [
 
 const OPTS_B = {
   searching_radar: Object.assign(seq(...srhRADAR), { rest: 0, trail: 1.3 }),
-  searching_eye: Object.assign(seq(...srhEYE), { still: srhEye(4, 0, 0, true), trail: 0.6 }),
   generating_gather: Object.assign(seq(...genGATHER_LOOP), { still: genSPARK }),
-  generating_wand: Object.assign(seq(...genWAND), { rest: 0 }),
   writing_caret: Object.assign(seq(...wrtCARET), { still: wrtPage(1, '##.##', 0, [6, 10]), trail: 0.3 }),
   writing_signature: Object.assign(seq(...wrtSIGNATURE), { still: wrtSIGNED, trail: 0.7 }),
 };
@@ -1543,25 +1449,6 @@ const synArc = (t, h, head) => {
   return cs;
 };
 const synLoop = (t, h, head) => stamp([...synArc(t, h, head), ...synArc(t + 14, h + 14, head)]);
-
-/* syncing, Devices take: a laptop and a phone joined by a short dim link, the picture of your things staying in step.
-   The device that has the change glows, its screen a dim wash of light. A white packet leaves that screen, slow off the
-   mark and quick across the link, and the other screen lights up from the side it arrives on, the way a page loads in.
-   Now both glow: in sync. The first one sleeps, and the phone sends the next change back the same way */
-const SYN_LAPTOP = ['.######.', '.#....#.', '.#....#.', '.#....#.', '.######.', '########'];
-const SYN_PHONE = ['.##.', '#..#', '#..#', '#..#', '#..#', '#..#', '.##.'];
-/* screen cells in columns, counted from the side that faces the other device */
-const SYN_LAP_SCREEN = [5, 4, 3, 2].map(x => [5, 6, 7].map(y => [x, y])), SYN_PHONE_SCREEN = [10, 11].map(x => [4, 5, 6, 7, 8].map(y => [x, y]));
-/* l, p: how many columns of each screen glow; pk: packet cells on top */
-const synDev = (l, p, pk = []) => stamp([...cellsOf(SYN_LAPTOP, 0, 4), ...cellsOf(SYN_PHONE, 9, 3), [7, 6, ':'], [8, 6, ':'],
-  ...SYN_LAP_SCREEN.slice(0, l).flat().map(([x, y]) => [x, y, ':']), ...SYN_PHONE_SCREEN.slice(0, p).flat().map(([x, y]) => [x, y, ':']), ...pk]);
-/* the packet runs along row 6 from one screen's facing edge (x 5 or 10) to the other's, a lit cell behind its white head */
-const synPacket = (x, d) => [[x, 6, 'W'], ...(x - d >= 5 && x - d <= 10 ? [[x - d, 6, '#']] : [])];
-const synSend = toPhone => {
-  const d = toPhone ? 1 : -1, xs = toPhone ? [5, 6, 7, 8, 9, 10] : [10, 9, 8, 7, 6, 5];
-  return [...xs.map((x, k) => F(toPhone ? synDev(4, 0, synPacket(x, d)) : synDev(0, 2, synPacket(x, d)), [85, 55, 40, 40, 55, 75][k])),
-    ...(toPhone ? [F(synDev(4, 1, [[10, 6, 'W']]), 70), F(synDev(4, 2), 90)] : [F(synDev(1, 2, [[5, 6, 'W']]), 60), F(synDev(2, 2), 55), F(synDev(3, 2), 60), F(synDev(4, 2), 90)])];
-};
 
 /* building, Bricks take: a brick wall laid course by course in running bond, the way a mason builds it. Each brick
    drops in from above, gathering speed, squashes flat on landing with a puff of dust either side and settles back into
@@ -1637,9 +1524,6 @@ const OPTS_C = {
     F(synLoop(-7, 4, 'open'), 560), F(synLoop(-6, 4, 'open'), 110), F(synLoop(-4, 4, 'open'), 70), F(synLoop(-2, 4, 'open'), 60), F(synLoop(-1, 4, 'tuck'), 90),
     F(synLoop(0, 6, 'hot'), 70), F(synLoop(2, 9, 'hot'), 50), F(synLoop(4, 13, 'hot'), 40), F(synLoop(6, 16, 'hot'), 45), F(synLoop(8, 19, 'hot'), 65),
     F(synLoop(7, 18, 'tuck'), 70), F(synLoop(7, 18, 'open'), 60)), { still: synLoop(-7, 4, 'open') }),
-  syncing_devices: Object.assign(seq(
-    F(synDev(4, 0), 400), ...synSend(true), F(synDev(4, 2), 480), F(synDev(2, 2), 70), F(synDev(0, 2), 260),
-    ...synSend(false), F(synDev(4, 2), 480), F(synDev(4, 1), 70), F(synDev(4, 0), 120)), { still: synDev(4, 2) }),
   building_bricks: Object.assign(seq(F(bldWall(0), 160), ...BLD_BRICKS.flatMap((_, k) => bldDrop(k)), ...[1, 3, 5, 8, 10, 12].map(c => F(bldShine(c), 40)), F(bldWall(7), 460),
     ...[-1, -3, -6, -10, -14].map((d, i) => F(bldWall(7, d), [110, 75, 55, 50, 60][i]))), { still: bldWall(7) }),
   building_crane: Object.assign(seq(
@@ -1735,42 +1619,11 @@ const scnOut = [1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2, 8.2, 9.4, 10.6], scnBack = [9
 const scnTouch = [F(scnPrint(-1), 380), ...scnOut.map((R, i) => F(scnPrint(R), ease(scnOut.length, 120, 50)[i])), F(scnPrint(20), 600),
   ...scnBack.map((R, i) => F(scnPrint(20, 0, R), ease(scnBack.length, 90, 60)[i])), F(stamp([...cellsOf(scnPrintRows).map(([x, y]) => [x, y, ':']), [6, 7, 'W'], [6, 8, 'W']]), 140)];
 
-/* breathing, Balloon take: breathing in fills a balloon. It is tied at the neck, so it grows upward from the knot, round
-   at every size, slow to start, quicker through the middle and slow as it gets full. As the rubber stretches it catches
-   the light: a glint appears on its shoulder and grows to two cells, and its far side stays in shade. Full, it holds;
-   then it lets the air go just as slowly. The string hangs below and sways gently all the while */
-const brtSizes = [[3, 5, 5, 3], [3, 5, 5, 5, 3], [3, 5, 7, 7, 5, 3], [3, 5, 7, 7, 7, 5, 3], [5, 7, 9, 9, 7, 5, 3], [5, 7, 9, 9, 9, 7, 5, 3]];
-const brtNeck = 8;
-/* the balloon at size k, its string in one of four curves: bowed left, an S, bowed right, the other S */
-const brtStrings = [[[6,9],[5,10],[5,11],[6,12]], [[6,9],[5,10],[6,11],[7,12]], [[6,9],[7,10],[7,11],[6,12]], [[6,9],[7,10],[6,11],[5,12]]];
-const brtBalloon = (k, curve) => {
-  const ws = brtSizes[k], top = brtNeck - ws.length;
-  const rows = ws.map((w, i) => [top + i, 6 - (w - 1) / 2, 6 + (w - 1) / 2]);
-  const cells = rows.flatMap(([y, a, b]) => Array.from({ length: b - a + 1 }, (_, i) => [a + i, y]));
-  const has = (x, y) => cells.some(([cx, cy]) => cx === x && cy === y);
-  const glint = k >= 4 ? [[rows[1][1] + 1, top + 1], [rows[2][1] + 1, top + 2]] : k >= 2 ? [[rows[1][1] + 1, top + 1]] : [];
-  const tone = ([x, y]) => glint.some(([gx, gy]) => gx === x && gy === y) ? 'W' : (x > 6 && y > top + 1 && (!has(x + 1, y) || !has(x, y + 1))) ? ':' : '#';
-  return stamp([...cells.map(([x, y]) => [x, y, tone([x, y])]), [6, brtNeck, '#'], ...brtStrings[curve % 4].map(([x, y]) => [x, y, ':'])]);
-};
-const brtBreath = [[0, 380], ...[1, 2, 3, 4, 5].map((k, i) => [k, ease(5, 320, 170)[i]]), [5, 700], ...[4, 3, 2, 1, 0].map((k, i) => [k, ease(5, 340, 180)[i]])]
-  .map(([k, ms], i) => F(brtBalloon(k, i), ms));
-
-/* breathing, Float take: the meditation figure from Health's Mindfulness, a round head over a body sitting cross-legged,
-   hands resting on the knees, with its soft shadow on the floor. Breathing in, it lifts off its seat and floats up two
-   cells, slow at the start and slow into the top, and its shadow draws in under it as it rises. It hangs there for the
-   held breath, then breathing out it settles back down just as slowly and the shadow spreads out to meet it */
-const brtZen = ['....###....', '...#####...', '...#####...', '....###....', '...........', '...#####...', '..#.###.#..', '.#..###..#.', '..#######..', '###########'];
-const brtFloat = (lift, shadow) => stamp([...cellsOf(brtZen, 1, 2 - lift), ...Array.from({ length: shadow }, (_, i) => [6 - (shadow - 1) / 2 + i, 12, ':'])]);
-const brtZenLoop = [F(brtFloat(0, 11), 540), F(brtFloat(0, 9), 260), F(brtFloat(1, 9), 330), F(brtFloat(1, 7), 300), F(brtFloat(2, 7), 360), F(brtFloat(2, 5), 760),
-  F(brtFloat(2, 7), 300), F(brtFloat(1, 7), 330), F(brtFloat(1, 9), 300), F(brtFloat(0, 9), 360)];
-
 const OPTS_D = {
   heartbeat_ecg: Object.assign(seq(...hrtEcg), { still: stamp([...hrtPath.map(([x, y]) => [x, y, '#']), ...hrtHeart('full')]), trail: 0.6 }),
   heartbeat_fill: Object.assign(seq(...hrtPump), { still: hrtFill(2, () => false, [3, 3]) }),
   scanning_faceid: Object.assign(seq(...scnFaceId), { still: scnFace() }),
   scanning_print: Object.assign(seq(...scnTouch), { still: scnPrint(20) }),
-  breathing_balloon: Object.assign(seq(...brtBreath), { still: brtBalloon(5, 1) }),
-  breathing_float: Object.assign(seq(...brtZenLoop), { still: brtFloat(1, 7) }),
 };
 
 /* Spinners, set one: ring, snake, dual, orbit, cascade. Every name here carries the prefix rng. */
@@ -2515,7 +2368,6 @@ const GLOW_SPRITES = {
    stepping. Bitmaps are five rows of five; the same tones as the 13x13 sprites. ---------- */
 const m5 = s => [s.slice(0, 5), s.slice(5, 10), s.slice(10, 15), s.slice(15, 20), s.slice(20, 25)];
 const c5 = cells => { const g = Array.from({ length: 5 }, () => Array(5).fill('.')); for (const [x, y, c] of cells) if (x >= 0 && x < 5 && y >= 0 && y < 5 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
-const shift5 = (cells, dx, dy) => cells.map(([x, y, c]) => [x + dx, y + dy, c]);
 const micro = frames => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? m5(b) : b, ms))), { N: 5, micro: true, trail: 0.9, rise: 2, glow: 2.1, scale: 0.84, cycle: 6 });
 
 /* thinking: the three dots of a reply ride a wave, each lifting while the next starts */
@@ -2640,6 +2492,322 @@ const SPRITES = {
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
 Object.assign(SPRITES, GLOW_SPRITES, MICRO_SPRITES);
+
+/* ---------- reworked takes: these replace earlier drafts of the same ids ---------- */
+/* Seven reworked takes, each with a purpose, a little story and one moment of delight. Every name here carries the
+   prefix tk2. */
+
+/* shared: a foreground object drawn over a background, with a clear one-cell moat round it so the two never merge
+   into one blob, the way a sticker sits on a page */
+const tk2Front = (back, front, moat = true) => {
+  const key = ([x, y]) => x + ',' + y, mine = new Set(front.map(key)), gap = new Set();
+  if (moat) for (const [x, y] of front) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) gap.add((x + dx) + ',' + (y + dy));
+  return [...back.filter(c => !mine.has(key(c)) && !gap.has(key(c))), ...front];
+};
+/* shared: film a motion. fn(t) draws the picture at t ms; the loop is sampled every millisecond, a frame is cut wherever
+   the picture changes, and any frame shorter than 30 ms is folded into its neighbour, so the holds carry the easing */
+const tk2Film = (fn, total) => { const raw = [];
+  for (let t = 0; t < total; t++) { const b = fn(t), last = raw[raw.length - 1];
+    if (last && last.b.join('') === b.join('')) last.ms++; else raw.push(F(b, 1)); }
+  const out = [];
+  raw.forEach((f, i) => { if (f.ms < 30 && i < raw.length - 1) raw[i + 1].ms += f.ms; else out.push(f); });
+  if (out.length > 1 && out[out.length - 1].ms < 30) out[out.length - 2].ms += out.pop().ms;
+  return out; };
+const tk2Clamp = p => p < 0 ? 0 : p > 1 ? 1 : p;
+const tk2InOut = p => (1 - Math.cos(Math.PI * tk2Clamp(p))) / 2;
+const tk2Out = p => 1 - (1 - tk2Clamp(p)) * (1 - tk2Clamp(p));
+const tk2In = p => tk2Clamp(p) * tk2Clamp(p);
+/* a value that moves from a to b between t0 and t1 with easing e */
+const tk2Tween = (t, t0, t1, a, b, e = tk2InOut) => a + (b - a) * e((t - t0) / (t1 - t0));
+
+/* shared: a four-point star at its spot. r 0 is a point, 1 a plus, 2 a plus with longer arms, 3 the sparkle with its
+   sides curving in; core lights its heart white */
+const tk2STAR_W = [[], [1, 0], [2, 0, 0], [3, 1, 0, 0]];
+const tk2Star = ([cx, cy], r, core, tone = '#') => { if (r < 0) return []; if (r === 0) return [[cx, cy, core ? 'W' : tone]];
+  const w = tk2STAR_W[r], cells = [];
+  for (let dy = -r; dy <= r; dy++) for (let dx = -w[Math.abs(dy)]; dx <= w[Math.abs(dy)]; dx++) cells.push([cx + dx, cy + dy, dx === 0 && dy === 0 && core ? 'W' : tone]);
+  return cells; };
+/* a flare: the heart of a big star white across three cells */
+const tk2Flare = ([cx, cy]) => [[cx - 1, cy, 'W'], [cx + 1, cy, 'W'], [cx, cy - 1, 'W'], [cx, cy + 1, 'W']];
+
+/* syncing, Devices take: a phone and a laptop side by side, and a file tossed between them. The phone's screen glows
+   with a new change. The glow gathers, and a page pops up out of the top of the phone like toast, the phone giving a
+   little kick as it goes. The page grows as it rises toward you, hangs at the top of its arc and drops onto the laptop,
+   quick at the end like anything falling. It lands flat on the screen with a white flash, bounces once, and the screen
+   lights from where it landed: in sync. Then the laptop lifts the next change off its screen and tosses it back, and
+   the page drops into the top of the phone, which bobs as it swallows it and lights up */
+const tk2PHONE_ROWS = ['####', '#..#', '#..#', '#..#', '#..#', '#..#', '#::#', '####'];
+/* the phone with its top at row top (5 at rest), its screen lit by lit rows from the top (0 to 5) in tone t */
+const tk2Phone = (top = 5, lit = 0, t = ':') => [...cellsOf(tk2PHONE_ROWS, 0, top), ...Array.from({ length: lit }, (_, k) => [[1, top + 1 + k, t], [2, top + 1 + k, t]]).flat()];
+const tk2LAP_IN = []; for (let y = 7; y <= 10; y++) for (let x = 6; x <= 10; x++) tk2LAP_IN.push([x, y]);
+/* the laptop, its screen lit out to r cells from where a page lands, in tone t */
+const tk2Laptop = (r = -1, t = ':') => [...cellsOf(['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#######'], 5, 6), ...Array.from({ length: 9 }, (_, i) => [4 + i, 12, '#']),
+  ...tk2LAP_IN.filter(([x, y]) => Math.abs(x - 8) + Math.abs(y - 8.5) <= r).map(([x, y]) => [x, y, t])];
+/* the page: small on the way in and out, m whole in the air, flat lying on the laptop's screen */
+const tk2DOC = { small: ['#:', '##', '##'], m: ['##:', '###', '###', '###'], flat: ['##:', '###'] };
+/* a frame: phone and laptop, and the page at [kind, x, y, how]. how is 'front' (a clear moat round it), 'behind' (the
+   phone hides it) or 'on' (drawn on the screen) */
+const tk2Sync = (phone, laptop, page, extra = []) => {
+  let cells = page ? cellsOf(tk2DOC[page[0]], page[1], page[2]) : [];
+  const ptop = phone[0];
+  if (page && page[3] === 'behind') cells = cells.filter(([x, y]) => !(x <= 3 && y >= ptop));
+  return stamp(inGrid(tk2Front([...tk2Phone(...phone), ...tk2Laptop(...laptop)], [...cells, ...extra], !!page && page[3] === 'front')));
+};
+/* phone to laptop, then back: [phone [top, lit, tone], laptop [r, tone], page, ms, extra] */
+const tk2SYNC_STEPS = [
+  [[5, 5], [], null, 420],
+  [[5, 5, '#'], [], null, 110],
+  [[6, 3], [], ['small', 1, 3, 'behind'], 70],
+  [[5, 0], [], ['small', 1, 1, 'behind'], 70],
+  [[5, 0], [], ['small', 3, 0], 90],
+  [[5, 0], [], ['m', 4, 0], 170],
+  [[5, 0], [], ['small', 7, 1], 80],
+  [[5, 0], [], ['small', 7, 4, 'front'], 55],
+  [[5, 0], [0], ['flat', 7, 8, 'on'], 70, [[8, 8, 'W']]],
+  [[5, 0], [1], ['flat', 7, 7, 'on'], 80],
+  [[5, 0], [2], ['flat', 7, 8, 'on'], 90],
+  [[5, 0], [3], ['flat', 7, 8, 'on'], 80],
+  [[5, 0], [9], null, 520],
+  [[5, 0], [9, '#'], ['flat', 7, 8, 'on'], 110],
+  [[5, 0], [2], ['small', 8, 4, 'front'], 70],
+  [[5, 0], [], ['small', 8, 1], 80],
+  [[5, 0], [], ['m', 5, 0], 170],
+  [[5, 0], [], ['small', 3, 0], 90],
+  [[5, 0], [], ['small', 1, 2, 'behind'], 60],
+  [[6, 0], [], ['small', 1, 4, 'behind'], 70],
+  [[6, 1, '#'], [], null, 90],
+  [[5, 3], [], null, 90],
+];
+const tk2SYNC = tk2SYNC_STEPS.map(([ph, lp, page, ms, extra]) => F(tk2Sync(ph, lp, page, extra), ms));
+
+/* analyzing, Pie take: a pie chart, and its biggest slice weighed up. Four slices sit closed with thin cuts between
+   them, the biggest three eighths of the whole. It is worked loose: it lifts a cell, sticks and drops back, then pulls
+   free and comes up and out along its middle, while the rest of the pie dims. Held up, it is hefted, sagging a cell and
+   coming back up as if weighed in the hand, and a glint runs along its crust as it is looked over. Then it is let go:
+   it drops back in, quick like anything heavy, and lands with a thud that makes the other slices hop, and the pie is
+   whole again */
+const tk2PIE_C = [5, 7], tk2PIE_R2 = 30.5;
+/* the cuts at 0, 135, 225 and 315 degrees: the big slice (three eighths), two quarters and an eighth */
+const tk2PIE_CUTS = [0, 135, 225, 315];
+const tk2PieCell = (dx, dy) => { if (dx * dx + dy * dy > tk2PIE_R2 || (dx === 0 && dy === 0)) return -1;
+  const a = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360;
+  if (tk2PIE_CUTS.some(c => Math.abs(((a - c + 540) % 360) - 180) < 0.01)) return -1;
+  return a < 135 ? 0 : a < 225 ? 1 : a < 315 ? 2 : 3; };
+const tk2PIE_SLICES = [[], [], [], []];
+for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) { const s = tk2PieCell(dx, dy); if (s >= 0) tk2PIE_SLICES[s].push([dx, dy]); }
+/* the crust of the big slice, in order round its arc, for the glint */
+const tk2PIE_RIM = tk2PIE_SLICES[0].filter(([dx, dy]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => (dx + a) * (dx + a) + (dy + b) * (dy + b) > tk2PIE_R2))
+  .sort((p, q) => Math.atan2(-p[1], p[0]) - Math.atan2(-q[1], q[0]));
+/* big: [dx, dy] of the big slice; rest: [dx, dy] of the others; dim: the others dimmed; glint: crust cells lit white */
+const tk2PIE_TONE = ['#', ':', '#', ':'];
+const tk2Pie = (big = [0, 0], { rest = [0, 0], dim = false, glint = [] } = {}) => stamp(inGrid(tk2PIE_SLICES.flatMap((cs, s) => {
+  const [ox, oy] = s === 0 ? big : rest;
+  return cs.map(([dx, dy]) => [tk2PIE_C[0] + dx + ox, tk2PIE_C[1] + dy + oy, s === 0 ? (glint.some(([gx, gy]) => gx === dx && gy === dy) ? 'W' : '#') : dim ? ':' : tk2PIE_TONE[s]]); })));
+const tk2HELD = { dim: true };
+const tk2PIE = [
+  F(tk2Pie(), 420),
+  F(tk2Pie([1, -1]), 110), F(tk2Pie(), 90), F(tk2Pie(), 120),
+  F(tk2Pie([1, -1], tk2HELD), 70), F(tk2Pie([2, -2], tk2HELD), 200),
+  F(tk2Pie([2, -1], tk2HELD), 130), F(tk2Pie([2, -2], tk2HELD), 150),
+  ...tk2PIE_RIM.map((_, k) => F(tk2Pie([2, -2], { dim: true, glint: tk2PIE_RIM.slice(Math.max(0, k - 1), k + 1) }), k === 0 ? 80 : 45)),
+  F(tk2Pie([2, -2], tk2HELD), 300),
+  F(tk2Pie([1, -1], tk2HELD), 60), F(tk2Pie([0, 0], { rest: [0, -1] }), 70), F(tk2Pie(), 90), F(tk2Pie([0, -1]), 70), F(tk2Pie(), 140),
+];
+
+/* generating, Wand take: the magic wand with its stars, the way the toolbar draws it: a slim stick held at the bottom
+   left with a heavier grip and a white-hot tip, a big four-point star beyond the tip and two small ones either side.
+   The stars twinkle out one after another, the big one last. The wand winds back, slow, up to nearly upright, waits a
+   beat, then flicks: it whips round fast, overshoots past flat and springs back to rest. As it whips, sparks fly off
+   the tip and are flung outward, slowing as they go. Two wink out; the other three light up where they come to rest
+   and the big one blooms, overshooting a size before it settles: a fresh set of stars, made by the flourish */
+const tk2PIVOT = [1, 11], tk2WAND_L = 7.1;
+const tk2Ang = d => d * Math.PI / 180;
+/* the wand at angle a degrees: a thin line from the hand to a white tip, the grip doubled for its first three cells */
+const tk2WandCells = a => { const tip = [tk2PIVOT[0] + tk2WAND_L * Math.cos(tk2Ang(a)), tk2PIVOT[1] - tk2WAND_L * Math.sin(tk2Ang(a))];
+  const line = pathCells([tk2PIVOT, tip], true), side = a < 30 ? [0, -1] : [1, 0];
+  return [...line.map(([x, y], i) => [x, y, i === line.length - 1 ? 'W' : '#']), ...line.slice(0, 3).map(([x, y]) => [x + side[0], y + side[1], '#'])]; };
+/* the sparks thrown by the flick: the angle at which each leaves the tip, how far out it comes to rest, and what it
+   becomes: a small star, the big star, or nothing (it winks out) */
+const tk2SPARKS = [[76, 10.4, 'small'], [60, 9.4, 'wink'], [45, 11.3, 'big'], [30, 9.4, 'wink'], [16, 10.4, 'small']];
+const tk2SparkAt = (a, r) => [Math.round(tk2PIVOT[0] + r * Math.cos(tk2Ang(a))), Math.round(tk2PIVOT[1] - r * Math.sin(tk2Ang(a)))];
+/* the timeline, in ms */
+const tk2W = { fadeA: 260, fadeB: 350, fadeBig: 440, wind: [640, 980], flick: [1060, 1220], back: [1220, 1500], loop: 1880 };
+const tk2WandAngle = t => t < tk2W.wind[0] ? 45 : t < tk2W.wind[1] ? tk2Tween(t, ...tk2W.wind, 45, 84) : t < tk2W.flick[0] ? 84
+  : t < tk2W.flick[1] ? tk2Tween(t, ...tk2W.flick, 84, -6, tk2In) : t < tk2W.back[1] ? tk2Tween(t, ...tk2W.back, -6, 45, tk2Out) : 45;
+/* when the whipping wand passes angle a */
+const tk2PassAt = a => tk2W.flick[0] + (tk2W.flick[1] - tk2W.flick[0]) * Math.sqrt((84 - a) / 90);
+/* a star that twinkles out from time t0: a white flare, a point, dim, gone */
+const tk2Fade = (pos, t, t0, r) => t < t0 ? tk2Star(pos, r, r >= 2) : t < t0 + 70 ? [...tk2Star(pos, r, true), ...(r >= 2 ? tk2Flare(pos) : [])] : t < t0 + 130 ? tk2Star(pos, r >= 2 ? 1 : 0, r >= 2)
+  : t < t0 + 190 ? tk2Star(pos, 0, false, r >= 2 ? '#' : ':') : t < t0 + 240 && r >= 2 ? tk2Star(pos, 0, false, ':') : [];
+const tk2Magic = t => {
+  const cells = [...tk2WandCells(tk2WandAngle(t))];
+  /* the resting set, twinkling out at the start of the loop */
+  const rest = { small: [tk2SparkAt(76, 10.4), tk2SparkAt(16, 10.4)], big: tk2SparkAt(45, 11.3) };
+  cells.push(...tk2Fade(rest.small[0], t, tk2W.fadeA, 1), ...tk2Fade(rest.small[1], t, tk2W.fadeB, 1), ...tk2Fade(rest.big, t, tk2W.fadeBig, 3));
+  for (const [a, r, kind] of tk2SPARKS) {
+    const born = tk2PassAt(a); if (t < born) continue;
+    const u = t - born, fly = tk2Out(u / 200), rr = 7.1 + (r - 7.1) * fly, pos = tk2SparkAt(a, rr);
+    if (u < 200) { cells.push([...pos, u < 60 ? 'W' : '#']); continue; }
+    const v = u - 200;
+    if (kind === 'wink') { if (v < 60) cells.push(...tk2Star(pos, 1, true)); else if (v < 120) cells.push([...pos, ':']); continue; }
+    if (kind === 'small') { cells.push(...(v < 70 ? tk2Star(pos, 1, true) : tk2Star(pos, 1, false))); continue; }
+    cells.push(...(v < 45 ? tk2Star(pos, 1, true) : v < 90 ? tk2Star(pos, 2, true) : v < 160 ? [...tk2Star(pos, 3, true), ...tk2Flare(pos)] : tk2Star(pos, 3, true)));
+  }
+  return stamp(inGrid(cells));
+};
+const tk2WAND = tk2Film(tk2Magic, tk2W.loop);
+
+/* searching, Eye take: an eye looking for something. An almond with pointed corners and a round iris with a dark
+   pupil. It searches the way eyes really do, in quick darts with still looks between, and every dart overshoots a cell
+   and settles. Left, then all the way right, then a glance down, the upper lid following the look down. Then a double
+   take: it snaps back to the right, overshooting, and narrows to peer, the upper lid lower than the lower one. There it
+   is: the eye pops wide for an instant and a white glint lights in its pupil. It holds the look, blinks, and goes back
+   to searching. Frozen, it is the narrowed eye peering off to one side: looking for something, not just seeing */
+/* the lids: the upper one u rows above the middle row at its highest, the lower one l rows below; each curves down to
+   a point in the corners, an almond */
+const tk2LidTop = (x, u) => Math.round(6 - u * (1 - ((x - 6) / 6) * ((x - 6) / 6)));
+const tk2LidBot = (x, l) => Math.round(6 + l * (1 - ((x - 6) / 6) * ((x - 6) / 6)));
+/* the lid outlines: a cell per column, filled down to the neighbouring column so the line never breaks */
+const tk2Lid = (fn, v) => { const cs = [];
+  for (let x = 0; x < N; x++) { const y = fn(x, v), ys = [y];
+    for (const nx of [x - 1, x + 1]) if (nx >= 0 && nx < N) { const ny = fn(nx, v); for (let k = Math.min(y, ny) + 1; k < Math.max(y, ny); k++) if (Math.abs(k - y) < Math.abs(k - ny) || (Math.abs(k - y) === Math.abs(k - ny) && Math.abs(x - 6) > Math.abs(nx - 6))) ys.push(k); }
+    for (const yy of ys) cs.push([x, yy]); }
+  return cs; };
+/* the iris: a disc with the pupil dark in the middle */
+const tk2IRIS = ['.###.', '#####', '##.##', '#####', '.###.'];
+/* the eye: lids open u above and l below, the iris looking dx, dy from the middle and cut by the lids, a white glint */
+const tk2Eye = ({ u = 4, l = 4, dx = 0, dy = 0, glint = false } = {}) => {
+  const cells = [...tk2Lid(tk2LidTop, u), ...tk2Lid(tk2LidBot, l)].map(([x, y]) => [x, y, '#']);
+  const inside = (x, y) => y > tk2LidTop(x, u) && y < tk2LidBot(x, l);
+  if (u > 0.5) {
+    cells.push(...cellsOf(tk2IRIS, 4 + dx, 4 + dy).filter(([x, y]) => inside(x, y)));
+    if (glint && inside(7 + dx, 5 + dy)) cells.push([7 + dx, 5 + dy, 'W']);
+  }
+  return stamp(inGrid(cells));
+};
+const tk2EYE = [
+  F(tk2Eye(), 300),
+  F(tk2Eye({ dx: -1 }), 40), F(tk2Eye({ dx: -3 }), 55), F(tk2Eye({ dx: -2 }), 340),
+  F(tk2Eye({ dx: 0 }), 35), F(tk2Eye({ dx: 2 }), 35), F(tk2Eye({ dx: 3 }), 55), F(tk2Eye({ dx: 2 }), 300),
+  F(tk2Eye({ dx: 0, dy: 1, u: 3 }), 40), F(tk2Eye({ dx: -1, dy: 1, u: 3 }), 220),
+  F(tk2Eye({ dx: 1 }), 35), F(tk2Eye({ dx: 3 }), 55), F(tk2Eye({ dx: 2, u: 3 }), 90), F(tk2Eye({ dx: 2, u: 2, l: 3 }), 420),
+  F(tk2Eye({ dx: 2, u: 5, l: 5, glint: true }), 70), F(tk2Eye({ dx: 2, glint: true }), 560),
+  F(tk2Eye({ dx: 1, u: 1, l: 3 }), 45), F(tk2Eye({ u: 0, l: 1 }), 80), F(tk2Eye({ u: 2, l: 4 }), 50),
+];
+
+/* thinking, Cloud take: a thought cloud with its bubble trailing down to the thinker, and an idea forming inside it.
+   Three dim dots sit in the cloud, the ellipsis of a thought in progress. They light one after another as the thought
+   gathers, then the outer two drift in and the three run together into one bright point. The point climbs to the low
+   shoulder of the cloud and pushes it up into a bump, breaks through it, and bursts above the cloud into a sparkle with
+   a white flare: the idea. The shoulder springs back. The idea hangs there glowing, then twinkles out as the next dots
+   appear in the cloud */
+const tk2CLOUD_ROWS = ['....###......', '..##...#.....', '.#......###..', '#..........#.', '#...........#', '.##........#.', '...########..'];
+const tk2SHOULDER = [[8, 6], [9, 6], [10, 6]];
+/* the cloud, its shoulder flat, bumped up in the middle, or broken open where the idea comes through */
+const tk2Cloud = (shoulder = 'flat') => {
+  const cells = cellsOf(tk2CLOUD_ROWS, 0, 4).filter(([x, y]) => !tk2SHOULDER.some(([sx, sy]) => sx === x && sy === y));
+  if (shoulder === 'flat') cells.push(...tk2SHOULDER.map(([x, y]) => [x, y, '#']));
+  if (shoulder === 'bump') cells.push([8, 6, '#'], [9, 5, '#'], [10, 6, '#']);
+  if (shoulder === 'open') cells.push([8, 6, '#'], [10, 6, '#']);
+  return cells; };
+const tk2TRAIL = cellsOf(['##', '##'], 0, 11);
+/* the idea: a four-point sparkle centred at (10, 2): 0 a point, 1 a plus, 2 the full sparkle with its corners */
+const tk2IDEA_AT = [10, 2];
+const tk2Idea = (r, { flare = false, tone = '#' } = {}) => { const [cx, cy] = tk2IDEA_AT;
+  if (r < 0) return []; if (r === 0) return [[cx, cy, tone === '#' ? 'W' : tone]];
+  const cells = [...[-r, -r + 1, 0, r - 1, r].flatMap(k => [[cx + k, cy, tone], [cx, cy + k, tone]]), ...(r >= 2 ? [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => [cx + a, cy + b, tone]) : [])];
+  if (tone === '#') cells.push([cx, cy, 'W'], ...(flare ? tk2Flare([cx, cy]) : []));
+  return cells; };
+const tk2Thought = (dots, shoulder = 'flat', idea = []) => stamp(inGrid([...tk2Cloud(shoulder), ...tk2TRAIL, ...dots, ...idea]));
+const tk2DOTS = (t1, t2, t3, xs = [3, 6, 9]) => [[xs[0], 8, t1], [xs[1], 8, t2], [xs[2], 8, t3]];
+const tk2CLOUDF = [
+  F(tk2Thought(tk2DOTS(':', ':', ':')), 300),
+  F(tk2Thought(tk2DOTS('#', ':', ':')), 150), F(tk2Thought(tk2DOTS('#', '#', ':')), 150), F(tk2Thought(tk2DOTS('#', '#', '#')), 220),
+  F(tk2Thought(tk2DOTS('#', '#', '#', [4, 6, 8])), 90), F(tk2Thought(tk2DOTS('#', '#', '#', [5, 6, 7])), 70),
+  F(tk2Thought([[6, 8, 'W'], [5, 8, ':'], [7, 8, ':']]), 80), F(tk2Thought([[6, 8, 'W']]), 150),
+  F(tk2Thought([[7, 7, 'W'], [6, 8, ':']]), 60), F(tk2Thought([[8, 7, 'W']]), 50), F(tk2Thought([[9, 6, 'W'], [8, 7, ':']], 'bump'), 90),
+  F(tk2Thought([[9, 5, 'W'], [9, 6, ':']], 'open'), 40), F(tk2Thought([[10, 4, 'W']], 'flat'), 40),
+  F(tk2Thought([], 'flat', tk2Idea(1)), 50), F(tk2Thought([], 'flat', tk2Idea(2, { flare: true })), 70), F(tk2Thought([], 'flat', tk2Idea(2)), 560),
+  F(tk2Thought([[3, 8, ':']], 'flat', tk2Idea(1)), 90), F(tk2Thought([[3, 8, ':'], [6, 8, ':']], 'flat', tk2Idea(0)), 90), F(tk2Thought(tk2DOTS(':', ':', ':'), 'flat', tk2Idea(0, { tone: ':' })), 90),
+];
+
+/* breathing, Balloon take: a breath filling a balloon. It is tied off at a little knot with its string hanging below.
+   Breathing in, it fills from the knot upward, round at every size, slow to start, quicker through the middle and slow
+   as it gets full, and as the rubber stretches the light on its shoulder stretches with it, from a point to a long
+   gleam. Full, it is light enough to float: it rises a cell, tugging its string straight, overshoots and settles. The
+   held breath. Breathing out it lets the air go just as slowly, sinks back down, and the string goes slack and swings
+   the other way, and at the very end the nearly empty balloon gives a little wobble */
+/* widths of the rows of the balloon from the top down, empty to full; the last row sits on the knot */
+const tk2BAL = [[3, 5, 3], [3, 5, 5, 3], [3, 5, 5, 5, 3], [5, 7, 7, 5, 3], [5, 7, 7, 7, 5, 3], [5, 7, 9, 9, 7, 5, 3], [5, 7, 9, 9, 9, 7, 5, 3]];
+const tk2WOBBLE = [5, 5, 3];
+/* the gleam on the shoulder: a run of cells just inside the upper left curve, longer as the rubber stretches */
+const tk2Gleam = (rows, top, n) => rows.slice(1, 1 + n).map((w, i) => [6 - (w - 1) / 2 + 1, top + 1 + i]);
+/* the string hangs from the knot down out of the frame; swing pushes its lower end sideways, more the further down */
+const tk2String = (knot, swing) => { const len = 12 - knot; return Array.from({ length: len }, (_, k) => [6 + Math.sign(swing) * Math.floor(Math.abs(swing) * (k + 1) / len + 0.34), knot + 1 + k, ':']); };
+/* the balloon: ws its rows, lift how far it has floated up from where it is tied, gleam cells, the string's swing */
+const tk2Balloon = (ws, { lift = 0, gleam = 0, swing = 0 } = {}) => {
+  const knot = 10 - lift, top = knot - ws.length;
+  const body = ws.flatMap((w, i) => Array.from({ length: w }, (_, j) => [6 - (w - 1) / 2 + j, top + i]));
+  const has = (x, y) => body.some(([a, b]) => a === x && b === y);
+  const shine = tk2Gleam(ws, top, gleam);
+  const tone = ([x, y]) => shine.some(([a, b]) => a === x && b === y) ? 'W' : (x > 6 && y > top && (!has(x + 1, y) || !has(x, y + 1))) ? ':' : '#';
+  return stamp(inGrid([...body.map(c => [...c, tone(c)]), [6, knot, '#'], ...tk2String(knot, swing)]));
+};
+const tk2BREATH = [
+  [tk2BAL[0], { swing: -1 }, 250],
+  [tk2BAL[1], { swing: -1 }, 220],
+  [tk2BAL[2], { gleam: 1, swing: -1 }, 180],
+  [tk2BAL[3], { gleam: 1, swing: 0 }, 150],
+  [tk2BAL[4], { gleam: 1, swing: 1 }, 150],
+  [tk2BAL[5], { gleam: 2, swing: 1 }, 190],
+  [tk2BAL[6], { gleam: 2, swing: 1 }, 250],
+  [tk2BAL[6], { gleam: 2, lift: 1, swing: 1 }, 120],
+  [tk2BAL[6], { gleam: 2, lift: 2, swing: 0 }, 130],
+  [tk2BAL[6], { gleam: 2, lift: 1, swing: 0 }, 510],
+  [tk2BAL[6], { gleam: 2, swing: 0 }, 220],
+  [tk2BAL[5], { gleam: 2, swing: -1 }, 200],
+  [tk2BAL[4], { gleam: 1, swing: -1 }, 160],
+  [tk2BAL[3], { gleam: 1, swing: -1 }, 150],
+  [tk2BAL[2], { gleam: 1, swing: 0 }, 180],
+  [tk2BAL[1], { swing: -1 }, 220],
+  [tk2WOBBLE, { swing: -1 }, 100],
+];
+const tk2BALLOON = tk2BREATH.map(([ws, o, ms]) => F(tk2Balloon(ws, o), ms));
+
+/* breathing, Float take: the meditation figure, a round head over a body sitting cross-legged with its hands resting
+   on its knees, and its breath. Breathing in, the chest rises: the shoulders lift and square, the head rises with them
+   and the arms lift off the body, slow at first and slow into the top. At the top the breath is held, and it shows as
+   a light in the chest, a soft spot that warms to white. Breathing out, the shoulders settle back and the light is let go
+   as a soft ring that spreads out from the chest behind the figure, past its head and out of the frame, fading as it
+   goes */
+const tk2SIT = {
+  out: ['.....###.....', '....#####....', '....#####....', '.....###.....', '.............', '.....###.....', '...#######...', '..#..###..#..', '.#..#####..#.', '..#########..', '.###########.'],
+  mid: ['.....###.....', '....#####....', '....#####....', '.....###.....', '.............', '....#####....', '...#.###.#...', '..#..###..#..', '.#..#####..#.', '..#########..', '.###########.'],
+  in: ['.....###.....', '....#####....', '....#####....', '.....###.....', '.............', '....#####....', '...#.###.#...', '...#.###.#...', '..#..###..#..', '.#..#####..#.', '..#########..', '.###########.'] };
+const tk2HEART = [6, 8];
+/* the figure in a pose, the light in its chest in a tone, and the breath as a ring of radius r behind it */
+const tk2Sit = (pose, heart, r = 0, ringTone = ':') => {
+  const rows = tk2SIT[pose], fig = cellsOf(rows, 0, N - rows.length), body = new Set(fig.map(([x, y]) => x + ',' + y));
+  const ring = []; if (r > 0) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (Math.abs(Math.hypot(x - tk2HEART[0], y - tk2HEART[1]) - r) < 0.5 && !body.has(x + ',' + y)) ring.push([x, y, ringTone]);
+  const b = stamp([...ring, ...fig]);
+  return heart ? put(b, [tk2HEART], heart) : b;
+};
+const tk2FLOAT = [
+  F(tk2Sit('out'), 420), F(tk2Sit('mid'), 320), F(tk2Sit('in'), 360),
+  F(tk2Sit('in', ':'), 220), F(tk2Sit('in', 'W'), 620),
+  F(tk2Sit('in', ':', 3), 130), F(tk2Sit('mid', null, 4), 140), F(tk2Sit('out', null, 5), 160), F(tk2Sit('out', null, 6), 180), F(tk2Sit('out', null, 7), 190), F(tk2Sit('out', null, 8), 160),
+];
+
+const OPTS_TK2 = {
+  thinking_cloud: Object.assign(seq(...tk2CLOUDF), { still: tk2Thought(tk2DOTS(':', ':', ':'), 'flat', tk2Idea(2)) }),
+  analyzing_pie: Object.assign(seq(...tk2PIE), { still: tk2Pie([2, -2]) }),
+  searching_eye: Object.assign(seq(...tk2EYE), { still: tk2Eye({ dx: 2, u: 2, l: 3 }), trail: 0.6 }),
+  generating_wand: Object.assign(seq(...tk2WAND), { still: tk2Magic(0) }),
+  syncing_devices: Object.assign(seq(...tk2SYNC), { still: tk2Sync([5, 5], [], ['m', 4, 0]) }),
+  breathing_balloon: Object.assign(seq(...tk2BALLOON), { still: tk2Balloon(tk2BAL[6], { gleam: 2, lift: 1 }) }),
+  breathing_float: Object.assign(seq(...tk2FLOAT), { still: tk2Sit('in', 'W', 6) }),
+};
+Object.assign(SPRITES, OPTS_TK2);
 
 /* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
    such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
@@ -2949,25 +3117,25 @@ ensureFilters();
 const OPTIONS = {
   thinking: [['thinking', 'Wave', 'Three dots ride an overlapping wave in a speech bubble, the reply-is-coming pattern from messaging.'],
     ['thinking_bulb', 'Bulb', 'A light bulb strikes like an old filament: it catches, drops out, catches again, then its tip goes white and the glow spreads through the glass as rays fan out around it.'],
-    ['thinking_cloud', 'Cloud', 'Thought bubbles rise into a thought cloud and glide inside to its middle; the first leaves a glowing point, the second sparks it into a white twinkle of an idea.']],
+    ['thinking_cloud', 'Cloud', 'Three dim dots in a thought cloud light one by one, drift together and run into one bright point. It climbs to the cloud\'s low shoulder, pushes it up into a bump and breaks through, bursting above the cloud into a sparkle with a white flare, which hangs there and twinkles out as new dots appear.', 'an assistant working out an answer before it replies, the beat between the question and the idea.']],
   reading: [['reading', 'Peel', 'A reading cursor runs the lines of a page, then the page peels off like paper and the next is underneath.'],
     ['reading_book', 'Book', 'An open book reads its lines left page then right, then the right page lifts, stands on edge and lands on the left, shaded like paper with a glint on its edge.'],
     ['reading_specs', 'Specs', 'Eyes behind reading glasses follow a line word by word, each word lighting as they reach it, flick back as the page scrolls up, and pause to blink at the end of the page.']],
   analyzing: [['analyzing', 'Bars', 'Four bars rise a beat apart, overshoot and spring back, a light runs across their tops, and they drop away.'],
     ['analyzing_trend', 'Trend', 'Four data points appear, a bright head joins them up into a line chart that dips and climbs, and the end opens into an arrowhead before the chart scrolls away.'],
-    ['analyzing_pie', 'Pie', 'Light cuts a dim disc into three slices, they ease apart, and the top-right quarter fills with light from the centre out before the pie closes again.']],
+    ['analyzing_pie', 'Pie', 'The biggest slice of a pie chart is worked loose: it lifts, sticks and drops back, then pulls free up and out while the rest of the pie dims. Held up, it sags a cell as if weighed in the hand and a glint runs along its crust, then it drops back in with a thud that makes the other slices hop.', 'breaking data down into its parts, like working out where the money went in a month of spending.']],
   searching: [['searching', 'Lens', 'A magnifier circles over fine print that shows only through the lens, lingering at the top and bottom.'],
     ['searching_radar', 'Radar', 'A radar arm sweeps round a dim scope and stray contacts flare white and fade as it passes. It slows on its way back up, a blip it crosses stays lit, and the arm brakes to a stop beside it as it pings.'],
-    ['searching_eye', 'Eye', 'An eye searches in quick jumps with still looks between: left, all the way right, a glance down. It narrows to peer at something, then opens and turns to you with a white catchlight: found. It blinks and looks again.']],
+    ['searching_eye', 'Eye', 'An eye searches in quick darts that overshoot and settle: left, right, a glance down with the lid following. Then a double take: it snaps back, narrows to peer, pops wide with a white glint in its pupil, blinks and looks again.', 'hunting for one particular thing, like finding a face in a photo library or a message in a long thread.']],
   generating: [['generating', 'Twinkle', 'Two sparkles pulse in opposite phase, each popping past its size with a white core; the big one flicks a quarter turn.'],
     ['generating_gather', 'Gather', 'Six scattered motes fall into the middle one at a time, and each one that lands grows the sparkle a size until it is whole. A light runs out along its rays, then it lets go and the motes fly back out.'],
-    ['generating_wand', 'Wand', 'A magic wand with a big star and two small ones by its tip. The stars twinkle out one after another, the wand draws back and flicks, and new stars fly off the tip and open up, big one first.']],
+    ['generating_wand', 'Wand', 'The stars by a magic wand twinkle out one by one. The wand winds back nearly upright, waits, then whips round, overshoots and springs back, flinging sparks off its tip that slow as they fly; two wink out and three light up where they land, the big one blooming with a white flare.', 'making something new from a prompt, like generating an image or drafting a reply with AI.']],
   writing: [['writing', 'Pencil', 'A two-tone pencil writes a line of handwriting as the page slides under it, and stops to dot an i.'],
     ['writing_caret', 'Caret', 'A white caret types lines of words in a rhythm. It stops on a word, blinks, deletes it and types a better one, then returns: it sweeps back to the start as the page scrolls up a line.'],
     ['writing_signature', 'Signature', 'Two looped letters are signed in one flowing stroke, wet ink white at the pen and drying behind it, slow round each loop and quick down the stems. The pen lifts and sweeps a long underline back beneath; it holds, dims and is gone.']],
   syncing: [['syncing', 'Handoff', 'Two arrows take turns: each pulls back, dashes off with speed lines, and its replacement slides in and settles.'],
     ['syncing_loop', 'Loop', 'The sync arrows coil, each tail drawing up into its tucked head, then fling half a turn round the ring with white tips, overshoot a cell and open their arrowheads where the other arrow began.'],
-    ['syncing_devices', 'Devices', 'A laptop and a phone on a dim link: a white packet leaves the glowing screen, crosses, and the other screen lights up from the side it lands on, then the change goes back the other way.']],
+    ['syncing_devices', 'Devices', 'A phone\'s glowing screen gathers itself and pops a page out of its top like toast. The page grows toward you at the top of its arc and drops onto the laptop, landing flat with a white flash and a bounce as the screen lights from where it landed; then the laptop tosses the next change back and the phone bobs as it swallows it.', 'syncing files or settings across a person\'s devices, like photos moving from phone to laptop.']],
   connecting: [['connecting', 'Rise', 'The dot jumps and spreads into an arc where it peaks; a new dot jumps higher, three times, until the Wi-Fi fan is whole.'],
     ['connecting_ripple', 'Ripple', 'A drop of signal falls onto the dot and the splash spreads out as the arcs, one after another.'],
     ['connecting_plug', 'Plug', 'A plug and a socket ease together, click home with sparks, and light runs out along both cables.']],
@@ -3000,8 +3168,8 @@ const OPTIONS = {
     ['scanning_faceid', 'Face ID', 'The corner brackets lock onto a dim face, a scan line glides down lighting each feature it passes, and the recognised face grins and winks.'],
     ['scanning_print', 'Touch ID', 'A ring of light spreads out from the core of a fingerprint and lights every ridge, then gathers back into the core, which blinks once.']],
   breathing: [['breathing', 'Lungs', 'Lungs swell to fill a dim outline as a breath travels down the windpipe, then empty on the exhale.'],
-    ['breathing_balloon', 'Balloon', 'A balloon tied at the neck slowly fills and empties, catching a glint as the rubber stretches, its string swaying underneath.'],
-    ['breathing_float', 'Float', 'A cross-legged meditating figure floats up off its seat on the in-breath, its shadow drawing in, hangs, and settles back on the out-breath.']],
+    ['breathing_balloon', 'Balloon', 'A breath fills a balloon from its knot upward while the gleam on its shoulder stretches from a point to a streak. Full, it floats up, overshoots a cell on its string and settles for the held breath, then lets the air go just as slowly, sinking as its string swings the other way, and wobbles when it is nearly empty.', 'a playful breathing exercise, like a calm-down timer for kids: breathe in to fill the balloon, breathe out to let it go.'],
+    ['breathing_float', 'Float', 'A meditating figure breathes in: its shoulders lift and square, its head rises and its arms lift off its body. At the top the held breath glows in its chest, a soft spot warming to white, and breathing out the light is let go as a soft ring that spreads out behind the figure and fades.', 'a mindfulness session getting ready, or any wait you want to feel unhurried and paced to a slow breath.']],
   calculating: [['calculating', 'Operators', 'The operators turn into one another: plus blooms into times, times folds into minus, minus throws out the dots of divide, divide becomes equals.'],
     ['calculating_keypad', 'Keypad', 'A calculator: keys press in a quick rhythm, each adding a digit to the display, and the equals key flashes the answer.'],
     ['calculating_sigma', 'Sigma', 'A white-hot head draws a sigma on a dim track, the equals sign pops in, and the stroke erases tail first.']],
