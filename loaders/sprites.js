@@ -791,7 +791,7 @@ const OPTS_B = {
   searching_eye: Object.assign(seq(...srhEYE), { still: srhEye(4, 0, 0, true), trail: 0.6 }),
   generating_gather: Object.assign(seq(...genGATHER_LOOP), { still: genSPARK }),
   generating_wand: Object.assign(seq(...genWAND), { rest: 0 }),
-  writing_caret: Object.assign(seq(...wrtCARET), { still: wrtPage(1, '##.##', 0, [6, 10]), trail: 0.6 }),
+  writing_caret: Object.assign(seq(...wrtCARET), { still: wrtPage(1, '##.##', 0, [6, 10]), trail: 0.3 }),
   writing_signature: Object.assign(seq(...wrtSIGNATURE), { still: wrtSIGNED, trail: 0.7 }),
 };
 
@@ -941,6 +941,117 @@ const OPTS_C = {
     { still: dbgSpider('rest', 0) }),
 };
 
+/* heartbeat, ECG take: a patient monitor. A white-hot head sweeps the trace across the screen at a steady pace and wipes
+   two columns ahead of itself, the way a real monitor writes over its last sweep; the newest trace is lit and it cools
+   to dim behind. On the flat it walks, on the beat it darts: up the R spike, a hang at the top, then down through the
+   deep S and back. At the peak the beat throws a small heart: a spark above the tip blooms into the heart with a glint
+   on its lobe, it hangs there while the trace runs on, and it fades before the next beat. Frozen, it is the heart over
+   the pulse line, the heart rate symbol */
+const hrtPath = [[0,10],[1,10],[2,10],[3,10],[4,10],[5,9],[5,8],[5,7],[5,6],[6,5],[7,6],[7,7],[7,8],[7,9],[7,10],[7,11],[8,12],[9,11],[10,10],[11,10],[12,10]];
+const hrtHeartRows = ['.#.#.', '#####', '.###.', '..#..'];
+/* the trace with the head at path index h: drawn this sweep up to h, lit for the newest columns and dim further back;
+   the two columns ahead of the head are wiped, and past them the last sweep still glows dim */
+const hrtTrace = h => { const hx = hrtPath[h][0]; return hrtPath.map(([x, y], i) => {
+  const ahead = ((x - hx) % N + N) % N, age = ((hx - x) % N + N) % N;
+  if (i === h) return [x, y, 'W'];
+  if (i > h) return ahead >= 1 && ahead <= 2 || x === hx ? null : [x, y, ':'];
+  return [x, y, age <= 7 ? '#' : ':'];
+}).filter(Boolean); };
+const hrtHeart = st => !st ? [] : st === 'spark' ? [[6, 3, '#']] : st === 'tiny' ? cellsOf(['#.#', '###', '.#.'], 5, 1)
+  : cellsOf(hrtHeartRows, 4, 0).map(([x, y]) => [x, y, st === 'dim' ? ':' : st === 'hot' && x === 5 && y === 0 ? 'W' : '#']);
+const hrtMs = [85, 85, 80, 75, 60, 48, 40, 34, 34, 80, 30, 28, 28, 28, 30, 34, 50, 50, 70, 80, 85];
+const hrtHearts = { 9: 'spark', 10: 'tiny', 11: 'hot', 12: 'hot', 13: 'hot', 14: 'hot', 15: 'full', 16: 'full', 17: 'full', 18: 'full', 19: 'dim' };
+const hrtEcg = hrtPath.map((_, h) => F(stamp([...hrtTrace(h), ...hrtHeart(hrtHearts[h])]), hrtMs[h]));
+
+/* heartbeat, Fill take: the heart as a vessel, and the beat as the pump. Empty, it is a dim outline. On the lub a surge
+   of red rushes in from the point, a crest running across its surface and catching the light, sloshes up the far wall
+   and settles; on the dub a second surge fills it to the lobes and sloshes back the other way. Full, it is the solid
+   heart with a glint on its lobe. Then it drains away smoothly, slow to start and slow to finish, ready for the next
+   beat */
+const hrtVessel = ['.............', '.............', '..###...###..', '.#####.#####.', '.###########.', '.###########.', '..#########..', '...#######...', '....#####....', '.....###.....', '......#......', '.............', '.............'];
+const hrtIn = (x, y) => (hrtVessel[y] || '')[x] === '#';
+const hrtRim = new Set(cellsOf(hrtVessel).filter(([x, y]) => [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => !hrtIn(x + dx, y + dy))).map(([x, y]) => x + ',' + y));
+/* liquid up to row L; the surface is a row higher where wave(x) says so; glint marks one white cell */
+const hrtFill = (L, wave = () => false, glint) => stamp(cellsOf(hrtVessel).map(([x, y]) => {
+  if (y >= (wave(x) ? L - 1 : L)) return [x, y, glint && glint[0] === x && glint[1] === y ? 'W' : '#'];
+  return hrtRim.has(x + ',' + y) ? [x, y, ':'] : null; }).filter(Boolean));
+const hrtCrest = c => x => Math.abs(x - c) <= 1;
+const hrtSurge = (L, c) => hrtFill(L, hrtCrest(c), [c, L - 1]);
+const hrtPump = [F(hrtFill(11), 320),
+  F(hrtSurge(9, 4), 60), F(hrtSurge(7, 6), 55), F(hrtSurge(6, 8), 75), F(hrtFill(6, x => x >= 9), 100), F(hrtFill(6, hrtCrest(6)), 110), F(hrtFill(6), 170),
+  F(hrtSurge(5, 8), 60), F(hrtSurge(4, 6), 55), F(hrtSurge(3, 4), 75), F(hrtFill(3, x => x <= 3), 100), F(hrtFill(2), 110), F(hrtFill(2, () => false, [3, 3]), 650),
+  ...[3, 4, 5, 6, 7, 8, 9, 10, 11].map((L, i) => F(hrtFill(L), ease(9, 110, 60)[i]))];
+
+/* scanning, Face ID take: the Face ID glyph, four corner brackets around a face drawn as two eyes, a nose with its hook
+   and a smile. The face waits dim, not yet known. The brackets close in a cell and lock on, then a scan line glides
+   down the face, slow at the brow, quick through the middle, slow at the chin: the row under it lights white and
+   everything it has passed stays lit. Recognised, the brackets let go, the smile widens into a grin and the face gives
+   a wink, holds, and dims for the next face */
+const scnEyes = [[4,3],[4,4],[8,3],[8,4]], scnWink = [[4,4],[8,3],[8,4]];
+const scnNose = [[6,4],[6,5],[6,6],[5,6]];
+const scnSmile = [[4,8],[5,9],[6,9],[7,9],[8,8]], scnGrin = [[3,7],[4,8],[5,9],[6,9],[7,9],[8,8],[9,7]];
+const scnBrackets = k => [[0,0],[1,0],[2,0],[0,1],[0,2]].flatMap(([x, y]) => [[x + k, y + k], [12 - x - k, y + k], [x + k, 12 - y - k], [12 - x - k, 12 - y - k]]);
+/* brackets in by k; the features lit above row `lit`, dim below it, white on the beam's row */
+const scnFace = ({ k = 0, beam = -1, lit = 13, eyes = scnEyes, smile = scnSmile } = {}) => stamp([
+  ...scnBrackets(k).map(([x, y]) => [x, y, '#']),
+  ...[...eyes, ...scnNose, ...smile].map(([x, y]) => [x, y, y === beam ? 'W' : y < lit ? '#' : ':']),
+  ...(beam >= 0 ? Array.from({ length: 9 }, (_, i) => [2 + i, beam, ':']) : [])]);
+const scnRows = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+const scnFaceId = [F(scnFace({ lit: 0 }), 480), F(scnFace({ k: 1, lit: 0 }), 120),
+  ...scnRows.map((r, i) => F(scnFace({ k: 1, beam: r, lit: r }), ease(scnRows.length, 120, 55)[i])), F(scnFace({ k: 1 }), 150),
+  F(scnFace({ k: 1, smile: scnGrin }), 90), F(scnFace({ smile: scnGrin, eyes: scnWink }), 170), F(scnFace({ smile: scnGrin }), 850), F(scnFace({ lit: 0, smile: scnGrin }), 90)];
+
+/* scanning, Touch ID take: a fingerprint, nested ridges arching over a short core, the bottom ends running off at their
+   own heights the way a real print does. It waits dim. A ring of light spreads out from the core, slow off the core,
+   fast through the middle, slow at the rim: the ridges at its front catch it white and every ridge behind stays lit,
+   the way Touch ID fills the print in. Read, it holds, then the light gathers back in from the edge to the core, which
+   blinks white once, and the print goes dim for the next touch */
+const scnPrintRows = ['....#####....', '..##.....##..', '.#..#####..#.', '#..#.....#..#', '#.#..###..#.#', '#.#.#...#.#.#', '#.#.#.#.#.#.#', '..#.#.#.#.#.#', '.#..#.#.#.#..', '.#.#..#.#..#.', '...#.#..#.#..', '..#..#.#..#..', '....#..#.....'];
+const scnDist = ([x, y]) => Math.hypot(x - 6, y - 7.5);
+/* lit within R of the core with a white front, dim beyond; past `keep` dim again */
+const scnPrint = (R, band = 0.75, keep = 99) => stamp(cellsOf(scnPrintRows).map(([x, y]) => { const d = scnDist([x, y]); return [x, y, d > keep ? ':' : d <= R - band ? '#' : d <= R ? 'W' : ':']; }));
+const scnOut = [1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2, 8.2, 9.4, 10.6], scnBack = [9, 7.5, 6, 4.5, 3, 1.5];
+const scnTouch = [F(scnPrint(-1), 380), ...scnOut.map((R, i) => F(scnPrint(R), ease(scnOut.length, 120, 50)[i])), F(scnPrint(20), 600),
+  ...scnBack.map((R, i) => F(scnPrint(20, 0, R), ease(scnBack.length, 90, 60)[i])), F(stamp([...cellsOf(scnPrintRows).map(([x, y]) => [x, y, ':']), [6, 7, 'W'], [6, 8, 'W']]), 140)];
+
+/* breathing, Balloon take: breathing in fills a balloon. It is tied at the neck, so it grows upward from the knot, round
+   at every size, slow to start, quicker through the middle and slow as it gets full. As the rubber stretches it catches
+   the light: a glint appears on its shoulder and grows to two cells, and its far side stays in shade. Full, it holds;
+   then it lets the air go just as slowly. The string hangs below and sways gently all the while */
+const brtSizes = [[3, 5, 5, 3], [3, 5, 5, 5, 3], [3, 5, 7, 7, 5, 3], [3, 5, 7, 7, 7, 5, 3], [5, 7, 9, 9, 7, 5, 3], [5, 7, 9, 9, 9, 7, 5, 3]];
+const brtNeck = 8;
+/* the balloon at size k, its string in one of four curves: bowed left, an S, bowed right, the other S */
+const brtStrings = [[[6,9],[5,10],[5,11],[6,12]], [[6,9],[5,10],[6,11],[7,12]], [[6,9],[7,10],[7,11],[6,12]], [[6,9],[7,10],[6,11],[5,12]]];
+const brtBalloon = (k, curve) => {
+  const ws = brtSizes[k], top = brtNeck - ws.length;
+  const rows = ws.map((w, i) => [top + i, 6 - (w - 1) / 2, 6 + (w - 1) / 2]);
+  const cells = rows.flatMap(([y, a, b]) => Array.from({ length: b - a + 1 }, (_, i) => [a + i, y]));
+  const has = (x, y) => cells.some(([cx, cy]) => cx === x && cy === y);
+  const glint = k >= 4 ? [[rows[1][1] + 1, top + 1], [rows[2][1] + 1, top + 2]] : k >= 2 ? [[rows[1][1] + 1, top + 1]] : [];
+  const tone = ([x, y]) => glint.some(([gx, gy]) => gx === x && gy === y) ? 'W' : (x > 6 && y > top + 1 && (!has(x + 1, y) || !has(x, y + 1))) ? ':' : '#';
+  return stamp([...cells.map(([x, y]) => [x, y, tone([x, y])]), [6, brtNeck, '#'], ...brtStrings[curve % 4].map(([x, y]) => [x, y, ':'])]);
+};
+const brtBreath = [[0, 380], ...[1, 2, 3, 4, 5].map((k, i) => [k, ease(5, 320, 170)[i]]), [5, 700], ...[4, 3, 2, 1, 0].map((k, i) => [k, ease(5, 340, 180)[i]])]
+  .map(([k, ms], i) => F(brtBalloon(k, i), ms));
+
+/* breathing, Float take: the meditation figure from Health's Mindfulness, a round head over a body sitting cross-legged,
+   hands resting on the knees, with its soft shadow on the floor. Breathing in, it lifts off its seat and floats up two
+   cells, slow at the start and slow into the top, and its shadow draws in under it as it rises. It hangs there for the
+   held breath, then breathing out it settles back down just as slowly and the shadow spreads out to meet it */
+const brtZen = ['....###....', '...#####...', '...#####...', '....###....', '...........', '...#####...', '..#.###.#..', '.#..###..#.', '..#######..', '###########'];
+const brtFloat = (lift, shadow) => stamp([...cellsOf(brtZen, 1, 2 - lift), ...Array.from({ length: shadow }, (_, i) => [6 - (shadow - 1) / 2 + i, 12, ':'])]);
+const brtZenLoop = [F(brtFloat(0, 11), 540), F(brtFloat(0, 9), 260), F(brtFloat(1, 9), 330), F(brtFloat(1, 7), 300), F(brtFloat(2, 7), 360), F(brtFloat(2, 5), 760),
+  F(brtFloat(2, 7), 300), F(brtFloat(1, 7), 330), F(brtFloat(1, 9), 300), F(brtFloat(0, 9), 360)];
+
+const OPTS_D = {
+  heartbeat_ecg: Object.assign(seq(...hrtEcg), { still: stamp([...hrtPath.map(([x, y]) => [x, y, '#']), ...hrtHeart('full')]), trail: 0.6 }),
+  heartbeat_fill: Object.assign(seq(...hrtPump), { still: hrtFill(2, () => false, [3, 3]) }),
+  scanning_faceid: Object.assign(seq(...scnFaceId), { still: scnFace() }),
+  scanning_print: Object.assign(seq(...scnTouch), { still: scnPrint(20) }),
+  breathing_balloon: Object.assign(seq(...brtBreath), { still: brtBalloon(5, 1) }),
+  breathing_float: Object.assign(seq(...brtZenLoop), { still: brtFloat(1, 7) }),
+};
+
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
@@ -978,5 +1089,5 @@ const SPRITES = {
   calculating_keypad: restAtLongest(seq(...KEYPAD)),
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
-Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C);
+Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
