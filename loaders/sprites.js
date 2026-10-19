@@ -74,30 +74,30 @@ const ARROW_L = bm(
   '...#.....',
   '.........');
 /* searching: a magnifier that stays put while a scan line sweeps the glass */
+/* searching: a magnifier with a glint, sweeping slowly left and right like it is scanning a page */
 const LENS = bm(
+  '.........',
   '..###....',
   '.#...#...',
-  '#.....#..',
-  '#.....#..',
-  '#.....#..',
   '.#...#...',
-  '..###.#..',
+  '.#...#...',
+  '..###....',
+  '.....##..',
   '......##.',
-  '.......##');
-const LENS_COL = x => [[x,1],[x,2],[x,3],[x,4],[x,5]].filter(([c, r]) => (r === 1 || r === 5) ? (c >= 2 && c <= 4) : (c >= 1 && c <= 5));
-/* thinking: a bulb; the filament lights, then the whole bulb flashes */
-const BULB = bm(
-  '...###...',
-  '..#...#..',
-  '.#.....#.',
-  '.#..#..#.',
-  '.#.#.#.#.',
-  '..#...#..',
-  '...###...',
-  '...#.#...',
-  '...###...');
-const FIL = [[4,3],[3,4],[5,4]];
-/* reading: a page with a folded corner; lines appear under a reading cursor */
+  '.........');
+/* thinking: a speech bubble whose three dots rise in turn, the reply-is-coming pattern everyone knows from messaging */
+const BUBBLE = bm(
+  '.........',
+  '.#######.',
+  '#.......#',
+  '#.......#',
+  '#.......#',
+  '#.......#',
+  '.#######.',
+  '..#......',
+  '.#.......');
+const DOTS = [[2,4],[4,4],[6,4]];
+const bubbleWave = up => put(BUBBLE, DOTS.map(([x, y], i) => [x, i === up ? y - 1 : y]), '#');
 const PAGE = bm(
   '.#####...',
   '.#...##..',
@@ -109,20 +109,25 @@ const PAGE = bm(
   '.#.....#.',
   '.#######.');
 const LINE = row => [[3,row],[4,row],[5,row]];
+const PAGE_TEXT = put(PAGE, [...LINE(4), ...LINE(6)], '#');
 /* generating: a four-point sparkle that grows and settles */
-const STAR_S = bm('.........','.........','.........','....#....','...###...','....#....','.........','.........','.........');
-const STAR_M = bm('.........','....#....','....#....','...###...','..#####..','...###...','....#....','....#....','.........');
-const STAR_L = bm('....#....','....#....','...###...','..#####..','#########','..#####..','...###...','....#....','....#....');
-/* writing: lines of text are typed cell by cell under a cursor; when the page fills it scrolls up */
-const LINE1 = 7, LINE2 = 5, LINE3 = 7;
-const textRow = (row, n) => Array.from({ length: n }, (_, x) => [x, row]);
-const typed = (base, row, n, cursor) => put(put(base, textRow(row, n), '#'), cursor ? [[n, row]] : [], 'W');
-const PAGE1 = put(EMPTY, textRow(1, LINE1), '#');
-/* connecting: a plug that seats into a socket bar */
-const SOCKET = bm('#########','.........','.........','.........','.........','.........','.........','.........','.........');
-const PLUG = bm('.........','.........','.........','..#...#..','..#...#..','.#######.','.#######.','..#####..','....#....');
+/* generating: the sparkle pair everyone now reads as AI, a big four-point star and a small one twinkling in turn */
+const BIG = r => put(EMPTY, [...Array.from({ length: 2 * r + 1 }, (_, i) => [3, 5 - r + i]), ...Array.from({ length: 2 * r + 1 }, (_, i) => [3 - r + i, 5]), ...(r >= 2 ? [[2,4],[4,4],[2,6],[4,6]] : [])], '#');
+const SMALL = big => put(EMPTY, big ? [[7,0],[6,1],[7,1],[8,1],[7,2]] : [[7,1]], '#');
+const sparkle = (r, big, hotCore) => put(over(BIG(r), SMALL(big)), hotCore ? [[3,5]] : [], 'W');
+/* writing: words with spaces are typed under a cursor; the page scrolls, and three lines cycle so the loop is seamless */
+const WORDS = ['###.###..', '##.####..', '####.##..'];
+const textLine = (b, row, w, n) => put(b, w.split('').map((ch, x) => ch === '#' && x < n ? [x, row] : null).filter(Boolean), '#');
+const page3 = (a, b, c, n, cursor) => { let g = textLine(textLine(textLine(EMPTY, 1, a, 9), 4, b, 9), 7, c, n); return cursor ? put(g, [[n, 7]], 'W') : g; };
+const writeCycle = (a, b, c) => [...Array.from({ length: 8 }, (_, n) => F(page3(a, b, c, n, true), 95)), F(page3(a, b, c, 7, false), 200), F(page3(a, b, c, 7, true), 200), F(shift(page3(a, b, c, 7, false), 0, -1), 80), F(shift(page3(a, b, c, 7, false), 0, -2), 80)];
+/* connecting: the Wi-Fi fan, the dot first and then each arc, the way a phone shows it is joining a network */
+const WIFI_DOT = put(EMPTY, [[4,7]], '#');
+const WIFI_1 = put(WIFI_DOT, [[3,4],[4,4],[5,4],[2,5],[6,5]], '#');
+const WIFI_2 = put(WIFI_1, [[2,2],[3,2],[4,2],[5,2],[6,2],[1,3],[7,3],[0,4],[8,4]], '#');
 /* uploading / downloading: an arrow through a tray */
 const TRAY = bm('.........','.........','.........','.........','.........','.........','#.......#','#.......#','#########');
+/* on impact the tray walls give a little instead of flashing: a squash, not a light */
+const TRAY_SQUASH = bm('.........','.........','.........','.........','.........','.........','.........','#.......#','#########');
 const ARR_UP = bm('....#....','...###...','..#####..','....#....','....#....','....#....','.........','.........','.........');
 const ARR_DN = bm('....#....','....#....','....#....','..#####..','...###...','....#....','.........','.........','.........');
 /* error: a warning triangle with a clear exclamation mark: 3-cell bar, gap, dot */
@@ -176,18 +181,18 @@ function bars(t) {
 }
 const SPRITES = {
   done: restAtLongest(seq(...[90,70,55,50,50,55,65,85].map((ms, k) => F(strokeTo(0, k + 1, true), ms)), F(CHECK, 520), ...[-1,0,1,2,3,4,5,6,7,8].map(c => F(glint(c), 40)), F(CHECK, 900), ...[1,2,3,4,5,6,7].map(k => F(strokeTo(k, 8, false), 45)), F(EMPTY, 280))),
-  done_spring: restAtLongest(seq(F(shift(CHECK, 0, -5), 60), F(shift(CHECK, 0, -3), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(hot(CHECK), 100), F(CHECK, 1500), F(shift(CHECK, 0, 2), 60), F(shift(CHECK, 0, 5), 60), F(EMPTY, 320))),
+  done_spring: restAtLongest(seq(F(shift(CHECK, 0, -5), 60), F(shift(CHECK, 0, -3), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[2], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 2), 60), F(shift(CHECK, 0, 5), 60), F(EMPTY, 320))),
   building: seq(F(HAM_RAISED, 620), F(HAM_MID, 90), F(put(HAM_STRIKE, [[3,4],[0,1]]), 100), F(HAM_STRIKE, 220), F(HAM_MID, 110)),
-  syncing: seq(...[0,1,2,3,4,5,6,7,8].map(k => F(over(wrapX(ARROW_R, k), wrapX(ARROW_L, -k)), 130))),
-  searching: seq(F(LENS, 420), ...[1,2,3,4,5].map(x => F(put(LENS, LENS_COL(x)), 150)), F(LENS, 200), F(put(LENS, [[2,2]]), 180)),
-  analyzing: seq(...[0,1,2,3,4,5,6].map(t => F(bars(t), 110)), ...[[1,5],[3,3],[5,4],[7,1]].map(c => F(put(bars(9), [c]), 130)), F(bars(9), 900), ...[5,3,1].map(t => F(bars(t), 70))),
-  thinking: seq(F(BULB, 520), F(put(BULB, FIL), 420), F(put(hot(BULB), [[0,0],[8,0]]), 120), F(put(BULB, FIL), 300)),
-  reading: seq(F(PAGE, 420), ...[3,4,5].map(c => F(put(PAGE, [[c,4]]), 110)), F(put(PAGE, LINE(4), '#'), 320), ...[3,4,5].map(c => F(put(put(PAGE, LINE(4), '#'), [[c,6]]), 110)), F(put(PAGE, [...LINE(4), ...LINE(6)], '#'), 1000), F(put(PAGE, LINE(4), '#'), 90)),
-  generating: seq(F(STAR_S, 320), F(STAR_M, 150), F(put(STAR_L, [[1,1],[7,7]]), 640), F(STAR_M, 150), F(put(STAR_S, [[7,1],[1,7]]), 320)),
-  writing: seq(...Array.from({ length: LINE2 + 1 }, (_, n) => F(typed(PAGE1, 4, n, true), 85)), F(typed(PAGE1, 4, LINE2, false), 160), F(typed(PAGE1, 4, LINE2, true), 160), ...Array.from({ length: LINE3 + 1 }, (_, n) => F(typed(typed(PAGE1, 4, LINE2, false), 7, n, true), 85)), F(typed(typed(PAGE1, 4, LINE2, false), 7, LINE3, false), 220), F(typed(typed(PAGE1, 4, LINE2, false), 7, LINE3, true), 220), ...[1,2,3,4,5,6].map(k => F(shift(typed(typed(PAGE1, 4, LINE2, false), 7, LINE3, false), 0, -k), 70))),
-  connecting: seq(F(over(SOCKET, PLUG), 520), F(over(SOCKET, shift(PLUG, 0, -1)), 150), F(put(over(SOCKET, shift(PLUG, 0, -2)), [[2,1],[6,1],[2,0],[6,0]]), 240), F(over(SOCKET, shift(PLUG, 0, -2)), 900), F(over(SOCKET, shift(PLUG, 0, -1)), 150)),
+  syncing: seq(...[0,1,2,3,4,5].map(k => F(put(over(shift(ARROW_R, 1, 0), shift(ARROW_L, -1, 0)), [[1 + k, 2], [7 - k, 6]], 'W'), 150)), F(over(shift(ARROW_R, 1, 0), shift(ARROW_L, -1, 0)), 420)),
+  searching: seq(F(LENS, 300), F(shift(LENS, 1, 0), 300), F(put(shift(LENS, 1, 0), [[3,2]]), 160), F(shift(LENS, 1, 0), 140), F(LENS, 300), F(shift(LENS, -1, 0), 300), F(LENS, 140)),
+  analyzing: seq(...[1,2,3,4,5,6].map(t => F(bars(t), 120)), ...[[1,5],[3,3],[5,4],[7,1]].map(c => F(put(bars(9), [c]), 140)), F(bars(9), 900), ...[5,3].map(t => F(bars(t), 90))),
+  thinking: seq(F(bubbleWave(0), 230), F(bubbleWave(1), 230), F(bubbleWave(2), 230), F(bubbleWave(-1), 460)),
+  reading: seq(F(PAGE_TEXT, 420), ...LINE(4).map(c => F(put(PAGE_TEXT, [c]), 170)), F(PAGE_TEXT, 200), ...LINE(6).map(c => F(put(PAGE_TEXT, [c]), 170)), F(PAGE_TEXT, 520)),
+  generating: seq(F(sparkle(1, true, false), 260), F(sparkle(2, true, false), 160), F(sparkle(3, false, false), 160), F(sparkle(3, false, true), 520), F(sparkle(2, false, false), 160), F(sparkle(2, true, false), 160)),
+  writing: seq(...writeCycle(WORDS[0], WORDS[1], WORDS[2]), ...writeCycle(WORDS[1], WORDS[2], WORDS[0]), ...writeCycle(WORDS[2], WORDS[0], WORDS[1])),
+  connecting: seq(F(WIFI_DOT, 360), F(WIFI_1, 300), F(WIFI_2, 900), F(WIFI_1, 140), F(WIFI_DOT, 140)),
   uploading: seq(...[2,1,0,-1,-2,-3].map(dy => F(over(TRAY, shift(ARR_UP, 0, dy)), 140)), F(TRAY, 380)),
-  downloading: seq(...[-3,-2,-1,0,1,2].map(dy => F(over(TRAY, shift(ARR_DN, 0, dy)), 140)), F(hot(TRAY), 110), F(TRAY, 300)),
+  downloading: seq(...[-3,-2,-1,0,1,2].map(dy => F(over(TRAY, shift(ARR_DN, 0, dy)), 140)), F(TRAY_SQUASH, 110), F(TRAY, 320)),
   error: seq(F(put(TRI, BANG, '#'), 900), F(TRI, 220), F(put(TRI, BANG, '#'), 900), F(shift(put(TRI, BANG, '#'), 1, 0), 70), F(shift(put(TRI, BANG, '#'), -1, 0), 70), F(shift(put(TRI, BANG, '#'), 1, 0), 70)),
   debugging: seq(...Array.from({ length: 14 }, (_, i) => F(BUG(i - 7, i), 160))),
   heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(HEART_M, 90), F(HEART_S, 140), F(HEART_L, 70), F(HEART_M, 80), F(HEART_S, 610)),
