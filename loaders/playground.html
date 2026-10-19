@@ -38,6 +38,13 @@
   --accent-l: .55; --accent-c: .22; --glow-mul: .5; color-scheme: light;
 }
 :root[data-font="system"] { --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* iOS: system background, grouped-cell surfaces, SF Pro, no dot grid */
+:root[data-theme="ios"] {
+  --bg: #000000; --surface: #1c1c1e; --surface-2: #2c2c2e; --line: rgba(255,255,255,.08);
+  --fg: #ffffff; --muted: #8e8e93; --dot: transparent; --pill: #1c1c1e; --pill-line: transparent;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  --glow-mul: .45; color-scheme: dark;
+}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -115,11 +122,11 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .pair .v { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; min-width: 0; }
 .pair .v em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
 .state:hover { border-color: var(--line); }
-.state.sel { border-color: hsl(var(--h) 90% 55% / .55); background: var(--surface-2); }
-.state:focus-visible { outline: 2px solid hsl(var(--h) 90% 55%); outline-offset: 2px; }
+.state.sel { border-color: color-mix(in srgb, var(--accent, hsl(var(--h) 90% 55%)) 55%, transparent); background: var(--surface-2); }
+.state:focus-visible { outline: 2px solid var(--accent, hsl(var(--h) 90% 55%)); outline-offset: 2px; }
 .state small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .state small i { font-style: normal; display: inline-flex; align-items: center; gap: 5px; }
-.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: hsl(var(--h) 100% 56%); }
+.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--accent, hsl(var(--h) 100% 56%)); }
 .group-title { flex-basis: 100%; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
 
 .contexts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
@@ -131,7 +138,7 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .ctx .card .t { font-weight: 600; font-size: 15px; }
 .ctx .card .d { color: var(--muted); font-size: 12.5px; }
 .ctx .bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.ctx .bar i { display: block; height: 100%; width: 38%; background: hsl(var(--h) 100% 56%); }
+.ctx .bar i { display: block; height: 100%; width: 38%; background: var(--accent, hsl(var(--h) 100% 56%)); }
 
 .rail { position: sticky; top: 16px; align-self: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 14px; display: grid; gap: 14px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
 @media (max-width: 880px) { .rail { position: static; max-height: none; } }
@@ -219,7 +226,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 
   <aside class="rail" aria-label="Controls">
     <h2>Controls</h2>
-    <div class="ctl"><span class="lab">Theme</span><div class="seg" data-set="theme"><button data-v="system">System</button><button data-v="dark">Dark</button><button data-v="light">Light</button></div></div>
+    <div class="ctl"><span class="lab">Theme</span><div class="seg" data-set="theme"><button data-v="system">System</button><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="ios">iOS</button></div></div>
     <div class="ctl"><span class="lab">Label font</span><div class="seg" data-set="font"><button data-v="inter">Inter</button><button data-v="system">System</button></div></div>
     <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
     <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
@@ -653,6 +660,23 @@ function ramp(hue, light) {
   const r = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
   rampCache.set(key, r); return r;
 }
+/* iOS system colors (dark surface values) and how each state maps onto them */
+const IOS = { blue: '#0A84FF', green: '#30D158', red: '#FF453A', orange: '#FF9F0A', yellow: '#FFD60A', pink: '#FF375F', purple: '#BF5AF2', teal: '#40C8E0', indigo: '#5E5CE6', mint: '#63E6E2' };
+const IOS_MAP = { thinking: 'purple', reading: 'blue', analyzing: 'blue', searching: 'blue', generating: 'purple', writing: 'blue', syncing: 'teal', connecting: 'teal', uploading: 'indigo', downloading: 'indigo', done: 'green', error: 'red', building: 'orange', debugging: 'yellow', heartbeat: 'pink', scanning: 'purple', breathing: 'mint', calculating: 'blue' };
+const iosName = id => (S.hueMode === 'brand' && id !== 'done' && id !== 'error') ? 'blue' : IOS_MAP[id];
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function rampHex(hex) {
+  const key = 'hex:' + hex + ':' + S.bed;
+  if (rampCache.has(key)) return rampCache.get(key);
+  const [r, g, b] = hexRgb(hex), fills = [], alphas = [];
+  for (let i = 0; i < RAMP_N; i++) {
+    const v = i / (RAMP_N - 1);
+    if (v < 0.5) { fills.push(`rgb(${r} ${g} ${b})`); alphas.push(+lerp(S.bed, 1, v / 0.5).toFixed(3)); }
+    else { const u = ((v - 0.5) / 0.5) ** 2; fills.push(`rgb(${Math.round(lerp(r, 255, u))} ${Math.round(lerp(g, 255, u))} ${Math.round(lerp(b, 255, u))})`); alphas.push(1); }
+  }
+  const out = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
+  rampCache.set(key, out); return out;
+}
 const isLight = () => getComputedStyle(document.documentElement).colorScheme.includes('light');
 
 /* ---------- matrix renderer ---------- */
@@ -698,7 +722,10 @@ class Matrix {
   applyHue() {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
+    this.accent = S.theme === 'ios' ? IOS[iosName(this.stateId)] : null;
+    this.accentCss = this.accent || `hsl(${hue} 100% 56%)`;
   }
+  get swatch() { return S.theme === 'ios' ? iosName(this.stateId) + ' ' + IOS[iosName(this.stateId)] : `${byId[this.stateId].hueName} ${this.hue}`; }
   set(stateId, N) { this.stateId = stateId; this.N = N; this.build(); }
   get period() { return (this.variant === 'pixels' && this.state.sprite) ? this.state.sprite.period : this.state.period; }
   scene(t) {
@@ -716,9 +743,9 @@ class Matrix {
     for (let i = 0; i < buf.length; i++) { let v = buf[i] * kd; const t = tg[i]; if (t > v) v += (t - v) * kr; buf[i] = v; }
   }
   paint(o) {
-    const light = isLight(), rp = ramp(this.hue, light);
+    const light = isLight(), rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
-    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1);
+    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.theme === 'ios' ? 0.45 : 1);
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
@@ -757,7 +784,7 @@ const heroLoaderB = new Matrix($('heroLoaderB'), selected, S.grid, { variant: 'p
 const stateEls = {};
 const stripMats = [];
 
-function captionFor(id) { const st = byId[id], per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period); return `<i>${st.hueName} ${st.hue}</i><span>${per.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
+function captionFor(id, m) { const st = byId[id], per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period); const sw = m ? m.swatch : `${st.hueName} ${st.hue}`; return `<i>${sw}</i><span>${per.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
 function buildStates() {
   const root = $('states');
   for (const id in stateEls) for (const m of stateEls[id].ms) m.destroy();
@@ -778,11 +805,11 @@ function buildStates() {
       const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
       pill.append(l, lbl); wrap.appendChild(pill); pair.appendChild(wrap);
       const m = new Matrix(l, st.id, S.grid, { variant: v }); ms.push(m); pills.push(pill);
-      pill.style.setProperty('--h', m.hue);
+      pill.style.setProperty('--h', m.hue); pill.style.setProperty('--accent', m.accentCss);
     }
-    const small = document.createElement('small'); small.innerHTML = captionFor(st.id);
+    const small = document.createElement('small'); small.innerHTML = captionFor(st.id, ms[0]);
     b.append(pair, small);
-    b.style.setProperty('--h', ms[0].hue);
+    b.style.setProperty('--h', ms[0].hue); b.style.setProperty('--accent', ms[0].accentCss);
     b.addEventListener('click', () => select(st.id));
     root.appendChild(b);
     stateEls[st.id] = { b, ms, pills, small };
@@ -805,9 +832,9 @@ function renderHero() {
   const st = byId[selected];
   $('heroLabel').textContent = st.label; $('heroLabelB').textContent = st.label;
   $('heroIdea').textContent = st.idea;
-  $('heroPill').style.setProperty('--h', heroLoader.hue); $('heroPillB').style.setProperty('--h', heroLoaderB.hue);
+  $('heroPill').style.setProperty('--h', heroLoader.hue); $('heroPillB').style.setProperty('--h', heroLoaderB.hue); $('heroPill').style.setProperty('--accent', heroLoader.accentCss); $('heroPillB').style.setProperty('--accent', heroLoaderB.accentCss);
   const per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period);
-  $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${per.toFixed(1)} s</b></span>${st.sprite && S.variant !== 'strings' ? `<span>frames <b>${st.sprite.frames.length}</b></span>` : ''}<span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
+  $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>color <b>${heroLoaderB.swatch}</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${per.toFixed(1)} s</b></span>${st.sprite && S.variant !== 'strings' ? `<span>frames <b>${st.sprite.frames.length}</b></span>` : ''}<span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
   const strip = $('strip'); strip.innerHTML = ''; stripMats.length = 0;
   const K = 14;
   for (let k = 0; k < K; k++) {
@@ -822,16 +849,19 @@ function select(id) { selected = id; heroLoader.set(id, S.grid); heroLoaderB.set
 
 const ctxMats = [];
 for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid, { variant: 'pixels' }));
+function syncCtxAccent() { for (const m of ctxMats) m.el.closest('.ctx').style.setProperty('--accent', m.accentCss); }
 
 function applyAll() {
   if (S.theme === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = S.theme;
+  $('brandHueOut').textContent = S.theme === 'ios' ? 'systemBlue' : S.brandHue; $('brandHue').disabled = S.theme === 'ios';
   document.documentElement.dataset.font = S.font;
   $('brandCtl').hidden = S.hueMode !== 'brand';
   rampCache.clear();
   for (const m of live) m.applyHue();
+  syncCtxAccent();
   const reduced = S.motion === 'reduced';
   for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.variant === 'pixels' && m.state.sprite ? restTime(m.state.sprite) : m.state.still); }
-  for (const id in stateEls) { const { b, ms, pills, small } = stateEls[id]; pills.forEach((pill, i) => { pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.style.setProperty('--h', ms[i].hue); }); b.style.setProperty('--h', ms[0].hue); small.innerHTML = captionFor(id); }
+  for (const id in stateEls) { const { b, ms, pills, small } = stateEls[id]; pills.forEach((pill, i) => { pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.style.setProperty('--h', ms[i].hue); pill.style.setProperty('--accent', ms[i].accentCss); }); b.style.setProperty('--h', ms[0].hue); b.style.setProperty('--accent', ms[0].accentCss); small.innerHTML = captionFor(id, ms[0]); }
   for (const id of ['heroPill', 'heroPillB']) $(id).classList.toggle('fixed', S.width === 'fixed');
   $('rulingTable').innerHTML = rulingHtml();
   for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.classList.toggle('on', String(S[seg.dataset.set]) === b.dataset.v);
@@ -856,7 +886,7 @@ function tokensJson() {
     variant: S.variant, whiteHot: S.hot === 'on',
     render: { artGrid: ART, pixels: 'hand-drawn cells', strings: 'vector lines between consecutive path cells', palette: S.levels ? S.levels + 1 + ' colors' : 'smooth', timeStepMs: S.step || 'smooth' },
     ramp: { space: 'hsl', dark: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 56%)', hot: 'hsl(h 100% 97%)' }, light: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 46%)', hot: 'hsl(h 100% 22%)' }, bed: S.bed },
-    color: { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
+    color: S.theme === 'ios' ? { theme: 'ios', hueMode: S.hueMode, system: IOS, stateColors: Object.fromEntries(STATES.map(s => [s.id, iosName(s.id)])) } : { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
     motion: { riseMs: S.rise, trailMs: S.decay, trailMul: Object.fromEntries(STATES.filter(s => s.decayMul).map(s => [s.id, s.decayMul])), periodS: Object.fromEntries(STATES.map(s => [s.id, s.period])) },
     glow: { bloom: S.glow, bloomBlurUnits: 2.6, edgeBlurUnits: 1.1, edgeWidthUnits: 0.3 },
     type: { family: S.font === 'inter' ? 'Inter' : 'system-ui', weight: 600, letterSpacing: '-0.01em' },
