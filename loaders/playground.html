@@ -153,6 +153,8 @@ html[data-theme='light'] .install code i { color: hsl(var(--accent-h) 80% 42%); 
 .take-btn { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.65rem; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-size: 0.84rem; text-align: left; cursor: pointer; }
 .take-btn:hover { color: var(--ink); }
 .take-btn[aria-pressed='true'] { background: var(--surface-hover); color: var(--ink); }
+.use { display: flex; gap: 0.6rem; align-items: baseline; margin: -0.6rem 0 1.5rem; font-size: 0.9rem; color: var(--ink); }
+.use b { flex: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .panel-note { font-size: 0.74rem; line-height: 1.45; color: var(--muted); margin: 0.4rem 0.3rem 0.2rem; }
 .take-btn small { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.66rem; color: var(--muted); }
 .code-block { position: relative; margin-bottom: 2.5rem; }
@@ -165,6 +167,7 @@ html[data-theme='light'] .install code i { color: hsl(var(--accent-h) 80% 42%); 
 .take-card .loader { --s: 40px; }
 .take-card b { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.15rem; }
 .take-card span.cap { display: block; font-size: 0.8rem; line-height: 1.45; color: var(--muted); }
+.take-card .take-use { margin-top: 0.35rem; color: var(--ink); opacity: 0.8; }
 .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem; }
 .pager a { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.9rem 1.1rem; border-radius: 16px; border: 1px solid var(--hairline); text-decoration: none; color: var(--ink); font-size: 0.92rem; font-weight: 500; }
 .pager a small { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
@@ -1804,75 +1807,148 @@ const rngFilm = (fn, total) => { const raw = [];
   raw.forEach((f, i) => { if (f.ms < 30 && i < raw.length - 1) raw[i + 1].ms += f.ms; else out.push(f); });
   if (out.length > 1 && out[out.length - 1].ms < 30) out[out.length - 2].ms += out.pop().ms;
   return out; };
-const rngSine = p => p <= 0 ? 0 : p >= 1 ? 1 : (1 - Math.cos(Math.PI * p)) / 2;
-const rngQuad = p => p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? 2 * p * p : 1 - 2 * (1 - p) * (1 - p);
+/* a loop's frames with back-to-back repeats merged, including across the wrap, so every hold is one frame */
+const rngTidy = frames => { const out = frames.reduce((acc, f) => { const last = acc[acc.length - 1];
+    if (last && last.b.join('') === f.b.join('')) last.ms += f.ms; else acc.push({ b: f.b, ms: f.ms }); return acc; }, []);
+  if (out.length > 1 && out[0].b.join('') === out[out.length - 1].b.join('')) out[0].ms += out.pop().ms;
+  return out; };
+const rngClamp = p => p <= 0 ? 0 : p >= 1 ? 1 : p;
+const rngSine = p => (1 - Math.cos(Math.PI * rngClamp(p))) / 2;
+const rngOut = (p, k = 2) => 1 - Math.pow(1 - rngClamp(p), k);
+/* a keyframed value: [[ms, value, ease?], ...], each step eased with its own ease or the default */
+const rngKeys = (keys, t, e = rngSine) => { for (let i = 1; i < keys.length; i++) if (t < keys[i][0]) {
+  const [t0, v0] = keys[i - 1], [t1, v1, ek = e] = keys[i]; return v0 + (v1 - v0) * ek((t - t0) / (t1 - t0)); } return keys[keys.length - 1][1]; };
 
-/* spinner, Ring take: a comet runs round a dim ring like a bead round a loop-the-loop. It creeps over the top, falls
-   down the right side gathering speed, whips round the bottom and coasts up the left side, slowing, to creep over the
-   top again. Its tail is its speed: short and tight at the top, stretched long through the bottom, white head, lit
-   body, and the tail runs out into the dim track */
-const rngRING_N = rngR5.length;
-const rngRingMs = i => { const th = 2 * Math.PI * (i + 0.5) / rngRING_N, vt = 1 / 150, vb = 1 / 34, c = (vb * vb - vt * vt) / 2;
-  return Math.round(1 / Math.sqrt(vt * vt + c * (1 - Math.cos(th)))); };
-const rngRingLen = i => Math.round(2 + 5 * (150 / rngRingMs(i) - 1) / (150 / 34 - 1));
-const rngComet = (h, L) => stamp([...rngTone(rngR5, ':'), ...Array.from({ length: L }, (_, k) => [...rngAt(rngR5, h - 1 - k), '#']), [...rngAt(rngR5, h), 'W']]);
-const rngRING = Array.from({ length: rngRING_N }, (_, i) => F(rngComet(i, rngRingLen(i)), rngRingMs(i)));
+/* spinner, Ring take: a bead on a loop-the-loop, with only just enough speed to make it round. It climbs the left side
+   losing speed, creeps over the top and very nearly stops there, its tail drained away to a lone white bead; then it
+   tips over and falls down the right side, gathering speed, whips through the bottom with its tail stretched long, and
+   coasts up again. The tail is how far the bead went in the last 160 ms, so it is the speed itself, and the stall at
+   the top is real physics: energy is conserved round the loop and the top is where it has the least. At the crest it
+   teeters, rocking back a cell as if it will not make it, before it tips over */
+const rngRING_N = rngR5.length, rngRING_T = 1900, rngRING_WT = 0.06, rngRING_TAIL = 160;
+/* time at which the bead passes each angle, by integrating 1 / angular speed round the loop */
+const rngRingTable = (() => { const S = 2800, ts = [0];
+  for (let s = 0; s < S; s++) { const th = 2 * Math.PI * (s + 0.5) / S; ts.push(ts[s] + 1 / Math.sqrt(rngRING_WT * rngRING_WT + 1 - Math.cos(th))); }
+  return ts.map(v => v / ts[S] * rngRING_T); })();
+/* the bead's position in cells round the ring at time t (0 is the top, at the middle of the stall) */
+const rngRingPos = t => { t = ((t % rngRING_T) + rngRING_T) % rngRING_T; const T = rngRingTable; let lo = 0, hi = T.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (T[m] <= t) lo = m; else hi = m; }
+  return (lo + (t - T[lo]) / (T[hi] - T[lo])) / (T.length - 1) * rngRING_N; };
+const rngBead = (h, tail) => stamp([...rngTone(rngR5, ':'), ...Array.from({ length: tail }, (_, k) => [...rngAt(rngR5, h - 1 - k), '#']), [...rngAt(rngR5, h), 'W']]);
+/* at the crest it teeters: it sits a moment, rocks back a cell as if it will not make it, then tips over */
+const rngRingAt = t => { const p = rngRingPos(t), q = rngRingPos(t - rngRING_TAIL), u = ((t % rngRING_T) + rngRING_T) % rngRING_T, s = u > rngRING_T / 2 ? u - rngRING_T : u;
+  if (s >= -70 && s < 20) return rngBead(-1, 0);
+  return rngBead(Math.round(p), Math.min(8, Math.round(((p - q) % rngRING_N + rngRING_N) % rngRING_N - 0.35))); };
+/* filmed from the bottom of the loop so the stall at the top is one unbroken hold */
+const rngRING = rngFilm(t => rngRingAt(t + rngRING_T / 2), rngRING_T);
 
-/* spinner, Snake take: the arc that chases its own tail. The head runs ahead and the arc grows until it nearly closes
-   while the tail creeps; then the head creeps and the tail runs to catch up, until the arc is a short dash again. Each
-   run is eased, slow off the mark and slow into the end, and in one loop the arc has gone round once. The head is
-   white and the last cell of the tail is dim, so it always reads which way it is going */
-const rngSNAKE_RUN = 24, rngSNAKE_CREEP = 4, rngSNAKE_MIN = 3, rngSNAKE_HALF = 820;
-const rngSnakeArc = (t, h) => stamp(Array.from({ length: h - t + 1 }, (_, k) => [...rngAt(rngR5, t + k), k === h - t ? 'W' : k === 0 ? ':' : '#']));
-/* the runner eases, the creeper walks, and the tail never comes closer than a three-cell dash behind the head */
-const rngSnakeAt = ms => { const u = (ms % rngSNAKE_HALF) / rngSNAKE_HALF, run = Math.round(rngSNAKE_RUN * rngQuad(u)), creep = Math.round(rngSNAKE_CREEP * u);
-  const h = ms < rngSNAKE_HALF ? rngSNAKE_MIN - 1 + run : rngSNAKE_MIN - 1 + rngSNAKE_RUN + creep, t = ms < rngSNAKE_HALF ? creep : rngSNAKE_CREEP + run;
-  return rngSnakeArc(Math.min(t, h - rngSNAKE_MIN + 1), h); };
-const rngSNAKE = rngFilm(rngSnakeAt, 2 * rngSNAKE_HALF);
+/* spinner, Snake take: an ouroboros. A snake with a dark eye runs round the ring after its own tail, in surges, the
+   head lunging ahead while the body stretches behind it. A nose away it stops and flicks a white tongue twice,
+   tasting, then lunges and bites: the ring is closed, the eye squeezes shut and a gulp runs down its neck. The tail
+   wriggles free and whips away round the ring, the eye opens, and the chase goes on, one lap a loop */
+const rngSNAKE_T = 2400;
+/* the snake's head and the tip of its tail, in cells round the ring, as keyframes */
+const rngSNAKE_H = [[0, 16], [360, 22], [500, 23], [860, 27], [1230, 27], [1300, 29], [1740, 29], [2400, 44]];
+const rngSNAKE_TL = [[0, 0], [1230, 2, rngSine], [1680, 2], [2020, 21, p => rngOut(p, 1.8)], [2400, 28]];
+/* the cell just outside ring cell i: the radius 6 cell nearest it in angle */
+const rngOuter = i => { const c = rngAt(rngR5, i), a = rngAngle(c), d = q => Math.abs(((rngAngle(q) - a + 540) % 360) - 180);
+  return rngR6.reduce((b, q) => d(q) < d(b) ? q : b); };
+/* the head is a two by two block astride the ring, a little outside it; the eye is its front outer cell */
+const rngHead = h => { const a = 2 * Math.PI * (h - 0.5) / rngRING_N, cx = 6 + 5.4 * Math.sin(a), cy = 6 - 5.4 * Math.cos(a);
+  const x0 = Math.round(cx - 0.5), y0 = Math.round(cy - 0.5), score = ([x, y]) => (x - cx) * (Math.cos(a) + Math.sin(a)) + (y - cy) * (Math.sin(a) - Math.cos(a));
+  const cs = [[x0, y0], [x0 + 1, y0], [x0, y0 + 1], [x0 + 1, y0 + 1]];
+  return { cells: cs, eye: cs.reduce((b, c) => score(c) > score(b) ? c : b) }; };
+const rngSnake = (h, t, { eye = ':', tongue = false, gulp = -1 } = {}) => { h = Math.round(h); t = Math.round(t);
+  const len = Math.min(h - t, rngRING_N - 1), head = rngHead(h);
+  const body = Array.from({ length: len }, (_, k) => [...rngAt(rngR5, h - 1 - k), k >= len - 2 ? ':' : '#']);
+  const g = stamp([...body, ...rngTone(head.cells, '#'), ...(tongue ? [[...rngAt(rngR5, h + 1), 'W']] : []),
+    ...(gulp >= 0 ? [[...rngOuter(h - 1 - gulp), '#']] : [])]);
+  return eye === '#' ? g : put(g, [head.eye], eye); };
+const rngSnakeAt = t => { const h = rngKeys(rngSNAKE_H, t), tl = rngKeys(rngSNAKE_TL, t);
+  const tongue = [[920, 990], [1090, 1160]].some(([a, b]) => t >= a && t < b);
+  const gulp = t >= 1400 && t < 1700 ? Math.floor((t - 1400) / 50) : -1;
+  return rngSnake(h, tl, { eye: t >= 1300 && t < 1720 ? '#' : ':', tongue, gulp }); };
+const rngSNAKE = rngFilm(rngSnakeAt, rngSNAKE_T);
 
-/* spinner, Dual take: two arcs on two rings, turning opposite ways. They cross at the top and at the bottom, nested
-   one inside the other, and slow as they cross so the pair is seen, then part and race round the far sides. The outer
-   arc is lit with a white leading tip; the inner one is dim with a lit tip, further away */
-const rngDUAL_HALF = 900;
-const rngDualAt = a => stamp([...rngArcAt(rngR3, -a, 5, ':', '#', -1), ...rngArcAt(rngR5, a, 7, '#', 'W', 1)]);
-const rngDUAL = rngFilm(t => rngDualAt(180 * Math.floor(t / rngDUAL_HALF) + 180 * rngSine((t % rngDUAL_HALF) / rngDUAL_HALF)), 2 * rngDUAL_HALF);
+/* spinner, Dual take: two things keeping in sync. Two arcs on two tracks go opposite ways and only one of them holds
+   the light: it is lit with a white leading tip, the other is dim with a lit tip. They glide in towards each other,
+   slowing all the way, and meet nested at the top; a white spark jumps the gap between them, the light passes across,
+   and they sling each other on, fast at first with the lit one streaking, gliding slower round the far sides until
+   they meet at the bottom and hand the light back */
+const rngDUAL_GLIDE = 760, rngDUAL_CLASP = 220, rngDUAL_HALF = rngDUAL_GLIDE + rngDUAL_CLASP;
+/* lit: 'out' or 'in' names the arc that holds the light, 'both' the moment it passes across; tail is the lit arc's
+   streak, in cells */
+const rngDualAt = (a, lit = 'out', { spark = -1, tail = 0 } = {}) => { const o = lit !== 'in', i = lit !== 'out';
+  const outer = rngArcAt(rngR5, a, 7, o ? '#' : ':', o ? 'W' : '#', 1), inner = rngArcAt(rngR3, -a, 5, i ? '#' : ':', i ? 'W' : '#', -1);
+  const c5 = Math.round(a * 28 / 360 - 3), c3 = Math.round(-a * 16 / 360 + 2), top = Math.round(a / 180) % 2 === 0;
+  const streak = Array.from({ length: tail }, (_, k) => lit === 'out' ? [...rngAt(rngR5, c5 - 1 - k), ':'] : [...rngAt(rngR3, c3 + 1 + k), ':']);
+  /* the spark crosses between the two arcs' middles: 0 on the outer arc, 1 in the gap, 2 on the inner arc */
+  return stamp([...inner, ...outer, ...streak, ...(spark >= 0 ? [[6, top ? 1 + spark : 11 - spark, 'W']] : [])]); };
+const rngDualAngle = t => { const h = Math.floor(t / rngDUAL_HALF), u = t % rngDUAL_HALF;
+  return 180 * h + (u < rngDUAL_CLASP ? 0 : 180 * rngOut((u - rngDUAL_CLASP) / rngDUAL_GLIDE, 2.4)); };
+/* at the top the light goes from the inner arc to the outer, at the bottom back again */
+const rngDualFilm = t => { const h = Math.floor(t / rngDUAL_HALF), u = t % rngDUAL_HALF, mine = h ? 'in' : 'out', theirs = h ? 'out' : 'in';
+  if (u < rngDUAL_CLASP) { const k = u < 50 ? -1 : u < 95 ? 0 : u < 140 ? 1 : u < 185 ? 2 : -1;
+    return rngDualAt(180 * h, u < 95 ? theirs : u < 140 ? 'both' : mine, { spark: k < 0 ? -1 : h ? k : 2 - k }); }
+  const a = rngDualAngle(t), moved = (a - rngDualAngle(t - 90)) * (h ? 16 : 28) / 360;
+  return rngDualAt(a, mine, { tail: Math.min(3, Math.round(moved - 0.6)) }); };
+const rngDUAL = rngFilm(rngDualFilm, 2 * rngDUAL_HALF);
 
-/* spinner, Orbit take: a moon round a planet. The planet is a round dot, a lit cross with its corners dim. The moon
-   is a short comet on a dotted path: a white head, a lit body and a dim tail that fades through the gaps of the path.
-   It hangs at the top and at the bottom and swings quickly down and up the sides, two easy beats to a lap */
+/* spinner, Orbit take: a satellite calling home. The planet is a round dot, a lit cross with its corners dim; the
+   satellite is a white point on a dotted orbit, trailing a comet tail as long as its speed. It slows to a hover over
+   the top and plays ping-pong with the planet: it drops a white ping that falls, quicker and quicker, onto the
+   planet's crown and sinks into its heart, the server thinking, then comes back out as the pong and rises, slowing,
+   into the satellite's hands. The connection made, it sets off again, gathering speed round the far side of the
+   planet, and comes back over the top */
 const rngPLANET = [[6, 6, '#'], [6, 5, '#'], [7, 6, '#'], [6, 7, '#'], [5, 6, '#'], [5, 5, ':'], [7, 5, ':'], [7, 7, ':'], [5, 7, ':']];
 const rngORBIT_PATH = rngR5.filter((_, i) => i % 2 === 0);
-const rngOrbitAt = i => stamp([...rngTone(rngORBIT_PATH, ':'), ...rngPLANET,
-  [...rngAt(rngR5, i), 'W'], [...rngAt(rngR5, i - 1), '#'], [...rngAt(rngR5, i - 2), '#'], ...[3, 4, 5].map(k => [...rngAt(rngR5, i - k), ':'])]);
-const rngOrbitMs = ease(14, 130, 40);
-const rngORBIT = Array.from({ length: rngR5.length }, (_, i) => F(rngOrbitAt(i), rngOrbitMs[i % 14]));
+const rngORBIT_T = 2300, rngORBIT_HOVER = 560;
+/* the ping's flight, [from ms, row]: down from under the satellite onto the planet's crown (row 5), into its heart
+   (row 6) and back out, and up again */
+const rngPING = [[100, 2], [152, 3], [194, 4], [230, 5], [286, 6], [352, 5], [398, 4], [438, 3], [486, 2], [550, -1]];
+const rngOrbitPos = t => { t = ((t % rngORBIT_T) + rngORBIT_T) % rngORBIT_T; if (t < rngORBIT_HOVER) return 0;
+  const u = (t - rngORBIT_HOVER) / (rngORBIT_T - rngORBIT_HOVER); return 28 * (u - Math.sin(2 * Math.PI * u) / (2 * Math.PI)); };
+const rngOrbitAt = (p, tail, { ping = -1, catchIt = false } = {}) => { const i = Math.round(p);
+  return stamp([...rngTone(rngORBIT_PATH, ':'), ...rngPLANET, ...(ping >= 0 ? [[6, ping, 'W']] : []),
+    ...Array.from({ length: tail }, (_, k) => [...rngAt(rngR5, i - 1 - k), k < 2 ? '#' : ':']),
+    ...(catchIt ? [[5, 1, ':'], [7, 1, ':']] : []), [...rngAt(rngR5, i), 'W']]); };
+const rngOrbitFilm = t => { const p = rngOrbitPos(t), moved = p - rngOrbitPos(t - 150);
+  const k = rngPING.findIndex(([at], j) => t >= at && (j === rngPING.length - 1 || t < rngPING[j + 1][0]));
+  return rngOrbitAt(p, Math.max(0, Math.min(5, Math.round(((moved % 28) + 28) % 28 - 0.3))), { ping: k >= 0 ? rngPING[k][1] : -1, catchIt: t >= 486 && t < 576 }); };
+const rngORBIT = rngFilm(rngOrbitFilm, rngORBIT_T);
 
-/* spinner, Cascade take: three nested arcs, a signal. They stand stacked like the bars of a signal icon, then turn
-   half a turn together but not quite in step: the turn starts at the middle and spreads outward, the small arc a beat
-   ahead of the middle one and the middle one ahead of the big one, so the stack fans open into a spiral as it swings
-   and folds back into a stack on the far side, the big arc swinging a cell past and settling. Folded, a light runs out
-   through the middle of the three arcs, the signal sent, and it turns again */
-const rngCAS_RINGS = [rngS1, rngO4, rngR6], rngCAS_LEN = [3, 7, 11], rngCAS_MOVE = 760;
+/* spinner, Cascade take: calling out and turning to the answer. Three nested arcs stand stacked like the bars of a
+   signal icon. A light runs out through them, small to big, the call going out. A beat later the answer comes back
+   from behind, a faint arc on the far edge, and the stack turns to face it the way a person turns to a voice: the
+   small arc first, like the eyes, then the middle, then the big one, so it fans into a spiral as it goes and folds
+   back into a stack on the far side, the big arc swinging a cell past and settling onto the faint arc. Then it calls
+   again, and the answer comes from where it began */
+const rngCAS_RINGS = [rngS1, rngO4, rngR6], rngCAS_LEN = [3, 7, 11], rngCAS_MOVE = 620;
 /* when each arc turns, as fractions of the move: the small one first, the big one last */
-const rngCAS_GO = [[0, 0.84], [0.08, 0.92], [0.16, 1]];
+const rngCAS_GO = [[0, 0.8], [0.1, 0.9], [0.2, 1]];
 /* the big arc runs a cell past the stack and springs back: eased out to the far point, then eased back */
-const rngSpring = p => p < 0.88 ? 1.045 * rngSine(p / 0.88) : 1.045 - 0.045 * rngSine((p - 0.88) / 0.12);
-const rngCascadeAt = (as, hot = -1) => stamp(as.flatMap((a, i) => rngArcAt(rngCAS_RINGS[i], a, rngCAS_LEN[i], '#').map((c, k) => i === hot && k === (rngCAS_LEN[i] - 1) / 2 ? [c[0], c[1], 'W'] : c)));
-const rngCascadeHalf = h => { const end = [0, 1, 2].map(() => 180 * (h + 1));
-  return [...rngFilm(t => rngCascadeAt(rngCAS_GO.map(([a, b], i) => { const p = Math.min(1, Math.max(0, (t / rngCAS_MOVE - a) / (b - a)));
-      return 180 * h + 180 * (i === 2 ? rngSpring : rngSine)(p); })), rngCAS_MOVE),
-    ...[0, 1, 2].map(i => F(rngCascadeAt(end, i), [55, 55, 65][i])), F(rngCascadeAt(end), 140)]; };
+const rngSpring = p => p < 0.86 ? 1.045 * rngSine(p / 0.86) : 1.045 - 0.045 * rngSine((p - 0.86) / 0.14);
+/* as: the three arcs' angles; hot: the arc the call is passing through; answer: the angle of the faint arc, or null */
+const rngCascadeAt = (as, hot = -1, answer = null) => stamp([...(answer === null ? [] : rngArcAt(rngR6, answer, 11, ':')),
+  ...as.flatMap((a, i) => rngArcAt(rngCAS_RINGS[i], a, rngCAS_LEN[i], '#').map((c, k) => i === hot && Math.abs(k - (rngCAS_LEN[i] - 1) / 2) <= (i ? 1 : 0) ? [c[0], c[1], 'W'] : c))]);
+const rngCascadeHalf = h => { const at = [0, 1, 2].map(() => 180 * h), back = 180 * h + 180;
+  return [F(rngCascadeAt(at), 70), F(rngCascadeAt(at, 0), 60), F(rngCascadeAt(at, 1), 60), F(rngCascadeAt(at, 2), 90), F(rngCascadeAt(at), 110),
+    F(stamp(rngArcAt(rngR6, back, 5, ':'), rngCascadeAt(at)), 60), F(rngCascadeAt(at, -1, back), 120),
+    ...rngFilm(t => { const as = rngCAS_GO.map(([a, b], i) => 180 * h + 180 * (i === 2 ? rngSpring : rngSine)((t / rngCAS_MOVE - a) / (b - a)));
+      return rngCascadeAt(as, -1, back); }, rngCAS_MOVE)]; };
 const rngCASCADE = [...rngCascadeHalf(0), ...rngCascadeHalf(1)];
 
 const OPTS_SP1 = {
-  spinner_ring: Object.assign(seq(...rngRING), { still: rngComet(4, 3) }),
-  spinner_snake: Object.assign(seq(...rngSNAKE), { still: rngSnakeArc(0, 17) }),
-  spinner_dual: Object.assign(seq(...rngDUAL), { still: rngDualAt(90) }),
-  spinner_orbit: Object.assign(seq(...rngORBIT), { still: rngOrbitAt(4) }),
-  spinner_cascade: Object.assign(seq(...rngCASCADE), { still: rngCascadeAt([0, 0, 0]), trail: 0.7 }),
+  spinner_ring: Object.assign(seq(...rngTidy(rngRING)), { still: rngBead(4, 3) }),
+  spinner_snake: Object.assign(seq(...rngTidy(rngSNAKE)), { still: rngSnake(25, 2) }),
+  spinner_dual: Object.assign(seq(...rngTidy(rngDUAL)), { still: rngDualAt(90, 'out', { tail: 1 }) }),
+  spinner_orbit: Object.assign(seq(...rngTidy(rngORBIT)), { still: rngOrbitAt(5, 4) }),
+  spinner_cascade: Object.assign(seq(...rngTidy(rngCASCADE)), { still: rngCascadeAt([0, 0, 0]), trail: 0.7 }),
 };
 
-/* Spinners, second set: blocks, slide, leap, gather, swirl, eclipse. Every name here carries the prefix dts. */
+/* Spinners, second set: blocks, slide, leap, gather, swirl, eclipse. Each one is a small story with a purpose, not a
+   pattern: a code being typed, a puzzle being solved, a queue of leapfrogs, a huddle, a launch, an eclipse. Every name
+   here carries the prefix dts. */
 
 /* round pixel discs of odd diameter, centred on a cell. A bare plus reads as a cross, so the small ones are softened
    with dim corners, the pixel version of anti-aliasing: 3 a lit plus with dim corners, 5 a 5x5 with the corners off,
@@ -1882,170 +1958,270 @@ const dtsDisc = (cx, cy, d, t = '#') => { const r = (d - 1) / 2, cs = [];
     const corner = Math.abs(x) === r && Math.abs(y) === r;
     if (d === 7 ? Math.hypot(x, y) < 3.6 : !(d === 5 && corner)) cs.push([cx + x, cy + y, d === 3 && corner ? ':' : t]); }
   return cs; };
-
-/* spinner, Blocks take: a three by three grid of square blocks, three cells each with two-cell gutters, so it fills
-   the frame edge to edge. A wave runs down the diagonal from the top-left corner to the bottom-right: each block in
-   turn softens its corners, shrinks to a point, dims, and grows back, a beat after its neighbour, so the valley of the
-   wave is three diagonals wide and slides through the grid like a ripple across tiles. Each block comes back whole
-   with a white glint at its heart, so a line of light follows the valley out. The wave sets off slowly, runs fast
-   through the long middle diagonal and slows into the far corner; the grid holds whole for a breath and goes again */
-const dtsBLK_C = [1, 6, 11];
-/* a block at stage 3 whole, 2 with its corners softened, 1 a point, 0 a dim point */
-const dtsBlock = (cx, cy, s) => [-1, 0, 1].flatMap(y => [-1, 0, 1].map(x => { const k = Math.abs(x) + Math.abs(y);
-  const t = s >= 3 ? '#' : s === 2 ? (k === 2 ? ':' : '#') : k === 0 ? (s === 1 ? '#' : ':') : null;
-  return t ? [cx + x, cy + y, t] : null; })).filter(Boolean);
-/* stage of a block p frames after the wave reached its diagonal */
-const dtsBLK_DIP = [2, 1, 0, 1, 2];
-const dtsBlkStage = p => p < 0 || p >= dtsBLK_DIP.length ? 3 : dtsBLK_DIP[p];
-const dtsBlocks = t => stamp(dtsBLK_C.flatMap((cy, j) => dtsBLK_C.flatMap((cx, i) => { const p = t - 2 * (i + j);
-  return [...dtsBlock(cx, cy, dtsBlkStage(p)), ...(p === dtsBLK_DIP.length || p === dtsBLK_DIP.length + 1 ? [[cx, cy, 'W']] : [])]; })));
-const dtsBLK_N = 2 * 4 + dtsBLK_DIP.length + 2;
-const dtsBLOCKS = [...Array.from({ length: dtsBLK_N }, (_, t) => F(dtsBlocks(t), ease(dtsBLK_N, 115, 55)[t])), F(dtsBlocks(-1), 300)];
-
-/* spinner, Slide take: the fifteen puzzle cut down to four squares. Three rounded tiles sit in a two by two tray with
-   one slot empty, a dim recess, and they take turns sliding into it, so the gap walks round the tray one way while the
-   tiles walk round the other. Each slide eases out of rest, crosses the gutter quickly and eases in against the wall.
-   A short pause, and the next tile goes */
-/* the four slots in turn round the tray, clockwise from top-left, as the top-left cell of a 5x5 tile */
-const dtsSLOTS = [[1, 1], [7, 1], [7, 7], [1, 7]];
 /* a rectangle from (x0, y0) to (x1, y1) inclusive with dim corners */
 const dtsTile = (x0, y0, x1, y1, t = '#') => { const cs = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cs.push([x, y, (x === x0 || x === x1) && (y === y0 || y === y1) ? ':' : t]); return cs; };
-const dtsTileAt = ([x, y], dx = 0, dy = 0) => dtsTile(x + dx, y + dy, x + 4 + dx, y + 4 + dy);
-/* the empty slot: a dim outline with its corners off */
-const dtsRecess = ([x0, y0]) => { const cs = []; for (let y = y0; y <= y0 + 4; y++) for (let x = x0; x <= x0 + 4; x++) { const ex = x === x0 || x === x0 + 4, ey = y === y0 || y === y0 + 4; if ((ex || ey) && !(ex && ey)) cs.push([x, y, ':']); } return cs; };
-/* gap g: the empty slot; the tile in slot g-1 (counter-clockwise neighbour) slides into it, moving k cells */
-const dtsSLIDE_K = [1, 3, 5, 6], dtsSLIDE_MS = [110, 60, 55, 90];
-const dtsSlideFrame = (g, k) => { const from = (g + 3) % 4, [ax, ay] = dtsSLOTS[from], [bx, by] = dtsSLOTS[g];
-  const still = [0, 1, 2, 3].filter(s => s !== g && s !== from).flatMap(s => dtsTileAt(dtsSLOTS[s]));
-  const dx = Math.sign(bx - ax), dy = Math.sign(by - ay);
-  return stamp([...dtsSLOTS.flatMap(dtsRecess), ...still, ...dtsTileAt(dtsSLOTS[from], dx * k, dy * k)]); };
-const dtsSlideMove = g => [F(dtsSlideFrame(g, 0), 240), ...dtsSLIDE_K.map((k, i) => F(dtsSlideFrame(g, k), dtsSLIDE_MS[i]))];
-const dtsSLIDE = [1, 0, 3, 2].flatMap(g => dtsSlideMove(g));
 
-/* spinner, Leap take: leapfrog. Three dots wait in a row; the last one crouches, springs, and sails over the other two
-   in a high arc, hanging for a moment at the top with a white core, while the two it jumps slide back under it to
-   make room. It lands at the front, squashes flat for a beat and stands up, and now a different dot is last in line.
-   The row never moves off centre, so it plays over and over like a treadmill of little jumps */
-const dtsLEAP_Y = 8;
-/* a squashed dot, wide and low on the same ground, for the crouch and the landing */
-const dtsSquat = cx => [-1, 0, 1].flatMap(x => [0, 1].map(y => [cx + x, dtsLEAP_Y + y, '#']));
-const dtsLeapAt = (p, pose) => { const e = p * p * (3 - 2 * p), lx = Math.round(2 + 8 * e), ly = Math.round(dtsLEAP_Y - 20 * p * (1 - p));
-  const leaper = pose === 'squat' ? dtsSquat(lx) : [...dtsDisc(lx, ly, 3), ...(pose === 'air' ? [[lx, ly, 'W']] : [])];
-  return stamp([...dtsDisc(Math.round(6 - 4 * e), dtsLEAP_Y, 3), ...dtsDisc(Math.round(10 - 4 * e), dtsLEAP_Y, 3), ...leaper]); };
-const dtsLEAP = [F(dtsLeapAt(0), 320), F(dtsLeapAt(0, 'squat'), 140), ...[0.15, 0.32, 0.5, 0.68, 0.85].map((p, i) => F(dtsLeapAt(p, 'air'), [65, 85, 140, 85, 65][i])),
-  F(dtsLeapAt(1, 'squat'), 120)];
-const dtsLEAP_STILL = stamp([2, 6, 10].flatMap(x => dtsDisc(x, 6, 3)));
+/* spinner, Blocks take: a keypad, and someone typing a code on it. Nine keys stand in a three by three grid, each seen
+   from a little above: a face two rows lit with a dim edge under it, so it stands proud of the pad. A press drops the
+   face a row onto its edge, flush with the pad, and the key lights white where the finger is; it springs back up
+   with the light still on it for a blink. The code goes in with a human rhythm: top, right, a hesitation, a quick
+   double tap on the bottom key, left. Then the middle key goes down as enter and the pad answers: the four keys
+   round it dip, then the four corners, a ripple of yes running out to the edges, and the pad stands ready again */
+const dtsKEY_C = [1, 6, 11];
+const dtsKey = (cx, cy, down) => [-1, 0, 1].flatMap(x => down
+  ? [[cx + x, cy, '#'], [cx + x, cy + 1, '#']]
+  : [[cx + x, cy - 1, '#'], [cx + x, cy, '#'], [cx + x, cy + 1, ':']]);
+/* the pad with the keys in down pressed and the keys in lit carrying the white light (keys numbered 0 to 8, row by
+   row) */
+const dtsPad = (down = [], lit = []) => stamp(dtsKEY_C.flatMap((cy, j) => dtsKEY_C.flatMap((cx, i) => { const k = j * 3 + i, d = down.includes(k);
+  return [...dtsKey(cx, cy, d), ...(lit.includes(k) ? [[cx, d ? cy : cy - 1, 'W']] : [])]; })));
+const dtsPress = (k, gap) => [F(dtsPad([k], [k]), 110), F(dtsPad([], [k]), 50), F(dtsPad(), gap)];
+const dtsBLOCKS = [F(dtsPad(), 200),
+  ...dtsPress(1, 120), ...dtsPress(5, 230), ...dtsPress(7, 50), ...dtsPress(7, 130), ...dtsPress(3, 150),
+  F(dtsPad([4], [4]), 150), F(dtsPad([1, 3, 5, 7], [4]), 85), F(dtsPad([0, 2, 6, 8]), 85), F(dtsPad(), 120)];
 
-/* spinner, Gather take: four rounded squares wait in the corners. They draw in to the middle, slowing as they meet,
-   with a white spark where they touch, and the little cluster clicks round an eighth of a turn as one: the squares
-   become diamonds and the cross of gutters between them becomes an X. Then they spread out to the middles of the sides, draw in again, click another
-   eighth and spread back to the corners, so each loop turns the cluster a quarter. No in-between angle is drawn:
-   a square turned a little on this grid grows a notch on every side and reads as a pinwheel, so the turn is a soft
-   cut, and the engine's afterglow blends one pose into the next */
-/* a 4x4 block with dim corners, centred off the middle by o (a half-cell) along each diagonal */
-const dtsSquares = o => stamp([-1, 1].flatMap(sy => [-1, 1].flatMap(sx => dtsTile(6 + sx * o - 1.5, 6 + sy * o - 1.5, 6 + sx * o + 1.5, 6 + sy * o + 1.5))));
-/* a radius-2 diamond at distance d from the middle on each axis */
+/* spinner, Slide take: a sliding puzzle that is really being solved. A picture is cut into four tiles in a two by two
+   tray: two eyes on the top tiles, a smile across the bottom two, drawn lit on dim tiles. The last tile lifts out,
+   the other three shuffle quickly round the tray and the face is scrambled; then they are slid back one at a time,
+   each easing out of rest, crossing fast and easing in against the wall. The missing tile fades in, the seams of
+   the tray close so the tiles become one card, a catchlight comes into each eye, and the face winks at you: the
+   right eye shuts and that corner of the smile lifts. Then the seams open and it goes again */
+/* the picture, twelve by twelve; the gutters of the tray cut it into four six by six tiles */
+const dtsPIC = [
+  '............',
+  '............',
+  '..##....##..',
+  '..##....##..',
+  '............',
+  '............',
+  '............',
+  '.#........#.',
+  '..#......#..',
+  '...######...',
+  '............',
+  '............'];
+/* the four slots of the tray clockwise from top-left, as top-left cells, and the part of the picture each tile
+   carries */
+const dtsSLOT = [[0, 0], [7, 0], [7, 7], [0, 7]];
+const dtsQUAD = [[0, 0], [6, 0], [6, 6], [0, 6]];
+/* tile q with its top-left cell at (x0, y0): the picture lit (or in tone) on a dim tile with its corners off */
+const dtsPiece = (q, x0, y0, tone = '#') => { const [qx, qy] = dtsQUAD[q], cs = [];
+  for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) { const on = dtsPIC[qy + y][qx + x] === '#', corner = (x === 0 || x === 5) && (y === 0 || y === 5);
+    if (on) cs.push([x0 + x, y0 + y, tone]); else if (!corner) cs.push([x0 + x, y0 + y, ':']); }
+  return cs; };
+/* arr maps each slot to the tile in it, or null for the gap; mv = [from, to, k] slides the tile in slot from k cells
+   toward slot to */
+const dtsTray = (arr, mv) => stamp(arr.flatMap((q, s) => { if (q == null) return [];
+  let [x, y] = dtsSLOT[s]; if (mv && mv[0] === s) { const [tx, ty] = dtsSLOT[mv[1]]; x += Math.sign(tx - x) * mv[2]; y += Math.sign(ty - y) * mv[2]; }
+  return dtsPiece(q, x, y); }));
+/* the solved puzzle with the seams closed: one dim card, its four outer corners off, the smile joined across the
+   middle. shine puts a white catchlight in each open eye; wink shuts the right eye and lifts that end of the smile */
+const dtsWhole = (shine, wink) => { const cs = [];
+  const at = (x, y) => { const px = x < 6 ? x : x > 6 ? x - 1 : null, py = y < 6 ? y : y > 6 ? y - 1 : null;
+    if (px != null && py != null) return dtsPIC[py][px] === '#';
+    if (px == null && py == null) return false;
+    if (px == null) return dtsPIC[py][5] === '#' && dtsPIC[py][6] === '#';
+    return dtsPIC[5][px] === '#' && dtsPIC[6][px] === '#'; };
+  for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) {
+    if ((x === 0 || x === 12) && (y === 0 || y === 12)) continue;
+    let on = at(x, y);
+    if (wink && x >= 9 && x <= 10 && y <= 3) on = y === 3;
+    if (wink && x === 11) on = y === 7;
+    cs.push([x, y, on ? '#' : ':']); }
+  if (shine) cs.push([2, 2, 'W'], ...(wink ? [] : [[9, 2, 'W']]));
+  return stamp(cs); };
+const dtsSOLVED = [0, 1, null, 3], dtsFULL = [0, 1, 2, 3];
+const dtsFading = arr => stamp(dtsPiece(2, 7, 7, ':'), dtsTray(arr));
+/* one move: the frames of the slide, and the tray after it */
+const dtsSlideMove = (arr, from, to, ks, mss) => { const out = ks.map((k, i) => F(dtsTray(arr, [from, to, k]), mss[i]));
+  const next = arr.slice(); next[to] = arr[from]; next[from] = null; return [out, next]; };
+const dtsSLIDE = (() => {
+  const fr = [F(dtsWhole(true), 220), F(dtsWhole(true, true), 150), F(dtsWhole(true), 160), F(dtsWhole(), 60),
+    F(dtsTray(dtsFULL), 80), F(dtsFading(dtsSOLVED), 60), F(dtsTray(dtsSOLVED), 70)];
+  let arr = dtsSOLVED, out;
+  /* the shuffle: three quick slides, the gap walking round one way */
+  for (const [a, b] of [[3, 2], [0, 3], [1, 0]]) { [out, arr] = dtsSlideMove(arr, a, b, [2, 5, 7], [35, 35, 50]); fr.push(...out); }
+  fr.push(F(dtsTray(arr), 110));
+  /* the solve: three deliberate slides, the gap walking back */
+  for (const [a, b] of [[0, 1], [3, 0], [2, 3]]) { [out, arr] = dtsSlideMove(arr, a, b, [1, 3, 5, 6, 7], [85, 45, 40, 50, 95]); fr.push(...out); }
+  fr.push(F(dtsFading(arr), 70), F(dtsTray(dtsFULL), 70));
+  return fr; })();
+
+/* spinner, Leap take: leapfrog with a bit of character. Three dots stand in a row. The one at the back crouches, low
+   and wide, and springs: in the air it stretches along its path, tipped up as it rises and down as it falls, and at
+   the top it hangs for a moment with a white core. The two it jumps duck as it sails over them, pulled down flat,
+   while they shuffle back a place so the row stays centred. It lands at the front squashed wide, bounces up a little
+   tall, and settles; now a different dot is at the back, and it goes again, the queue always moving on */
+const dtsLG = 8;
+const dtsRound = (x, y = dtsLG, hot) => [...dtsDisc(x, y, 3), ...(hot ? [[x, y, 'W']] : [])];
+/* low on the ground: a dot ducking, or (wide) the crouch before the spring and the squash of the landing */
+const dtsLow = (x, wide) => [...[-1, 0, 1].flatMap(d => [[x + d, dtsLG, '#'], [x + d, dtsLG + 1, '#']]), ...(wide ? [[x - 2, dtsLG + 1, ':'], [x + 2, dtsLG + 1, ':']] : [])];
+/* in flight the dot stretches along its path: the two corners on the line of travel fill in, the other two drop out */
+const dtsFly = (x, y, rising) => [[x, y - 1, '#'], [x - 1, y, '#'], [x, y, '#'], [x + 1, y, '#'], [x, y + 1, '#'], ...(rising ? [[x + 1, y - 1, '#'], [x - 1, y + 1, '#']] : [[x - 1, y - 1, '#'], [x + 1, y + 1, '#']])];
+/* the jump at p (0 to 1) along an eased arc from the back to the front */
+const dtsLeapAt = (p, pose, extra = []) => { const e = p * p * (3 - 2 * p), lx = Math.round(1 + 10 * e), ly = Math.round(dtsLG - 20 * p * (1 - p));
+  const others = [6 - 5 * e, 11 - 5 * e].map(Math.round), air = pose === 'up' || pose === 'down' || pose === 'top';
+  const leaper = pose === 'crouch' ? dtsLow(1, true) : pose === 'land' ? dtsLow(11, true) : pose === 'up' || pose === 'down' ? dtsFly(lx, ly, pose === 'up') : dtsRound(lx, ly, pose === 'top');
+  const body = others.flatMap(x => air && Math.abs(x - lx) <= 3 ? dtsLow(x) : dtsRound(x));
+  return stamp([...body, ...leaper, ...extra]); };
+const dtsLEAP = [F(dtsLeapAt(0), 300), F(dtsLeapAt(0, 'crouch'), 170), F(dtsLeapAt(0.13, 'up'), 65), F(dtsLeapAt(0.3, 'up'), 70), F(dtsLeapAt(0.5, 'top'), 170),
+  F(dtsLeapAt(0.7, 'down'), 70), F(dtsLeapAt(0.87, 'down'), 60), F(dtsLeapAt(1, 'land'), 110), F(dtsLeapAt(1, '', [[11, 6, ':']]), 90)];
+const dtsLEAP_STILL = stamp([1, 6, 11].flatMap(x => dtsDisc(x, 6, 3)));
+
+/* spinner, Gather take: a huddle. Four rounded squares wait in the corners, then draw in, quickening, until they
+   press together: the gutters between them fill and a white spark strikes where all four meet. Huddled, they turn
+   together a quarter turn as one: the squares round off into four dots a sixteenth of the way, stand as diamonds at
+   the eighth with the spark still glowing between their points, round off again and square up a quarter on. Then
+   they step back out to the corners, each carrying a white glint on the corner that faced the spark, which fades
+   as they arrive. No in-between angle of a square is drawn: on this grid a square turned a little grows a notch on
+   every side and reads as a pinwheel, so mid-turn they are round */
+const dtsSquares = (o, extra = []) => stamp([...[-1, 1].flatMap(sy => [-1, 1].flatMap(sx => dtsTile(6 + sx * o - 1.5, 6 + sy * o - 1.5, 6 + sx * o + 1.5, 6 + sy * o + 1.5))), ...extra]);
+/* the corner of each square that faced the middle */
+const dtsInner = (o, t) => [-1, 1].flatMap(sy => [-1, 1].map(sx => [6 + sx * (o - 1.5), 6 + sy * (o - 1.5), t]));
 const dtsDiamond = (cx, cy) => [-2, -1, 0, 1, 2].flatMap(y => [-2, -1, 0, 1, 2].map(x => Math.abs(x) + Math.abs(y) <= 2 ? [cx + x, cy + y, '#'] : null)).filter(Boolean);
-const dtsDiamonds = d => stamp([[0, -d], [d, 0], [0, d], [-d, 0]].flatMap(([x, y]) => dtsDiamond(6 + x, 6 + y)));
-/* as the four meet, a white spark at the point where they touch, the middle of the gutters */
-const dtsTOUCH = [[6, 6, 'W']];
-const dtsGATHER = [F(dtsSquares(4.5), 360), F(dtsSquares(3.5), 100), F(stamp(dtsTOUCH, dtsSquares(2.5)), 70), F(dtsSquares(2.5), 130), F(dtsDiamonds(3), 190),
-  F(dtsDiamonds(4), 360), F(stamp(dtsTOUCH, dtsDiamonds(3)), 70), F(dtsDiamonds(3), 130), F(dtsSquares(2.5), 190), F(dtsSquares(3.5), 100)];
+const dtsDiamonds = (d, extra = []) => stamp([...[[0, -d], [d, 0], [0, d], [-d, 0]].flatMap(([x, y]) => dtsDiamond(6 + x, 6 + y)), ...extra]);
+/* a round 4x4 blob, corners off, its top-left cell at (x, y) */
+const dtsBlob = (x, y) => [0, 1, 2, 3].flatMap(j => [0, 1, 2, 3].map(i => (i === 0 || i === 3) && (j === 0 || j === 3) ? null : [x + i, y + j, '#'])).filter(Boolean);
+/* the cluster a sixteenth of a turn on as four round blobs; second is the sixteenth past the diamonds */
+const dtsTurning = (second, extra = []) => stamp([...(second ? [[6, 1], [8, 6], [3, 8], [1, 3]] : [[3, 1], [8, 3], [6, 8], [1, 6]]).flatMap(([x, y]) => dtsBlob(x, y)), ...extra]);
+const dtsGUTTER = [2, 3, 4, 5, 7, 8, 9, 10].flatMap(k => [[6, k, ':'], [k, 6, ':']]);
+const dtsSPARK = [[6, 6, 'W'], [6, 5, '#'], [6, 7, '#'], [5, 6, '#'], [7, 6, '#']];
+const dtsGATHER = [F(dtsSquares(4.5), 280), F(dtsSquares(3.5), 100), F(dtsSquares(2.5), 60), F(dtsSquares(2.5, [...dtsGUTTER, ...dtsSPARK]), 100), F(dtsSquares(2.5, [[6, 6, 'W']]), 70),
+  F(dtsTurning(false, [[6, 6, '#']]), 80), F(dtsDiamonds(3, [[6, 6, '#']]), 140), F(dtsTurning(true, [[6, 6, ':']]), 80), F(dtsSquares(2.5), 90),
+  F(dtsSquares(3.5, dtsInner(3.5, 'W')), 90), F(dtsSquares(4.5, dtsInner(4.5, '#')), 130)];
 
-/* spinner, Swirl take: eight dots on the edge of a square, at its corners and the middles of its sides, a dim track
-   of points, and a light that chases round them. The head is a round dot with a white core, the dot behind it is
-   lit, and the tail shrinks and fades back into the track. It does not tick at one speed: it winds up, whips round
-   with its tail stretched long, and coasts in with the tail drawn short, so it feels thrown rather than driven */
-const dtsSWIRL_AT = [[1, 1], [6, 1], [11, 1], [11, 6], [11, 11], [6, 11], [1, 11], [1, 6]];
-/* a dot at level 3 head, 2 lit, 1 a lit point, 0 the dim track */
-const dtsSwDot = (x, y, l) => l === 3 ? [...dtsDisc(x, y, 3), [x, y, 'W']] : l === 2 ? dtsDisc(x, y, 3) : [[x, y, l === 1 ? '#' : ':']];
-/* the ring with the head at position h and a tail of tl dots behind it */
-const dtsSwirl = (h, tl) => stamp(dtsSWIRL_AT.flatMap(([x, y], i) => { const back = ((h - i) % 8 + 8) % 8;
-  return dtsSwDot(x, y, back === 0 ? 3 : back > tl ? 0 : back === tl ? 1 : 2); }));
-const dtsSWIRL_MS = [150, 120, 95, 80, 65, 55, 50, 50, 50, 55, 65, 80, 95, 120, 150, 170];
-const dtsSWIRL = dtsSWIRL_MS.map((ms, t) => F(dtsSwirl(t % 8, ms < 70 ? 3 : ms < 110 ? 2 : 1), ms));
+/* spinner, Swirl take: runway lights and a launch. Eight lights stand round the edge of a square, unlit bulbs as dim
+   points. A light taxis once round them, a round head with a white core and a short tail, easing off the top and
+   slowing for the turn. At the top-left corner it turns in and runs down the diagonal to the middle, lined up.
+   There the runway lights come on one after another round the square, quicker and quicker, while it waits and
+   then crouches low; with all eight lit it launches, a white streak straight up and out through the top light,
+   which catches the glow and becomes the head of the next lap */
+const dtsSW = [[6, 1], [11, 1], [11, 6], [11, 11], [6, 11], [1, 11], [1, 6], [1, 1]];
+/* a bulb at level 3 the head, 2 lit, 1 a lit point, 0 an unlit bulb */
+const dtsBulb = ([x, y], l) => l === 3 ? [...dtsDisc(x, y, 3), [x, y, 'W']] : l === 2 ? dtsDisc(x, y, 3) : [[x, y, l === 1 ? '#' : ':']];
+/* the ring with the head at light h (or none) and a tail of tl lights behind it */
+const dtsRing = (h, tl, extra = []) => stamp([...dtsSW.flatMap((p, i) => { const back = h == null ? 99 : ((h - i) % 8 + 8) % 8;
+  return dtsBulb(p, back === 0 ? 3 : back > tl ? 0 : back === tl ? 1 : 2); }), ...extra]);
+/* the light waiting in the middle, and the same light crouched low and wide before the launch */
+const dtsWAIT = [...dtsDisc(6, 6, 3), [6, 6, 'W']];
+const dtsCROUCH = [[5, 6, '#'], [6, 6, 'W'], [7, 6, '#'], [5, 7, '#'], [6, 7, '#'], [7, 7, '#'], [4, 7, ':'], [8, 7, ':']];
+/* the ring with the first n lights switched on, clockwise from the top */
+const dtsLightsOn = (n, extra) => stamp([...dtsSW.map(([x, y], i) => [x, y, i < n ? '#' : ':']), ...extra]);
+const dtsSWIRL = [
+  ...[0, 1, 2, 3, 4, 5, 6, 7].map((h, i) => F(dtsRing(h, [0, 1, 2, 2, 2, 2, 2, 2][i]), [150, 115, 90, 80, 80, 85, 100, 120][i])),
+  F(dtsRing(null, 0, [...dtsDisc(3, 3, 3), [3, 3, 'W'], [1, 1, '#'], [1, 6, ':']]), 70),
+  F(dtsRing(null, 0, [...dtsWAIT, [4, 4, '#'], [3, 3, ':']]), 90),
+  ...[1, 2, 3, 4, 5, 6, 7, 8].map((n, i) => F(dtsLightsOn(n, i < 5 ? dtsWAIT : dtsCROUCH), [110, 75, 60, 50, 45, 42, 40, 40][i])),
+  F(dtsLightsOn(8, dtsCROUCH), 130),
+  F(dtsRing(null, 0, [[6, 3, 'W'], [6, 4, '#'], [6, 5, '#'], [6, 6, ':']]), 45),
+  F(dtsRing(null, 0, [[6, 0, 'W'], [6, 1, 'W'], [6, 2, '#'], [6, 3, ':']]), 50),
+];
 
-/* spinner, Eclipse take: two discs orbit each other, seen edge-on, so the orbit is told by depth alone. The disc that
-   swings in front catches a white glint on its upper edge like a lit sphere and swells; the one that passes behind
-   dims to the shadow tone and slips behind it, so for a moment only its rim shows past the front one, a dim crescent,
-   then nothing, then the crescent on the other side. Side by side they are the same size and both lit. The orbit
-   lingers at the sides and quickens through the crossing. Half an orbit is a whole loop, since after it the two have
-   simply swapped places. (A far disc that also shrank was tried: at three cells it was hidden whole or left as a
-   sliver, so the far one keeps its size and depth is told by tone) */
-const dtsORBIT = 4;
-/* one disc at depth z (1 nearest, -1 farthest). Coming forward it catches a white glint, then swells; going back it
-   dims */
-const dtsBody = (x, z) => {
-  if (z > 0.6) return [...dtsDisc(x, 6, 7), [x - 1, 4, 'W'], [x - 2, 5, 'W']];
-  if (z > 0.3) return [...dtsDisc(x, 6, 5), [x - 1, 5, 'W']];
-  return dtsDisc(x, 6, 5, z > -0.3 ? '#' : ':'); };
-const dtsEclipse = th => { const xa = Math.round(6 - dtsORBIT * Math.cos(th)), za = Math.sin(th), xb = 12 - xa, zb = -za;
-  const [front, back] = za >= zb ? [dtsBody(xa, za), dtsBody(xb, zb)] : [dtsBody(xb, zb), dtsBody(xa, za)];
-  const cover = new Set(front.map(([x, y]) => x + ',' + y)), seen = back.filter(([x, y]) => !cover.has(x + ',' + y));
-  /* fewer than three cells of the far disc would only read as a stray, so it is hidden instead */
-  return stamp([...(seen.length >= 3 ? seen : []), ...front]); };
-/* frames at every angle where something on screen changes, each held for as long as the orbit stays there. The orbit
-   runs at a speed that eases: theta(t) = pi t - 0.3 sin(2 pi t), slower at the sides, quicker through the crossing */
-const dtsECL_T = 1300;
-const dtsECLIPSE = (() => { const steps = 1300, out = []; let prev = null, start = 0;
-  for (let s = 0; s <= steps; s++) { const t = s / steps, b = s < steps ? dtsEclipse(Math.PI * t - 0.3 * Math.sin(2 * Math.PI * t)).join('') : null;
-    if (b !== prev) { if (prev !== null) out.push([prev, s - start]); prev = b; start = s; } }
-  /* a pose held for less than 40 ms only flickers, so it folds into the one before */
-  const fs = []; for (const [b, n] of out) { const ms = Math.round(dtsECL_T * n / steps); if (ms < 40 && fs.length) fs[fs.length - 1].ms += ms; else fs.push(F(b.match(/.{13}/g), ms)); }
-  return fs; })();
+/* spinner, Eclipse take: a real eclipse. The sun is a bright disc in the middle. A dark moon the same size drifts in
+   from the left, a dim disc that hides whatever part of the sun it covers, so the sun wanes to a crescent, slowing as
+   the two line up. At second contact one bead of sunlight is left on the moon's edge, white, and the corona is
+   already showing round it: the diamond ring. At totality the corona flares, the bright ring widening into a soft
+   dim halo with two white prominences on the limb, then draws back in; the diamond ring flashes on the other edge,
+   the crescent grows back and the moon drifts off to the right, leaving the sun whole */
+const dtsInSun = (x, y) => Math.hypot(x - 6, y - 6) < 3.6;
+const dtsInMoon = (x, y, mx) => Math.hypot(x - mx, y - 6) < 3.6;
+/* the moon centred at column mx. corona 1 the bright ring round the limb, 2 with the soft halo outside it, 3 with the
+   prominences; bead the column of the last bead of sunlight */
+const dtsEcl = (mx, corona = 0, bead = null) => { const cs = [];
+  for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) { const r = Math.hypot(x - 6, y - 6);
+    if (dtsInMoon(x, y, mx)) cs.push([x, y, ':']); else if (dtsInSun(x, y)) cs.push([x, y, '#']);
+    if (corona && r >= 3.6 && r < 4.6) cs.push([x, y, '#']);
+    if (corona >= 2 && r >= 4.6 && r < 5.6) cs.push([x, y, ':']); }
+  if (corona >= 3) cs.push([9, 3, 'W'], [3, 9, 'W']);
+  if (bead != null) cs.push([bead, 6, 'W']);
+  return stamp(cs); };
+const dtsECLIPSE = [F(dtsEcl(-5), 220),
+  ...[-3, -2, -1, 0, 1, 2, 3, 4].map((m, i) => F(dtsEcl(m), [85, 75, 70, 70, 75, 85, 100, 115][i])),
+  F(dtsEcl(6, 1, 9), 130), F(dtsEcl(6, 1), 80), F(dtsEcl(6, 2), 90), F(dtsEcl(6, 3), 180), F(dtsEcl(6, 2), 100), F(dtsEcl(6, 1), 80), F(dtsEcl(6, 1, 3), 150),
+  ...[8, 9, 10, 11, 12, 13, 14, 15].map((m, i) => F(dtsEcl(m), [115, 100, 85, 75, 70, 70, 75, 85][i]))];
 
 const OPTS_SP2 = {
-  spinner_blocks: Object.assign(seq(...dtsBLOCKS), { still: dtsBlocks(-1) }),
-  spinner_slide: Object.assign(seq(...dtsSLIDE), { still: dtsSlideFrame(1, 0) }),
+  spinner_blocks: Object.assign(seq(...dtsBLOCKS), { still: dtsPad() }),
+  spinner_slide: Object.assign(seq(...dtsSLIDE), { still: dtsTray(dtsSOLVED) }),
   spinner_leap: Object.assign(seq(...dtsLEAP), { still: dtsLEAP_STILL, trail: 0.8 }),
   spinner_gather: Object.assign(seq(...dtsGATHER), { still: dtsSquares(4.5) }),
-  spinner_swirl: Object.assign(seq(...dtsSWIRL), { still: dtsSwirl(2, 2) }),
-  spinner_eclipse: Object.assign(seq(...dtsECLIPSE), { still: dtsEclipse(Math.PI / 4) }),
+  spinner_swirl: Object.assign(seq(...dtsSWIRL), { still: dtsRing(2, 2) }),
+  spinner_eclipse: Object.assign(seq(...dtsECLIPSE), { still: dtsEcl(3) }),
 };
 
 /* spinners, set three. Shared helpers first */
 
-/* round pixel circles of radius 1 to 6 round the centre cell, as [x, y] cells sorted clockwise from twelve o'clock.
-   Each is given by one octant, from the top to the diagonal, and mirrored eight ways. These are the circles a pixel
-   artist draws (flat runs at the poles, short steps on the shoulders), rounder than the plain midpoint rasterisation,
-   which turns radius 6 into an octagon */
-const shpAngle = ([x, y]) => (Math.atan2(x - 6, 6 - y) + 2 * Math.PI) % (2 * Math.PI);
-const shpOCTANT = { 1: [[0, -1], [1, -1]], 2: [[0, -2], [1, -2]], 3: [[0, -3], [1, -3], [2, -2]], 4: [[0, -4], [1, -4], [2, -3], [3, -3]], 5: [[0, -5], [1, -5], [2, -4], [3, -4]], 6: [[0, -6], [1, -6], [2, -6], [3, -5], [4, -5]] };
-const shpCircle = r => {
-  const out = new Map();
-  for (const [a, b] of shpOCTANT[r]) for (const [p, q] of [[a, b], [-a, b], [a, -b], [-a, -b], [b, a], [-b, a], [b, -a], [-b, -a]]) out.set((6 + p) + ',' + (6 + q), [6 + p, 6 + q]);
-  return [...out.values()].sort((m, n) => shpAngle(m) - shpAngle(n));
-};
-/* frames whose bitmaps repeat back to back are merged into one held frame */
-const shpMerge = frames => frames.reduce((acc, f) => { const last = acc[acc.length - 1]; if (last && last.b.join('') === f.b.join('')) last.ms += f.ms; else acc.push({ b: f.b, ms: f.ms }); return acc; }, []);
 const shpMod = (a, n) => ((a % n) + n) % n;
+/* a film of a motion: the bitmap fn(t) sampled every 5 ms over a loop of T ms, each pose held for as long as it lasts.
+   A pose shorter than 35 ms only flickers, so it folds into the one before */
+const shpFilm = (fn, T) => {
+  const out = [];
+  for (let t = 0; t < T; t += 5) { const b = fn(t), last = out[out.length - 1]; if (last && last.b.join('') === b.join('')) last.ms += 5; else out.push({ b, ms: 5 }); }
+  return out.reduce((acc, f) => { if (f.ms < 35 && acc.length) acc[acc.length - 1].ms += f.ms; else acc.push(F(f.b, f.ms)); return acc; }, []);
+};
+/* frames given as [bitmap, ms]; back to back repeats merge into one held frame */
+const shpReel = list => list.reduce((acc, [b, ms]) => { const last = acc[acc.length - 1]; if (last && last.b.join('') === b.join('')) last.ms += ms; else acc.push(F(b, ms)); return acc; }, []);
+/* cells inside a mask, lit at the rim and dim inside; cells in `hot` that fall on the shape go white */
+const shpSolid = (cs, hot = []) => { const s = new Set(cs.map(([x, y]) => x + ',' + y)), h = (x, y) => s.has(x + ',' + y);
+  return [...cs.map(([x, y]) => [x, y, h(x - 1, y) && h(x + 1, y) && h(x, y - 1) && h(x, y + 1) ? ':' : '#']), ...hot.filter(([x, y]) => h(x, y)).map(([x, y]) => [x, y, 'W'])]; };
+const shpMask = test => { const cs = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (test(x - 6, y - 6)) cs.push([x, y]); return cs; };
 
-/* spinner, Spokes take: the activity indicator every iPhone has shown, redrawn on the pixel grid. Eight spokes stand
-   round a clear hole, the straight ones four cells long and the diagonals three, so both run from radius 3 out to 6 and
-   the wheel is round. The light steps round the wheel the way the original does: one spoke white, the two behind it lit,
-   the rest dim, so the whole wheel is always there and only the brightness turns */
+/* spinner, Spokes take: the activity indicator every iPhone has shown, kept as it is, eight spokes round a clear hole,
+   the straight ones four cells long and the diagonals three. What it gains is a flywheel's life. It rests with one
+   spoke white; then the light pulls away, slow for the first spoke and quicker for each after, and the faster it goes
+   the longer the lit wake it drags behind it, because each spoke stays lit for the same short time after the light has
+   left. Two quick turns, then it coasts in, the wake drawing up behind it, and stops at twelve where it began. The
+   light spills a spoke past and settles back, the wake drains away spoke by spoke, and the white draws back to the tip
+   of its spoke while it takes a breath, then floods down the spoke again as it pulls away */
 const shpDIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
 const shpSpoke = i => { const [dx, dy] = shpDIRS[i]; return (dx && dy ? [2, 3, 4] : [3, 4, 5, 6]).map(k => [6 + dx * k, 6 + dy * k]); };
-const shpSPOKE_TONE = ['W', '#', '#', ':', ':', ':', ':', ':'];
-const shpSpokes = head => stamp(shpDIRS.flatMap((_, i) => shpSpoke(i).map(([x, y]) => [x, y, shpSPOKE_TONE[shpMod(head - i, 8)]])));
-const shpSPOKES = Array.from({ length: 8 }, (_, k) => F(shpSpokes(k), 120));
+/* tones per spoke; 'w' is the head at rest, white at its outer tip only */
+const shpWheel = tones => stamp(tones.flatMap((c, i) => shpSpoke(i).map(([x, y], k, a) => [x, y, c === 'w' ? (k === a.length - 1 ? 'W' : '#') : c])));
+/* the light's steps round the wheel, [spoke, ms held there]: a rest at twelve, a spin-up, two turns, a coast in */
+const shpSPK_STEPS = [[0, 440], [1, 170], [2, 128], [3, 100], [4, 86], [5, 78], [6, 74], [7, 72], [0, 72], [1, 72], [2, 74], [3, 78], [4, 86], [5, 98], [6, 114], [7, 136]];
+const shpSPK_T = shpSPK_STEPS.reduce((a, [, ms]) => (a.push(a[a.length - 1] + ms), a), [0]);
+const shpSPK_LOOP = shpSPK_T[shpSPK_T.length - 1];
+/* a spoke stays lit this long after the light leaves it */
+const shpSPK_GLOW = 170;
+const shpSpokesAt = t => {
+  const at = k => shpMod(k, shpSPK_STEPS.length), now = shpSPK_T.findIndex((_, k) => shpSPK_T[k + 1] > t), head = shpSPK_STEPS[now][0];
+  const tones = shpDIRS.map((_, i) => {
+    if (i === head) return now === 0 && t >= 190 && t < 380 ? 'w' : 'W';
+    /* when the light last left spoke i, looking back through this loop and the one before */
+    for (let k = now - 1; k > now - 1 - shpSPK_STEPS.length; k--) if (shpSPK_STEPS[at(k)][0] === i) { const left = shpSPK_T[at(k) + 1] - (k < 0 ? shpSPK_LOOP : 0); return t - left < shpSPK_GLOW ? '#' : ':'; }
+    return ':';
+  });
+  /* as it lands the light spills a spoke past twelve, then settles back */
+  if (t < 90) tones[1] = '#';
+  return shpWheel(tones);
+};
+const shpSPOKES = shpFilm(shpSpokesAt, shpSPK_LOOP);
 
-/* spinner, Dot Ring take: a dotted circle, twelve single pixels set round the radius 6 circle at the hours of a clock
-   face, an even ring an LED matrix would draw. It always shows dim. A lit run with a white head goes round it and
-   breathes as it goes, the way the Material spinner does: the head eases away and the run stretches out over half the
-   ring, then the tail eases after it and the run gathers to a short dash half a turn on, rests a beat, and goes again.
-   Two breaths make one turn */
-const shpDOTS = [[6, 0], [9, 1], [11, 3], [12, 6], [11, 9], [9, 11], [6, 12], [3, 11], [1, 9], [0, 6], [1, 3], [3, 1]];
-const shpDotRun = (tail, head) => stamp([...shpDOTS.map(([x, y]) => [x, y, ':']),
-  ...Array.from({ length: head - tail + 1 }, (_, k) => { const [x, y] = shpDOTS[shpMod(tail + k, 12)]; return [x, y, k === head - tail ? 'W' : '#']; })]);
-/* one breath, half a turn: [tail, head, ms]. The head eases away while the tail waits, then the tail eases in
-   behind it, and the run rests as a dash before the next breath */
-const shpBREATH = [[0, 1, 220], [0, 2, 100], [0, 3, 70], [0, 4, 52], [0, 5, 45], [1, 6, 45], [2, 7, 50], [3, 7, 52], [4, 7, 62], [5, 7, 85]];
-const shpDOTRING = [0, 6].flatMap(o => shpBREATH.map(([t, h, ms]) => F(shpDotRun(t + o, h + o), ms)));
+/* spinner, Dot Ring take: a clock face. Twelve dim dots stand round the radius 6 circle at the hours, and a short lit
+   hand with a dim counterweight turns on a white pin in the middle. It ticks: each hour it snaps on to the next dot,
+   and the dot it points at sparks white and stays lit, so the face fills up like time being used. When the hand
+   comes back to twelve and the last dot lights, the hour chimes: two sparks run down from twelve either side, putting
+   the dots out as they go, and meet at six. The face is clear again and the hand ticks on. The hand is drawn as
+   a clean pixel line, straight or two cells over one */
+const shpHOURS = [[6, 0], [9, 1], [11, 3], [12, 6], [11, 9], [9, 11], [6, 12], [3, 11], [1, 9], [0, 6], [1, 3], [3, 1]];
+/* the hand for hours 0 to 2, three cells from the pin; the rest are these turned a quarter at a time */
+const shpHAND_Q = [[[6, 5], [6, 4], [6, 3]], [[6, 5], [7, 4], [7, 3]], [[7, 6], [8, 5], [9, 5]]];
+const shpHand = h => { let cs = shpHAND_Q[h % 3]; for (let q = 0; q < Math.floor(h / 3); q++) { cs = cs.map(([x, y]) => [12 - y, x]); }
+  const [hx, hy] = cs[0]; return [...cs.map(([x, y]) => [x, y, '#']), [12 - hx, 12 - hy, ':'], [6, 6, 'W']]; };
+/* the face with the hand at hour h, the dots in `lit` lit and those in `hot` white */
+const shpClock = (h, lit, hot = []) => stamp([...shpHOURS.map(([x, y], i) => [x, y, hot.includes(i) ? 'W' : lit.includes(i) ? '#' : ':']), ...shpHand(h)]);
+const shpUpTo = n => Array.from({ length: n }, (_, i) => i);
+const shpTICKS = Array.from({ length: 12 }, (_, k) => { const h = (k + 1) % 12, lit = h ? shpUpTo(h + 1).slice(1) : shpUpTo(12);
+  return [[shpClock(h, lit, [h]), 55], [shpClock(h, lit), 95]]; }).flat();
+/* the chime: sparks at k and 12 - k, every dot above them already out */
+const shpCHIME = [1, 2, 3, 4, 5, 6].map((k, i) => [shpClock(0, shpUpTo(12).filter(j => j > k - 1 && j < 13 - k && j !== 0), [k, 12 - k]), [70, 55, 48, 48, 55, 90][i]]);
+const shpDOTRING = shpReel([...shpTICKS, ...shpCHIME, [shpClock(0, []), 130]]);
 
-/* spinner, Trace take: a rounded square drawn dim, and a bright stroke tracing round it. The stroke speeds down the
-   straight sides and slows into each corner, the way a pen slows to turn. Its tail is wherever the head was a moment
-   ago, so on the straights it stretches out and in the corners it bunches up and wraps the bend */
+/* spinner, Trace take: a runner doing laps. A dim rounded track, and on it a white runner with a lit wake: the wake is
+   wherever the runner was a moment ago, so it stretches out down the straights and bunches up as the runner brakes
+   into each bend and swings round it, then drives out. Down the last straight it kicks for the line, and as it crosses
+   the start at the top a light gate across the track blips, a white cell either side of it that dims and goes out.
+   Then the next lap */
 const shpTRACK = (() => {
   const p = [];
   for (let x = 6; x <= 9; x++) p.push([x, 1]);
@@ -2059,167 +2235,277 @@ const shpTRACK = (() => {
   for (let x = 3; x <= 5; x++) p.push([x, 1]);
   return p;
 })();
-/* ms per cell for the head: slowest on the corner cell, quickest mid-side */
+/* ms per cell: slow on the corner cell, quick mid-side, and quicker still down the last straight and over the line */
 const shpCornerDist = i => Math.min(...[4, 12, 20, 28].map(c => Math.min(Math.abs(i - c), 32 - Math.abs(i - c))));
-const shpTRACE_MS = Array.from({ length: 32 }, (_, i) => [120, 80, 52, 38, 32][shpCornerDist(i)]);
-const shpTRACE_T = shpTRACE_MS.reduce((a, ms) => (a.push(a[a.length - 1] + ms), a), [0]);
-/* where the head was `lag` ms before it reached cell i, as a path index that may run below 0 into the previous lap */
-const shpTraceTail = (i, lag) => { let t = shpTRACE_T[i] - lag, off = 0; while (t < 0) { t += shpTRACE_T[32]; off -= 32; } let j = 0; while (shpTRACE_T[j + 1] <= t) j++; return j + off; };
-const shpTrace = (head, tail) => stamp([...shpTRACK.map(([x, y]) => [x, y, ':']), ...Array.from({ length: head - tail + 1 }, (_, k) => { const [x, y] = shpTRACK[shpMod(tail + k, 32)]; return [x, y, k === head - tail ? 'W' : '#']; })]);
-const shpTRACE = Array.from({ length: 32 }, (_, i) => F(shpTrace(i, Math.min(i - 1, shpTraceTail(i, 250))), shpTRACE_MS[i]));
+const shpRUN_MS = Array.from({ length: 32 }, (_, i) => { const kick = i >= 22 || i <= 1; return (kick ? [110, 70, 46, 34, 30] : [120, 80, 54, 42, 38])[shpCornerDist(i)]; });
+const shpRUN_T = shpRUN_MS.reduce((a, ms) => (a.push(a[a.length - 1] + ms), a), [0]);
+const shpRUN_LOOP = shpRUN_T[32];
+/* the runner's place (a path index) at time t, and the wake back to where it was shpRUN_LAG ms ago */
+const shpRunAt = t => { t = shpMod(t, shpRUN_LOOP); let j = 0; while (shpRUN_T[j + 1] <= t) j++; return j; };
+const shpRUN_LAG = 230;
+const shpTraceAt = t => {
+  const head = shpRunAt(t); let tail = shpRunAt(t - shpRUN_LAG); if (tail > head) tail -= 32; tail = Math.min(tail, head - 1);
+  /* the gate: white as the runner crosses the line, lit a moment, dim, then gone */
+  const since = shpMod(t, shpRUN_LOOP), gate = since < 100 ? 'W' : since < 240 ? ':' : null;
+  return stamp([...shpTRACK.map(([x, y]) => [x, y, ':']), ...(gate ? [[6, 0, gate], [6, 2, gate]] : []),
+    ...Array.from({ length: head - tail + 1 }, (_, k) => { const [x, y] = shpTRACK[shpMod(tail + k, 32)]; return [x, y, k === head - tail ? 'W' : '#']; })]);
+};
+const shpTRACE = shpFilm(shpTraceAt, shpRUN_LOOP);
 
-/* spinner, Morph take: a square tile that rounds into a disc while it turns, then squares up again a quarter turn on.
-   Free rotation breaks pixel edges, so the tile only stops at the angles the grid draws cleanly: a slope of one in four,
-   then one in two, by which time it is mostly round, then the disc, then the same slopes mirrored as it squares up the
-   other side of the turn. Lit rim, dim body. Slow off the square, quick through the turn, a beat as a disc. Two
-   opposite corners carry a white glint that rides round a cell at a time, so the tile visibly keeps turning while it
-   is a disc, and lands on the next pair of corners; two quarter turns bring the glints home */
-const shpConvex = pts => { const cs = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const px = x - 6, py = y - 6; if (pts.every(([ax, ay], i) => { const [bx, by] = pts[(i + 1) % pts.length]; return (bx - ax) * (py - ay) - (by - ay) * (px - ax) >= -0.02 * Math.hypot(bx - ax, by - ay); })) cs.push([x, y]); } return cs; };
-const shpShade = cs => { const s = new Set(cs.map(([x, y]) => x + ',' + y)), h = (x, y) => s.has(x + ',' + y); return stamp(cs.map(([x, y]) => [x, y, h(x - 1, y) && h(x + 1, y) && h(x, y - 1) && h(x, y + 1) ? ':' : '#'])); };
-/* a square of half side s turned th, its corners cut back by a fraction f of each side, as cells */
-const shpSquare = (s, th, f) => {
-  const c = [[-s, -s], [s, -s], [s, s], [-s, s]].map(([x, y]) => [x * Math.cos(th) - y * Math.sin(th), x * Math.sin(th) + y * Math.cos(th)]);
-  return shpConvex(c.flatMap((p, i) => { const a = c[(i + 3) % 4], b = c[(i + 1) % 4]; return [[p[0] + (a[0] - p[0]) * f, p[1] + (a[1] - p[1]) * f], [p[0] + (b[0] - p[0]) * f, p[1] + (b[1] - p[1]) * f]]; }));
-};
-/* the disc is the round radius 4 pixel circle filled, the same nine cells across as the square */
-const shpDISC = (() => { const ring = shpCircle(4), cs = []; for (let y = 2; y <= 10; y++) { const xs = ring.filter(c => c[1] === y).map(c => c[0]); for (let x = Math.min(...xs); x <= Math.max(...xs); x++) cs.push([x, y]); } return cs; })();
-/* two opposite corners carry a glint, so the turn shows even while the tile is a disc: the rim cells furthest out
-   along the corner's direction (angle a, clockwise from three o'clock) go white */
-const shpGlint = (cs, a) => {
-  const along = ([x, y]) => (x - 6) * Math.cos(a) + (y - 6) * Math.sin(a), off = ([x, y]) => Math.abs(-(x - 6) * Math.sin(a) + (y - 6) * Math.cos(a));
-  const pick = sign => { const end = cs.filter(c => sign * along(c) >= Math.max(...cs.map(d => sign * along(d))) - 0.6), m = Math.min(...end.map(off)); return end.filter(c => off(c) <= m + 0.3); };
-  return stamp([...pick(1), ...pick(-1)].map(([x, y]) => [x, y, 'W']), shpShade(cs));
-};
-const shpA4 = Math.atan2(1, 4), shpA2 = Math.atan2(1, 2), shpQ = Math.PI / 4;
-/* one quarter turn, starting from turn k: [cells, angle turned, ms] */
-const shpQuarter = k => [[shpSquare(4, 0, 0.12), 0, 380], [shpSquare(4.12, shpA4, 0.15), shpA4, 140], [shpSquare(4.47, shpA2, 0.32), shpA2, 90], [shpDISC, shpQ, 280],
-  [shpSquare(4.47, -shpA2, 0.32), 2 * shpQ - shpA2, 90], [shpSquare(4.12, -shpA4, 0.15), 2 * shpQ - shpA4, 140]].map(([cs, a, ms]) => F(shpGlint(cs, shpQ + a + k * 2 * shpQ), ms));
-const shpMORPH = [...shpQuarter(0), ...shpQuarter(1)];
+/* spinner, Morph take: a shape looking for its form. It starts as a square, lit rim and dim body, and tries a circle:
+   the corners cut, the sides swell out, and it clicks round into a ball, a white sheen catching its upper left that
+   cools to a soft lit spot. Then it pinches out to points, a cell too far, and clicks back into a diamond that
+   sparkles at each point like a cut stone. Then it gives a quick eighth of a turn, its glints swinging round with it,
+   and clicks home as the square, the four corners catching the light. A square turned a little on this grid grows
+   notches and reads as a pinwheel, so the turn is drawn as the octagon a spinning square blurs into, and the glints
+   carry the turn */
+const shpSQ = shpMask((x, y) => Math.abs(x) <= 4 && Math.abs(y) <= 4);
+const shpCUT = shpMask((x, y) => Math.abs(x) <= 4 && Math.abs(y) <= 4 && Math.abs(x) + Math.abs(y) <= 7);
+const shpOCT = shpMask((x, y) => Math.abs(x) <= 4 && Math.abs(y) <= 4 && Math.abs(x) + Math.abs(y) <= 6);
+/* the squircle on the way to the ball, and the ball: the radius 5 pixel circle, eleven across */
+const shpSQUIRCLE = shpMask((x, y) => Math.pow(Math.abs(x) / 5.2, 2.5) + Math.pow(Math.abs(y) / 5.2, 2.5) <= 1);
+const shpBALL = shpMask((x, y) => x * x + y * y <= 5.3 * 5.3);
+const shpSWELL = shpMask((x, y) => Math.abs(x) <= 5 && Math.abs(y) <= 5 && Math.abs(x) + Math.abs(y) <= 6);
+const shpDiam = r => shpMask((x, y) => Math.abs(x) + Math.abs(y) <= r);
+const shpSHEEN = [[4, 4], [5, 3]], shpPOINTS = [[6, 1], [11, 6], [6, 11], [1, 6]], shpCORNERS = [[2, 2], [10, 2], [10, 10], [2, 10]];
+/* on the octagon, an eighth of the way between a point and a corner */
+const shpSWING = [[8, 2], [10, 8], [4, 10], [2, 4]];
+const shpForm = (cs, hot = [], lit = []) => stamp(lit.map(([x, y]) => [x, y, '#']), stamp(shpSolid(cs, hot)));
+const shpMORPH = shpReel([
+  [shpForm(shpSQ), 440], [shpForm(shpCUT), 100], [shpForm(shpSQUIRCLE), 70], [shpForm(shpBALL, shpSHEEN), 90], [shpForm(shpBALL, [], shpSHEEN), 350],
+  [shpForm(shpSWELL), 100], [shpForm(shpDiam(6)), 60], [shpForm(shpDiam(5), shpPOINTS), 90], [shpForm(shpDiam(5)), 350],
+  [shpForm(shpOCT, shpSWING), 70], [shpForm(shpSQ, shpCORNERS), 90],
+]);
 
-/* spinner, Ripple take: a drop at the centre. The dot draws itself up into a small plus, white at its heart, and lets
-   go: a ring leaves it and spreads out, quick off the dot and slowing as it widens, dimming as it goes, and at the rim
-   it breaks into every other pixel before it is gone. The dot is already gathering for the next one before the last
-   ring has faded */
-const shpRING = { 2: shpCircle(2), 3: shpCircle(3), 4: shpCircle(4), 5: shpCircle(5), 6: shpCircle(6) };
-/* a ring's cells by its age in 60 ms units */
-const shpRippleRing = age => {
-  const at = [[2, 2, '#'], [4, 3, '#'], [7, 4, '#'], [10, 5, ':'], [14, 6, ':'], [16, 6, '.']].find(([until]) => age < until);
-  if (age < 0 || !at) return [];
-  const [, r, tone] = at, cs = shpRING[r];
-  return tone === '.' ? cs.filter((_, i) => i % 2 === 0).map(([x, y]) => [x, y, ':']) : cs.map(([x, y]) => [x, y, tone]);
-};
-const shpRippleAt = u => {
-  const p = shpMod(u, 12), swell = p >= 10;
-  return stamp([...shpRippleRing(p), ...shpRippleRing(p + 12), ...(swell ? [[6, 6, 'W'], [5, 6, '#'], [7, 6, '#'], [6, 5, '#'], [6, 7, '#']] : [[6, 6, '#']])]);
-};
-const shpRIPPLE = shpMerge(Array.from({ length: 24 }, (_, u) => F(shpRippleAt(u), 60)));
+/* spinner, Ripple take: rain on a pond, seen low across the water so the rings are ovals twice as wide as they are
+   deep. A drop gathers at the top, swells, stretches and lets go; it falls, quicker every cell, drawn out into a
+   streak, and goes in with a little flat splash. The water throws up a jet with a bead on top while the first ring
+   leaves; the bead hangs, drops back in and starts a small ring of its own. The rings spread, dim and break into dots
+   at the rim while the next drop gathers. Only rings far enough apart to stay separate are on the water together */
+const shpOVALS = [
+  ['.....###.....', '....#...#....', '.....###.....'],
+  ['.....###.....', '...##...##...', '..#.......#..', '...##...##...', '.....###.....'],
+  ['....#####....', '..##.....##..', '.#.........#.', '#...........#', '.#.........#.', '..##.....##..', '....#####....'],
+];
+/* a ring: size 0 to 2, tone '#', ':', '.' broken into dots, or ',' down to its last four dots, at the ends and middles */
+const shpOval = (k, tone) => { const rows = shpOVALS[k], cs = cellsOf(rows, 0, 9 - (rows.length - 1) / 2);
+  const keep = tone === '.' ? ([x, y]) => (x + y) % 2 === 0 : tone === ',' ? ([x]) => x % 6 === 0 : () => true;
+  return cs.filter(keep).map(([x, y]) => [x, y, tone === '.' || tone === ',' ? ':' : tone]); };
+const shpPond = (cells, ...rings) => stamp([...rings.flatMap(([k, tone]) => shpOval(k, tone)), ...cells]);
+const shpRIPPLE = shpReel([
+  /* in: a flat splash, then the jet with its bead, and the first ring */
+  [shpPond([[6, 9, 'W'], [5, 9, '#'], [7, 9, '#']]), 60],
+  [shpPond([[6, 8, '#'], [6, 7, 'W']], [0, '#']), 90],
+  [shpPond([[6, 8, ':'], [6, 6, 'W']], [1, '#']), 100],
+  [shpPond([[6, 5, 'W']], [1, '#']), 170],
+  [shpPond([[6, 7, '#']], [2, '#']), 90],
+  /* the bead goes back in and rings, small, as the first ring reaches the rim */
+  [shpPond([[6, 9, 'W']], [2, '#']), 60],
+  [shpPond([], [2, ':'], [0, '#']), 160],
+  [shpPond([], [2, '.'], [0, ':']), 180],
+  /* the next drop gathers, swells, stretches and lets go */
+  [shpPond([[6, 0, ':']], [1, ':']), 200],
+  [shpPond([[6, 0, '#']], [1, '.']), 190],
+  [shpPond([[6, 0, '#'], [6, 1, 'W']], [2, '.']), 160],
+  [shpPond([[6, 1, 'W']], [2, ',']), 110],
+  /* it falls, quicker each step, drawn out into a streak */
+  [shpPond([[6, 3, 'W']]), 90], [shpPond([[6, 4, '#'], [6, 5, 'W']]), 65], [shpPond([[6, 6, ':'], [6, 7, '#'], [6, 8, 'W']]), 50],
+]);
 
-/* spinner, Equalizer take: seven bars standing on a centre line, rising and falling as a wave travels through them,
-   the way a voice memo draws sound. One wavelength spans the seven bars, so as one crest leaves on the right the next
-   is rising on the left and the meter never goes flat; the crest carries white tips as it passes through. Heights move
-   in half cells: a bar between two heights wears dim caps, so no bar ever jumps more than a cell. The bars swell most
-   in the middle and least at the ends, so the silhouette stays balanced while the wave runs across */
-const shpEQ_ENV = [0.5, 0.75, 0.92, 1, 0.92, 0.75, 0.5];
-const shpBars = (hs, hot = -1) => stamp(hs.flatMap((H, i) => {
-  const x = 2 * i, out = [], full = Math.floor((H - 1) / 2);
-  for (let d = 0; d <= full; d++) out.push([x, 6 - d, i === hot && d === full ? 'W' : '#'], [x, 6 + d, i === hot && d === full ? 'W' : '#']);
-  if (H % 2 === 0) out.push([x, 6 - full - 1, ':'], [x, 6 + full + 1, ':']);
-  return out;
-}));
-const shpEqH = u => shpEQ_ENV.map((e, i) => Math.max(1, Math.min(13, Math.round(1 + 12 * e * (0.12 + 0.88 * (0.5 + 0.5 * Math.sin(2 * Math.PI * (u - i / 7))))))));
-/* the crest of the wave, the bar it is passing through, wears white tips */
-const shpEqAt = u => { const hs = shpEqH(u), c = shpMod(Math.round(7 * (u - 0.25)), 7); return shpBars(hs, hs[c] >= 9 ? c : -1); };
-const shpEQ = Array.from({ length: 24 }, (_, k) => F(shpEqAt(k / 24), 60));
+/* spinner, Equalizer take: listening. Seven bars on a centre line, the meter a voice memo draws, but driven by a voice
+   rather than a wave. Quiet, the bars sink to a row of dim dots. Then someone speaks: the bars jump up together on
+   each syllable, quick to rise and slower to fall, each syllable its own shape, round and full on the vowels, a thin
+   hiss up the right on an s, with short gaps between syllables and a longer one between the words. The last word is
+   the loud one: it clips, the middle bars hit the top and bottom and the centre one's tips flash white. Then
+   quiet again */
+const shpBars = hs => stamp(hs.flatMap((H, i) => { const x = 2 * i, d = (H - 1) / 2;
+  if (H <= 1) return [[x, 6, ':']];
+  return Array.from({ length: H }, (_, k) => [x, 6 - d + k, H >= 13 && i === 3 && (k === 0 || k === H - 1) ? 'W' : '#']); }));
+/* the phrase, as bar heights and how long each holds */
+const shpPHRASE = [
+  [[1, 1, 1, 1, 1, 1, 1], 240], [[1, 1, 1, 3, 1, 1, 1], 60],
+  /* "o", "kay" */
+  [[1, 3, 5, 7, 5, 3, 1], 50], [[3, 5, 9, 9, 7, 3, 1], 90], [[1, 5, 7, 7, 5, 3, 1], 70], [[1, 3, 3, 5, 3, 1, 1], 50], [[1, 1, 3, 1, 1, 1, 1], 40],
+  [[1, 3, 5, 9, 11, 7, 3], 60], [[3, 5, 7, 11, 9, 5, 3], 100], [[1, 3, 7, 9, 7, 3, 1], 70], [[1, 3, 5, 5, 3, 1, 1], 60], [[1, 1, 3, 3, 1, 1, 1], 60],
+  [[1, 1, 1, 1, 1, 1, 1], 160],
+  /* "let's", ending in a hiss */
+  [[1, 3, 7, 5, 7, 3, 1], 55], [[3, 7, 9, 7, 9, 5, 1], 80], [[1, 3, 5, 3, 5, 3, 1], 50], [[1, 1, 1, 3, 5, 7, 5], 55], [[1, 1, 3, 5, 7, 5, 3], 60], [[1, 1, 1, 1, 3, 3, 1], 45],
+  /* "go!", the loud one */
+  [[3, 7, 11, 13, 11, 7, 3], 70], [[5, 9, 13, 13, 13, 9, 5], 110], [[3, 7, 11, 11, 9, 7, 3], 80], [[1, 5, 7, 9, 7, 5, 1], 70], [[1, 3, 5, 7, 5, 3, 1], 70],
+  [[1, 1, 3, 5, 3, 1, 1], 70], [[1, 1, 1, 3, 1, 1, 1], 70],
+];
+const shpEQ = shpReel(shpPHRASE.map(([hs, ms]) => [shpBars(hs), ms]));
 
-/* spinner, Flip take: a square tile turns over. It tips on its horizontal axis: the far edge narrows away in
-   perspective, the near edge catches the light, it goes edge-on as a single bright line and opens onto its back, shaded
-   dim inside a lit rim, the same edge still nearest and still lit. Then it turns on its vertical axis the same way, back to its face. Each turn is slow off the mark, quick through
-   edge-on and slow to land, with a beat on each face */
-const shpTile = (ws, back, glint, vert) => {
-  const y0 = 6 - (ws.length - 1) / 2, cs = [];
-  ws.forEach((w, i) => { for (let k = 0; k < w; k++) { const x = 6 - (w - 1) / 2 + k, y = y0 + i, rim = i === 0 || i === ws.length - 1 || k === 0 || k === w - 1; cs.push([x, y, back && !rim ? ':' : i === glint && Math.abs(x - 6) <= 1 ? 'W' : '#']); } });
-  return stamp(vert ? cs.map(([x, y, c]) => [y, x, c]) : cs);
-};
-const shpR9 = n => Array(n).fill(9);
-/* the shapes of one half turn, face toward the viewer to edge-on: row widths from the far edge to the near edge */
-const shpTURN = [[7, ...shpR9(6)], [7, 7, 9, 9, 9], [5, 7, 9]];
-const shpHalf = (back, vert, opening) => {
-  const fr = shpTURN.map((ws, i) => { const g = i ? ws.length - 1 : -1; return opening ? shpTile(ws.slice().reverse(), back, i ? 0 : -1, vert) : shpTile(ws, back, g, vert); });
-  return opening ? fr.reverse() : fr;
-};
-const shpEDGE = vert => shpTile([9], false, 0, vert);
-const shpFLIP_MS = [150, 90, 60];
-const shpFLIP = [F(shpTile(shpR9(9)), 420), ...shpHalf(false, false, false).map((b, i) => F(b, shpFLIP_MS[i])), F(shpEDGE(false), 50),
-  ...shpHalf(true, false, true).map((b, i) => F(b, shpFLIP_MS[2 - i])), F(shpTile(shpR9(9), true), 380),
-  ...shpHalf(true, true, false).map((b, i) => F(b, shpFLIP_MS[i])), F(shpEDGE(true), 50),
-  ...shpHalf(false, true, true).map((b, i) => F(b, shpFLIP_MS[2 - i]))];
+/* spinner, Flip take: a coin toss. A coin rests face on. A flick: it dips and tips back, then rises spinning end over
+   end, so it flashes edge, back, face, edge, the lit face and the dim back taking turns and the edge a bright line;
+   it slows at the top, hangs edge on, and drops back spinning to land flat, squashing wide for a beat on the same
+   floor it left. The first toss lands tails, a dim back with a star stamped in it; the second lands heads, and heads
+   is a smiling face, which winks */
+/* a coin of `rows` rows (odd, 1 to 9) centred on row cy: an ellipse nine cells wide (or 2 rx + 1), cut to the
+   rows. side: 'heads' lit through, 'tails' dim inside a lit rim, 'edge' a lit line with a white middle */
+const shpCoin = (rows, cy, side, rx = 4.5) => { const ry = rows / 2, cs = [];
+  for (let dy = -(rows - 1) / 2; dy <= (rows - 1) / 2; dy++) { const w = rows === 1 ? 4 : Math.floor(Math.sqrt(Math.max(0, rx * rx * (1 - (dy / ry) * (dy / ry))))); for (let dx = -w; dx <= w; dx++) cs.push([6 + dx, cy + dy]); }
+  return stamp(rows === 1 ? cs.map(([x, y]) => [x, y, Math.abs(x - 6) <= 1 ? 'W' : '#']) : side === 'heads' ? cs.map(([x, y]) => [x, y, '#']) : shpSolid(cs)); };
+const shpFACE = [[4, 4], [8, 4], [4, 5], [8, 5], [3, 7], [9, 7], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8]];
+const shpWINK = [[3, 5], [4, 5], [5, 5], [8, 4], [8, 5], [3, 7], [9, 7], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8]];
+const shpHeads = face => { const g = shpCoin(9, 6, 'heads').map(r => r.split('')); for (const [x, y] of face) g[y][x] = '.'; g[3][4] = 'W'; return g.map(r => r.join('')); };
+const shpTAILS = stamp([[6, 6, 'W'], [5, 6, '#'], [7, 6, '#'], [6, 5, '#'], [6, 7, '#']], shpCoin(9, 6, 'tails'));
+/* one toss from `from` over to the other side: [rows, centre row, side, ms] through the flight, then the squash */
+const shpToss = from => { const other = from === 'heads' ? 'tails' : 'heads';
+  const fl = [[7, 7, from, 100], [1, 5, 'edge', 50], [7, 4, other, 50], [9, 4, other, 55], [5, 3, other, 65], [1, 2, 'edge', 110],
+    [5, 3, from, 65], [9, 4, from, 55], [7, 4, from, 50], [1, 5, 'edge', 45], [5, 6, other, 45], [7, 6, other, 50]];
+  return [...fl.map(([r, cy, side, ms]) => [shpCoin(r, cy, side), ms]), [shpCoin(7, 7, other, 5.5), 70]]; };
+const shpFLIP = shpReel([[shpHeads(shpFACE), 150], [shpHeads(shpWINK), 170], [shpHeads(shpFACE), 120], ...shpToss('heads'), [shpTAILS, 340], ...shpToss('tails')]);
 
 const OPTS_SP3 = {
-  spinner_spokes: Object.assign(seq(...shpSPOKES), { still: shpSpokes(0) }),
-  spinner_dotring: Object.assign(seq(...shpDOTRING), { still: shpDotRun(-2, 1) }),
-  spinner_trace: Object.assign(seq(...shpTRACE), { still: shpTrace(2, -3), trail: 0.8 }),
-  spinner_morph: Object.assign(seq(...shpMORPH), { still: shpMORPH[0].b }),
-  spinner_ripple: Object.assign(seq(...shpRIPPLE), { still: stamp([[6, 6, '#'], ...shpRING[3].map(([x, y]) => [x, y, '#']), ...shpRING[6].map(([x, y]) => [x, y, ':'])]) }),
-  spinner_equalizer: Object.assign(seq(...shpEQ), { still: shpBars([3, 6, 9, 13, 9, 6, 3], 3) }),
-  spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTile(shpR9(9)) }),
+  spinner_spokes: Object.assign(seq(...shpSPOKES), { still: shpWheel(['W', ':', ':', ':', ':', ':', '#', '#']) }),
+  spinner_dotring: Object.assign(seq(...shpDOTRING), { still: shpClock(4, [1, 2, 3, 4]) }),
+  spinner_trace: Object.assign(seq(...shpTRACE), { still: shpTraceAt(shpRUN_T[9]), trail: 0.8 }),
+  spinner_morph: Object.assign(seq(...shpMORPH), { still: shpForm(shpSQ) }),
+  spinner_ripple: Object.assign(seq(...shpRIPPLE), { still: shpPond([[6, 2, '#'], [6, 3, 'W']], [0, '#'], [2, ':']) }),
+  spinner_equalizer: Object.assign(seq(...shpEQ), { still: shpBars([3, 7, 9, 11, 9, 5, 3]) }),
+  spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTAILS }),
 };
 
-/* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
-   cells with a hairline seam, each flat pastel with a faint gradient and a tight, faint halo.
-   The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
-   renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
+/* ---------- glow: twelve tiny scenes in soft light, each with a job. A 3x3 grid of big cells with a hairline seam,
+   flat pastels with a faint gradient and a tight halo, the colour drifting round the wheel through neighbouring hues,
+   and cells that crossfade instead of popping. Each one is a small story with a purpose: a die for shuffling, a cup
+   that fills for downloading, a firefly for a quiet background task. '#' lit, ':' half, 'W' brightened. ---------- */
 const GL_PASTEL = { peach: '#FFC394', apricot: '#FFAA78', salmon: '#F7818F', pink: '#F59AC4', lilac: '#C6B2FF', sky: '#8DD0FF', aqua: '#7EDFD8', mint: '#97E9BC', butter: '#FFDC82' };
 const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
 const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.1, scale: 0.82, cycle: 7.5 }, opts);
-const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
-const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
 
-/* halo: a five-cell arc runs round the ring, a bright head and a fading tail */
-const glHaloAt = k => glCellsTo3([':', '#', '#', '#', 'W'].map((c, j) => [...GL_RING8[(k + j) % 8], c]));
-/* fold: the square folds like a sheet of paper, the top row over onto the middle, then the bottom up, to a single bright
-   line, which folds in to a point; then it unfolds the other way, sideways to a column and out to the full square */
-const GL_FOLD = [['#########', 260], [':::W#W###', 110], ['...######', 110], ['...###:::', 90], ['...W#W...', 160], ['...:#:...', 90], ['....W....', 220],
-  ['.:..#..:.', 90], ['.#..W..#.', 160], ['##:#W:##:', 100]];
-/* tide: a band of light washes across the square from one corner to the other and back, the water ahead of it shallow
-   and the sand behind it dark */
-const glTideAt = b => glCellsTo3(Array.from({ length: 9 }, (_, i) => { const x = i % 3, y = (i / 3) | 0, d = x + y - b; return [x, y, d === 0 ? 'W' : d === -1 || d === 1 ? '#' : d === 2 ? ':' : '.']; }));
-const GL_TIDE = [0, 1, 2, 3, 4, 3, 2, 1].map((b, i) => [glTideAt(b), [190, 120, 100, 120, 190, 120, 100, 120][i]]);
-/* twist: an S tumbles round an eighth of a turn at a time */
-const GL_TWIST = ['.##.#.##.', '#..###..#', '##..#..##', '..####W..'].map(b => [b, 230]);
-/* stairs: three columns trade heights like steps rolling forward */
-const glStairsAt = hs => glCellsTo3(hs.flatMap((hgt, x) => Array.from({ length: hgt }, (_, k) => [x, 2 - k, hgt === 3 && k === 2 ? 'W' : '#'])));
-/* pulse: the square breathes in from its centre and out again */
-const GL_PULSE = [['.........', 260], ['....#....', 140], ['.:.:#:.:.', 140], ['#########', 240], ['####W####', 280], [':::::::::', 220], ['....:....', 160]];
-/* bounce: a drop in the middle column springs up, stretching as it rises and falls, and squashes on landing */
-const glBounceAt = cells => glCellsTo3(cells.map(([y, c]) => [1, y, c || '#']));
-/* beads: a light passes along a row of three, the others resting half lit */
-const glBeadsAt = k => glCellsTo3([0, 1, 2].map(x => [x, 1, x === k ? 'W' : x === k - 1 ? '#' : ':']));
-/* worm: a three-cell worm wanders the grid row by row and turns back at the end */
-const GL_WORM_PATH = [[0,0],[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[1,2],[2,2]];
-const glWormAt = k => glCellsTo3([0, 1, 2].map(j => { const i = k - j; return i >= 0 && i < 9 ? [...GL_WORM_PATH[i], j === 0 ? 'W' : j === 1 ? '#' : ':'] : null; }).filter(Boolean));
-/* rain: drops fall down the three columns out of step, each with a short dim trail */
-const GL_RAIN_OFF = [0, 3, 1];
-const glRainAt = t => glCellsTo3(GL_RAIN_OFF.flatMap((o, x) => { const y = (t + o) % 5; return [[x, y, '#'], [x, y - 1, ':']]; }));
-/* spiral: the grid fills cell by cell, round and into the middle, holds, and empties the same way */
-const GL_SPIRAL = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1],[1,1]];
-const glSpiralAt = (from, to) => glCellsTo3(GL_SPIRAL.slice(from, to).map(([x, y], i) => [x, y, from === 0 && i === to - 1 && to < 9 ? 'W' : '#']));
-/* tumble: a two-by-two block rolls round the grid corner to corner */
-const GL_TUMBLE = [[0,0],[1,0],[1,1],[0,1]];
-const glTumbleAt = ([x0, y0], tone = '#') => glCellsTo3([[x0, y0], [x0 + 1, y0], [x0, y0 + 1], [x0 + 1, y0 + 1]].map(([x, y]) => [x, y, tone]));
+/* ---------- glow, reworked: twelve chunky soft-light spinners, each a tiny story with a job to do. Same 3x3 grid, same
+   glGlow helper and pastel palettes as before; every name here carries the prefix glw. Frames are written as three
+   rows joined by '|', top row first. ---------- */
+const glwB = s => { const t = s.replace(/\|/g, ''); return [t.slice(0, 3), t.slice(3, 6), t.slice(6, 9)]; };
+const glwCells = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells.filter(Boolean)) if (c && x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
+const glwMake = (frames, colors, opts = {}) => glGlow(frames.map(([b, ms]) => [typeof b === 'string' ? glwB(b) : b, ms]), colors, opts);
+
+/* die: a die that keeps landing on the next number. Each face is pips on a dim body. To roll it squashes, goes
+   edge-on as a bright bar with a glint, and opens out as the next face, squashed for a beat as it lands. It counts
+   one to six; six lands with a glint running over its pips, and then it is thrown hard, tumbling through a face
+   before it comes down on one again */
+const GLW_FACE = [null, ':::|:#:|:::', '::#|:::|#::', '::#|:#:|#::', '#:#|:::|#:#', '#:#|:#:|#:#', '#:#|#:#|#:#'].map(s => s && glwB(s));
+const glwMax = (r1, r2) => r1.split('').map((c, i) => RANK[c] >= RANK[r2[i]] ? c : r2[i]).join('');
+const glwSquash = f => ['...', glwMax(f[0], f[1]), f[2]];
+const glwRoll = (a, b) => [[glwSquash(a), 70], [['...', '#W#', '...'], 70], [glwSquash(b), 80]];
+const GLW_DIE = [
+  ...[1, 2, 3, 4, 5].flatMap(n => [[GLW_FACE[n], 290], ...glwRoll(GLW_FACE[n], GLW_FACE[n + 1])]),
+  [GLW_FACE[6], 200], ['W:#|#:#|#:#', 60], ['#:W|W:#|#:#', 60], ['#:#|#:W|W:#', 60], ['#:#|#:#|#:W', 60], [GLW_FACE[6], 160], ...glwRoll(GLW_FACE[6], GLW_FACE[1])];
+
+/* firefly: a lantern sits on the ground and a firefly loops above it, dark as it flies and flashing white each time it
+   passes just over the lantern. Each flash lights the lantern a little more, dim, then lit, then blazing; then the
+   firefly settles on top of it, the two blink together, and it lifts off while the lantern cools */
+const GLW_LOOP6 = [[1, 1], [0, 1], [0, 0], [1, 0], [2, 0], [2, 1]];
+const glwFly = (k, ft, lt) => glwCells([[1, 2, lt], [...GLW_LOOP6[k % 6], ft]]);
+const GLW_FLY_MS = [90, 110, 150, 170, 150, 110];
+const glwLap = (lt, ltLate) => [1, 2, 3, 4, 5].map(k => [glwFly(k, k === 1 ? ':' : '#', k >= 3 && ltLate ? ltLate : lt), GLW_FLY_MS[k]]);
+const GLW_FIREFLY = [
+  ...glwLap('#', ':'), [glwFly(0, 'W', ':'), 80], [glwFly(0, '#', '#'), 90],
+  ...glwLap('#'), [glwFly(0, 'W', '#'), 80], [glwCells([[1, 1, '#'], [1, 2, 'W'], [0, 2, ':'], [2, 2, ':']]), 170],
+  [glwFly(0, ':', '#'), 130], [glwCells([[1, 1, 'W'], [1, 2, 'W'], [0, 2, ':'], [2, 2, ':']]), 140], [glwFly(0, '#', '#'), 150]];
+
+/* cup: rain fills a cup. A drop falls down the middle and hits bottom with a little splash, and the water spreads
+   across; the next drop lands in it and the level rises a row; the third tops it up. Full, a ripple runs out from
+   where the last drop fell, and the cup drains away, the last puddle shrinking to the middle as the next drop falls */
+const GLW_CUP = [
+  ['.#.|...|...', 120], ['.:.|.#.|...', 75], ['...|.:.|.W.', 55], ['...|:.:|#W#', 70], ['...|...|###', 330],
+  ['.#.|...|###', 120], ['.:.|.#.|###', 75], ['...|:W:|:#:', 60], ['...|###|:::', 330],
+  ['.#.|###|:::', 140], ['.W.|###|:::', 60], ['#W#|:::|:::', 90], ['W#W|:::|:::', 90], ['###|:::|:::', 300],
+  ['...|###|:::', 150], ['...|...|###', 130], ['...|...|:#:', 110], ['...|...|.:.', 80]];
+
+/* ember: a coal sits in a little mound and breathes, warming from a dim core to a full glow and cooling again, slow
+   and calm. On the deeper second breath its heart flares white, a spark pops off the top, drifts up and sideways and
+   winks out as it cools */
+const GLW_EMBER = [
+  ['...|.:.|:#:', 420], ['...|.#.|:#:', 300], ['...|.#.|###', 380], ['...|.#.|:#:', 300], ['...|.:.|:#:', 400],
+  ['...|.#.|:#:', 260], ['...|.#.|###', 260], ['...|.#.|#W#', 220], ['...|.W.|###', 70], ['.W.|.#.|###', 70], ['..#|.#.|###', 120], ['..:|.#.|###', 160], ['...|.#.|:#:', 240]];
+
+/* messenger: two cells keep a conversation. The left one has something to say: it brightens, lobs a white packet
+   over the top, and the right one catches it, giving a little under the catch. It thinks, blinking like someone
+   typing, and lobs the reply back; the left one catches it the same way and glows with it */
+const glwMsg = (l, r, pk) => glwCells([[0, 1, l], [2, 1, r], pk ? [...pk, 'W'] : null]);
+/* the packet's arc over the top, from the left (from = 0) or from the right: slow at the top of the arc */
+const glwLob = from => [[[0, 0], 75], [[1, 0], 120], [[2, 0], 75]].map(([p, ms]) => [glwMsg(':', ':', from === 0 ? p : [2 - p[0], p[1]]), ms]);
+const GLW_MSG = [
+  [glwMsg('#', ':'), 320], [glwMsg('W', ':'), 90], ...glwLob(0), [glwCells([[0, 1, ':'], [2, 2, 'W']]), 60], [glwMsg(':', 'W'), 90], [glwMsg(':', '#'), 200],
+  [glwMsg(':', ':'), 140], [glwMsg(':', '#'), 130], [glwMsg(':', ':'), 140], [glwMsg(':', '#'), 200], [glwMsg(':', 'W'), 90], ...glwLob(2),
+  [glwCells([[0, 2, 'W'], [2, 1, ':']]), 60], [glwMsg('W', ':'), 90], [glwMsg('#', ':'), 260]];
+
+/* snake: a little snake slithers round the edge. While it is away a pellet turns up at the bottom. Next time round it
+   stops at the top, turns its head down, flicks its tongue twice, then lunges through the middle and swallows the
+   pellet, and it is a cell longer. Round the corner it stops, shivers, and slips out of its skin, which it leaves
+   behind as a dim ghost that fades while the snake, small again, slithers on */
+const GLW_SNAKE_PATH = [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2], [1, 2], [0, 2], [0, 1], [0, 0], [1, 0], [1, 1], [1, 2], [0, 2], [0, 1]];
+const glwSnake = (i, len, { eat = false, extra = [], shiver = false } = {}) => {
+  const body = Array.from({ length: len }, (_, j) => GLW_SNAKE_PATH[(i - j + 14) % 14]);
+  return glwCells([...extra, ...body.map((p, j) => [...p, j === 0 ? (eat ? 'W' : '#') : shiver ? (j % 2 ? ':' : '#') : j === len - 1 ? ':' : '#'])]);
+};
+const GLW_PELLET = [[1, 2, '#']], GLW_SKIN = [[0, 2], [1, 2]];
+const GLW_SNAKE = [
+  [glwSnake(0, 2, { extra: GLW_SKIN.map(p => [...p, ':']) }), 110], [glwSnake(1, 2, { extra: [[0, 1, ':'], [0, 2, ':'], [1, 2, ':']] }), 110], [glwSnake(2, 2), 100],
+  [glwSnake(3, 2), 95], [glwSnake(4, 2), 95], [glwSnake(5, 2), 95], [glwSnake(6, 2), 95], [glwSnake(7, 2), 100],
+  [glwSnake(8, 2, { extra: [[1, 2, ':']] }), 105], [glwSnake(9, 2, { extra: GLW_PELLET }), 170],
+  [glwSnake(9, 2, { extra: [...GLW_PELLET, [1, 1, 'W']] }), 50], [glwSnake(9, 2, { extra: GLW_PELLET }), 100], [glwSnake(9, 2, { extra: [...GLW_PELLET, [1, 1, 'W']] }), 50], [glwSnake(9, 2, { extra: GLW_PELLET }), 150],
+  [glwSnake(10, 2, { extra: GLW_PELLET }), 55], [glwSnake(11, 3, { eat: true }), 150], [glwSnake(12, 3), 115], [glwSnake(13, 3), 130],
+  [glwSnake(13, 3, { shiver: true }), 100], [glwSnake(13, 3), 90], [glwSnake(13, 3, { shiver: true }), 100]];
+
+/* seed: a seed lies in the soil. It glints and a shoot pushes up, its two leaves folded together at the top; they spring
+   open, a touch too far and back, into a seedling. A bud grows between them and ripens, then drops into the soil as a
+   new seed while the old plant fades */
+const GLW_SEED = [
+  ['...|...|:#:', 380], ['...|...|:W:', 80], ['...|.:.|:#:', 120], ['...|.#.|:#:', 110], ['.:.|.#.|:#:', 100], ['.#.|.#.|:#:', 140],
+  ['#:#|.#.|:#:', 70], ['...|###|:#:', 80], ['#.#|.#.|:#:', 380], ['#:#|.#.|:#:', 110], ['#W#|.#.|:#:', 320], ['###|.#.|:#:', 160],
+  [':#:|.:.|:::', 130], ['...|.#.|:::', 70], ['...|...|#W#', 70]];
+
+/* hourglass: sand runs through an hourglass, the middle of the top draining first and the pile at the bottom growing
+   from the middle out, a grain glinting in the neck now and then. Empty on top, the glass tips back a touch, turns
+   over, swinging a little past upright, and settles, and the sand starts to run again */
+const GLW_HOURGLASS = [
+  ['###|.:.|:::', 240], ['###|.#.|:::', 110], ['#:#|.W.|:::', 90], ['#:#|.#.|:#:', 260], ['#:#|.W.|:#:', 90], [':::|.#.|:#:', 200], [':::|.W.|###', 90], [':::|.:.|###', 220],
+  ['::.|::#|.##', 150], [':::|.:.|###', 70], ['.::|#::|##.', 60], ['#.:|#::|#.:', 55], ['##.|#::|.::', 60], ['###|.:.|:::', 70], ['.##|::#|::.', 120]];
+
+/* stack: blocks drop into a row and stack. One drops straight onto the block that is waiting, the next steers across to
+   the far gap, and the last falls into the middle and completes the row: a glint runs along it, it clears, and the
+   block left on top drops down into place, where the next one is waiting for it */
+const GLW_STACK = [
+  ['...|...|#..', 200], ['#..|...|#..', 130], ['...|W..|#..', 60], ['...|#..|#..', 220],
+  ['.#.|#..|#..', 120], ['..#|#..|#..', 100], ['...|#.#|#..', 70], ['...|#..|#.W', 60], ['...|#..|#.#', 220],
+  ['.#.|#..|#.#', 120], ['...|##.|#.#', 70], ['...|#..|#W#', 70], ['...|#..|W##', 60], ['...|#..|#W#', 60], ['...|#..|##W', 60], ['...|#..|:::', 80], ['...|#..|...', 70], ['...|:..|W..', 60]];
+
+/* balloon: a balloon fills from a limp scrap to a round, shiny balloon, a touch too round for a moment before it settles.
+   It tugs up once against its string, then it is let go: it floats up out of sight, its string trailing after it,
+   and the next one is already filling */
+const GLW_BALLOON = [
+  ['...|...|.:.', 160], ['...|.:.|.:.', 180], ['...|.#.|.:.', 180], ['.:.|:#:|.#.', 170], [':#:|###|:#:', 140], ['###|#W#|###', 80], [':W:|###|:#:', 260],
+  ['#W#|:#:|.:.', 110], [':W:|###|:#:', 150], ['#W#|:#:|.:.', 100], [':#:|.:.|.:.', 90], ['.:.|.:.|...', 85], ['.:.|...|...', 80]];
+
+/* fold: kept from the first set. A sheet folds like paper, top row over, bottom row up, to one bright crease, which
+   folds in to a point; then it unfolds the other way, to a column and out to the full square. Frozen, it is caught
+   half folded, the crease catching the light */
+const GLW_FOLD = [['#########', 260], [':::W#W###', 110], ['...######', 110], ['...###:::', 90], ['...W#W...', 160], ['...:#:...', 90], ['....W....', 220],
+  ['.:..#..:.', 90], ['.#..W..#.', 160], ['##:#W:##:', 100]].map(([s, ms]) => [glwB(s), ms]);
+
+/* bounce: kept from the first set and given a rhythm. A drop springs high up the middle column, stretching as it rises
+   and falls, slow at the top where it glints, and squashes on landing; then a little hop, a deep crouch, and up
+   again: boing, boing */
+const GLW_BOUNCE = [['...|...|:#:', 120], ['...|.#.|.:.', 70], ['...|.#.|...', 80], ['.#.|.:.|...', 70], ['.W.|...|...', 200], ['.#.|.:.|...', 70], ['...|.#.|...', 80], ['...|.:.|.#.', 60], ['...|...|:#:', 110],
+  ['...|.#.|.:.', 70], ['...|.#.|...', 150], ['...|.:.|.#.', 70], ['...|...|.#.', 90], ['...|...|###', 120]];
 
 const GLOW_SPRITES = {
-  glow_halo: glGlow(Array.from({ length: 8 }, (_, k) => [glHaloAt(k), 125]), ['pink', 'peach', 'lilac']),
-  glow_fold: glGlow(GL_FOLD, ['salmon', 'pink', 'lilac']),
-  glow_tide: glGlow(GL_TIDE, ['peach', 'apricot', 'salmon']),
-  glow_twist: glGlow(GL_TWIST, ['sky', 'aqua', 'lilac']),
-  glow_stairs: glGlow([[1, 2, 3], [2, 3, 1], [3, 1, 2]].map(hs => [glStairsAt(hs), 310]), ['mint', 'aqua', 'sky']),
-  glow_pulse: glGlow(GL_PULSE, ['lilac', 'pink', 'peach'], { trail: 1.6, rise: 4 }),
-  glow_bounce: glGlow([[glBounceAt([[2]]), 150], [glBounceAt([[1], [2, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[0, 'W']]), 200], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[2], [1, ':']]), 70], [glCellsTo3([[0, 2, ':'], [1, 2, '#'], [2, 2, ':']]), 130]], ['peach', 'butter', 'apricot'], { trail: 0.9, rise: 1.5 }),
-  glow_beads: glGlow([0, 1, 2, 3].map(k => [glBeadsAt(k), 210]), ['sky', 'lilac', 'pink']),
-  glow_worm: glGlow([...Array.from({ length: 11 }, (_, k) => [glWormAt(k), 95])], ['aqua', 'mint', 'sky'], { trail: 0.8 }),
-  glow_rain: glGlow(Array.from({ length: 5 }, (_, t) => [glRainAt(t), 170]), ['sky', 'aqua', 'mint'], { trail: 0.8 }),
-  glow_spiral: glGlow([...Array.from({ length: 9 }, (_, k) => [glSpiralAt(0, k + 1), 85]), [glSpiralAt(0, 9), 260], ...Array.from({ length: 8 }, (_, k) => [glSpiralAt(k + 1, 9), 85]), ['.........', 200]], ['pink', 'lilac', 'sky']),
-  glow_tumble: glGlow(GL_TUMBLE.map(c => [glTumbleAt(c), 250]), ['apricot', 'salmon', 'pink'], { trail: 1.0 }),
+  glow_die: glwMake(GLW_DIE, ['lilac', 'pink'], { still: GLW_FACE[5] }),
+  glow_firefly: glwMake(GLW_FIREFLY, ['butter', 'peach'], { still: glwB('..#|...|:#:'), trail: 0.8 }),
+  glow_cup: glwMake(GLW_CUP, ['sky', 'aqua'], { still: glwB('.#.|###|:::') }),
+  glow_ember: glwMake(GLW_EMBER, ['salmon', 'apricot'], { still: glwB('...|.#.|#W#'), trail: 1.3 }),
+  glow_messenger: glwMake(GLW_MSG, ['sky', 'lilac'], { still: glwB('.W.|:.:|...') }),
+  glow_snake: glwMake(GLW_SNAKE, ['aqua', 'mint'], { still: glwB('.#.|#..|##:'), trail: 0.7 }),
+  glow_seed: glwMake(GLW_SEED, ['mint', 'aqua'], { still: glwB('#.#|.#.|:#:') }),
+  glow_hourglass: glwMake(GLW_HOURGLASS, ['apricot', 'peach', 'butter'], { still: glwB('#:#|.#.|:#:') }),
+  glow_stack: glwMake(GLW_STACK, ['lilac', 'sky'], { still: glwB('.#.|#..|#.#') }),
+  glow_balloon: glwMake(GLW_BALLOON, ['pink', 'lilac'], { still: glwB(':W:|###|:#:') }),
+  glow_fold: glwMake(GLW_FOLD, ['salmon', 'pink', 'lilac'], { still: glwB('...|W#W|###') }),
+  glow_bounce: glwMake(GLW_BOUNCE, ['peach', 'butter', 'apricot'], { still: glwB('.#.|.:.|...'), trail: 0.9, rise: 1.5 }),
 };
 
 /* ---------- micro: every state again as a 5x5 glyph, for places too small for 13x13: a browser tab, a menu bar, a
@@ -2378,43 +2664,57 @@ function polishLoop(id, sp) {
 for (const [id, sp] of Object.entries(SPRITES)) if (!sp.micro && !sp.colors) polishLoop(id, sp);
 /* spinners: loaders with no meaning, for any wait. They take a warm neutral, the way a system spinner takes the text colour */
 const SPINNERS = [
-  ['spinner_ring', 'Ring', 'A comet runs a loop-the-loop on a dim ring: it creeps over the top, falls and whips round the bottom with its tail stretched long, and coasts back up.'],
-  ['spinner_snake', 'Snake', 'An arc chases its own tail: the head runs ahead until the arc nearly closes, then the tail runs to catch up, going round once.'],
-  ['spinner_dual', 'Dual', 'Two arcs on two rings turn opposite ways, slowing to cross nested at the top and bottom and racing round the far sides.'],
-  ['spinner_orbit', 'Orbit', 'A short comet moon circles a round planet on a dotted path, hanging at the top and bottom and swinging quickly through the sides.'],
-  ['spinner_cascade', 'Cascade', 'Three nested arcs stacked like a signal icon swing half a turn slightly out of step, fanning into a spiral and folding back into a stack, then a light runs out through them.'],
-  ['spinner_spokes', 'Spokes', 'The iPhone activity spinner drawn in pixels: eight spokes round a clear hole, and the light steps round them, one spoke white, two lit behind it and the rest dim.'],
-  ['spinner_dotring', 'Dot Ring', 'Twelve dim dots ring the centre like a clock face. A lit run with a white head stretches out over half the ring, then gathers up behind itself half a turn further on, and breathes out again.'],
-  ['spinner_swirl', 'Swirl', 'Eight dots round the edge of a square and a light that chases round them, winding up, whipping round with a long tail and coasting in with a short one.'],
-  ['spinner_trace', 'Trace', 'A bright stroke runs round a dim rounded square, quick down the straight sides and slowing into every corner, so it stretches out on the straights and bunches up round the bends.'],
-  ['spinner_blocks', 'Blocks', 'A three by three grid of blocks with a wave running corner to corner down the diagonal: each block softens, shrinks to a dim point and grows back with a white glint, a beat after its neighbour.'],
-  ['spinner_slide', 'Slide', 'Three rounded tiles in a two by two tray take turns sliding into the empty slot, easing out and in, so the gap walks round the tray.'],
-  ['spinner_leap', 'Leap', 'Leapfrog: the last of three dots crouches and sails over the other two in a high arc while they slide back under it, then lands squashed at the front.'],
-  ['spinner_gather', 'Gather', 'Four rounded squares draw in from the corners and meet with a spark, the cluster clicks round an eighth of a turn into four diamonds that spread to the sides, and back.'],
-  ['spinner_eclipse', 'Eclipse', 'Two discs orbit each other seen edge-on: the one coming forward catches a white glint and swells, the one going back dims and slips behind it, its rim showing as a crescent.'],
-  ['spinner_morph', 'Morph', 'A square tile rounds into a disc while it turns and squares up again a quarter turn on. Two white glints on opposite corners ride round with it, so the turn still shows while it is round.'],
-  ['spinner_ripple', 'Ripple', 'A dot draws itself up into a small plus and lets go a ring that spreads out, slowing and dimming, and breaks into dots at the rim while the next ring is already on its way.'],
-  ['spinner_equalizer', 'Equalizer', 'Seven bars stand on a centre line and rise and fall as a wave travels left to right through them, the crest marked by white tips, the bars between heights wearing dim caps.'],
-  ['spinner_flip', 'Flip', 'A square tile tips over on its horizontal axis, goes edge-on as a bright line and lands on its dim shaded back, then turns on its vertical axis back to its face.'],
+  ['spinner_ring', 'Ring', 'A bead runs a loop-the-loop with only just enough speed: it creeps up to the top, teeters there as a lone white bead, then tips over and whips round the bottom with its tail stretched long.', 'a page or a request loading.'],
+  ['spinner_snake', 'Snake', 'A snake chases its own tail round the ring in surges, stops a nose away to flick a white tongue, then lunges and bites; its eye shuts, a gulp runs down its neck, and the tail wriggles free and whips away.', 'a long process that keeps going.'],
+  ['spinner_dual', 'Dual', 'Two arcs on two tracks glide towards each other and only one holds the light; they meet nested, a spark jumps the gap and the light changes hands, and they sling each other on round the far sides.', 'syncing two things.'],
+  ['spinner_orbit', 'Orbit', 'A satellite slows to a hover over its planet and plays ping-pong: a white ping drops onto the planet, sinks into its heart and comes back up, and the satellite catches it and sets off round again.', 'connecting to a server.'],
+  ['spinner_cascade', 'Cascade', 'A stack of signal arcs sends a light out through itself; a faint answer appears on the far edge and the stack turns to it small arc first, fanning into a spiral, until the big arc swings past and settles onto it.', 'broadcasting or publishing.'],
+  ['spinner_spokes', 'Spokes', 'The iPhone spinner with a flywheel in it: the light pulls away from twelve slowly, whirs up dragging a longer lit wake the faster it goes, coasts in, spills a spoke past and settles, and the wake drains while it breathes.', 'any general wait where the native system feel matters, loading a screen, signing in, saving.'],
+  ['spinner_dotring', 'Dot Ring', 'A clock face: a short hand ticks round, and each hour dot sparks white and stays lit as the hand reaches it. At twelve the hour chimes and two sparks run down both sides putting the dots out.', 'waiting on time, a countdown, scheduling, a timer or a booking being placed.'],
+  ['spinner_swirl', 'Swirl', 'A light taxis once round eight runway lights, turns in to the middle, waits while the lights switch on round the square, crouches and launches straight up through the top light, which starts the next lap.', 'waiting to take off, a launch, a deploy or a publish about to go out.'],
+  ['spinner_trace', 'Trace', 'A runner laps a dim track, its lit wake stretching on the straights and bunching as it brakes into the bends; it kicks for the line, and a light gate across the track at the top blips white each time it crosses.', 'repeated passes, polling, retrying, waiting for a sync to come round again.'],
+  ['spinner_blocks', 'Blocks', 'A keypad being typed on: keys sink flush and light up under the finger in a human rhythm, a pause, a double tap, then the middle key goes in as enter and a ripple of dips runs out to the corners.', 'typing or entering a code, checking a passcode, sending a verification code.'],
+  ['spinner_slide', 'Slide', 'A sliding puzzle with a face on its tiles: the last tile lifts out, the rest shuffle, then slide back one by one; the missing tile fades in, the seams close and the face winks.', 'organising and sorting, tidying a library, arranging a layout.'],
+  ['spinner_leap', 'Leap', 'Leapfrog: the back dot crouches, springs and stretches through a high arc while the two it jumps duck flat beneath it, then lands squashed at the front and bounces up.', 'a queue moving forward, steps processed in turn, your place in line.'],
+  ['spinner_gather', 'Gather', 'Four squares rush in from the corners and press together with a white spark, turn a quarter turn as one huddle, and step back out each carrying a glint of the spark.', 'collecting results, merging, combining files or sources.'],
+  ['spinner_eclipse', 'Eclipse', 'A dark moon drifts across a bright sun: the sun wanes to a crescent, the diamond ring flashes, the corona flares at totality with two white prominences, and the light comes back on the other side.', 'a long render, a big export, any heavy job worth the wait.'],
+  ['spinner_morph', 'Morph', 'A square looks for its form: it rounds into a circle, swells into a diamond and twists back into the square, clicking into each shape with a glint, the glints swinging round with the last turn.', 'formatting, converting a file, reshaping or exporting data.'],
+  ['spinner_ripple', 'Ripple', 'A raindrop gathers, lets go and falls into a pond seen low across the water; a little jet throws up a bead that drops back in, and oval rings spread out and fade as the next drop gathers.', 'a calm wait, pull to refresh, a feed refilling.'],
+  ['spinner_equalizer', 'Equalizer', 'Bars on a centre line react like a voice, jumping up on each syllable and falling back, a thin hiss on an s, gaps between words, until the loud last word clips top and bottom with a white flash, then quiet dim dots.', 'voice input listening, recording, dictation, a call connecting.'],
+  ['spinner_flip', 'Flip', 'A coin is flicked up and spins end over end, hangs edge on at the top and drops back to land flat with a squash: tails with a star, then on the next toss heads, a smiling face that winks.', 'deciding, picking at random, shuffling, a surprise pick.'],
 ];
-for (const [id, label, idea] of SPINNERS) if (SPRITES[id]) STATES.push({ id, label, idea, group: 'Spinners', hue: 30, hueName: 'neutral', neutral: true, pillLabel: 'Loading', period: SPRITES[id].period });
+for (const [id, label, idea, use] of SPINNERS) if (SPRITES[id]) STATES.push({ id, label, idea, use, group: 'Spinners', hue: 30, hueName: 'neutral', neutral: true, pillLabel: 'Loading', period: SPRITES[id].period });
 /* glow spinners: chunky cells in drifting pastels, for a wait that should feel alive */
 const GLOWS = [
-  ['glow_halo', 'Halo', 'A five-cell arc runs round the ring with a bright head and a fading tail, the colour drifting from pink to peach to lilac.'],
-  ['glow_fold', 'Fold', 'The square folds like a sheet of paper, top over middle, bottom up, to a line and then a point, and unfolds the other way.'],
-  ['glow_tide', 'Tide', 'A band of light washes across the square from one corner to the other and back, shallow ahead of it and dark behind.'],
-  ['glow_twist', 'Twist', 'An S tumbles round an eighth of a turn at a time, crossfading as it turns, in cool sky and aqua.'],
-  ['glow_stairs', 'Stairs', 'Three columns trade heights like steps rolling forward, the top of the tallest catching the light.'],
-  ['glow_pulse', 'Pulse', 'The square breathes in from its centre to full, glows, and fades out again, slowly.'],
-  ['glow_bounce', 'Bounce', 'A drop in the middle column springs up, stretching as it rises and falls, and squashes on landing.'],
-  ['glow_beads', 'Beads', 'A light passes along a row of three, the others resting half lit.'],
-  ['glow_worm', 'Worm', 'A three-cell worm wanders the grid row by row, a bright head and a fading tail.'],
-  ['glow_rain', 'Rain', 'Drops fall down the three columns out of step, each with a short trail, like a quiet data rain.'],
-  ['glow_spiral', 'Spiral', 'The grid fills cell by cell, round and into the middle, holds, and empties the same way.'],
-  ['glow_tumble', 'Tumble', 'A two-by-two block rolls round the grid from corner to corner.'],
+  ['glow_fold', 'Fold', 'A sheet folds like paper, top row over and bottom row up, to one bright crease that folds in to a point; then it unfolds the other way, to a column and out to the full square.', 'packing things up, like compressing files, zipping an export or preparing a download.'],
+  ['glow_bounce', 'Bounce', 'A drop springs high up the middle, stretching as it rises and falls, glints at the top and squashes on landing; then a little hop, a deep crouch, and up again.', 'a short, light wait, like pull to refresh or loading the next page of a feed.'],
+  ['glow_die', 'Die', 'A die rolls and lands on the next number each time: it squashes, goes edge-on as a bright bar and opens out as the next face, counting one to six. Six lands with a glint running over its pips, and it rolls on round to one.', 'shuffling a playlist, picking at random, generating ideas or images.'],
+  ['glow_firefly', 'Firefly', 'A firefly loops above a lantern on the ground and flashes each time it passes over it, and each flash lights the lantern a little more. Blazing, the lantern lights the ground around it, the firefly settles on top and the two blink together before it flies on.', 'a quiet background task, like autosave, a background sync or a backup.'],
+  ['glow_cup', 'Cup', 'Raindrops fall into a cup: the first hits bottom with a little splash, and each one after raises the water a row. Full, a ripple runs across the surface, the cup drains, and the next drop is already falling.', 'downloading, filling a cache, loading a large file.'],
+  ['glow_ember', 'Ember', 'A coal in a little mound breathes, warming to a full glow and cooling again, slow and calm. On the deeper breath its heart flares white and a spark pops off, drifts up and winks out.', 'a long wait that wants calm, like a big build, a render or a long export.'],
+  ['glow_messenger', 'Messenger', 'Two cells keep a conversation: one lobs a bright packet over the top and the other catches it, giving a little under the catch. It blinks while it thinks, like someone typing, and lobs the reply back.', 'waiting on a reply, like a message being answered, an API request or an assistant composing a response.'],
+  ['glow_snake', 'Snake', 'A little snake slithers round the edge. A pellet turns up, and next time round the snake stops, flicks its tongue at it twice, lunges through the middle and swallows it, a cell longer. Then it shivers out of its skin and slithers on, leaving a dim ghost that fades.', 'indexing, crawling or searching through files.'],
+  ['glow_seed', 'Seed', 'A seed in the soil glints and a shoot pushes up, its two leaves folded at the top; they spring open, a touch too far and back. A bud grows between them, ripens and drops into the soil as a new seed while the old plant fades.', 'setting things up, like creating an account, starting a new project or first-run onboarding.'],
+  ['glow_hourglass', 'Hourglass', 'Sand runs through an hourglass, draining from the middle of the top and piling up from the middle of the bottom, a grain glinting in the neck. Empty on top, the glass tips back a touch, turns over, swings a little past upright and settles.', 'a wait with a known length, like a cooldown, a rate limit or a countdown before you can try again.'],
+  ['glow_stack', 'Stack', 'Blocks drop into a row: one lands on the block that is waiting, the next steers across to the far gap, and the last fills the middle. The full row glints and clears, and the block left on top drops into place.', 'working through a queue in batches, like importing rows, sending a batch of emails or processing uploads.'],
+  ['glow_balloon', 'Balloon', 'A balloon fills from a limp scrap to a round, shiny balloon, a touch too round for a moment. It tugs once at its string, then is let go and floats up out of sight, its string trailing after it.', 'uploading, publishing, sending something off.'],
 ];
-for (const [id, label, idea] of GLOWS) if (SPRITES[id]) STATES.push({ id, label, idea, group: 'Glow', hue: 340, hueName: 'pastel', pillLabel: 'Loading', period: SPRITES[id].period });
+for (const [id, label, idea, use] of GLOWS) if (SPRITES[id]) STATES.push({ id, label, idea, use, group: 'Glow', hue: 340, hueName: 'pastel', pillLabel: 'Loading', period: SPRITES[id].period });
 for (const st of STATES) st.sprite = SPRITES[st.id];
+/* what each state is for: the moment in a product where it is the right loader */
+const USE = {
+  thinking: 'an assistant composing a reply, a model reasoning before it answers.', reading: 'taking in documents, reading a file, a page or a PDF.',
+  analyzing: 'crunching numbers, building a report, running analytics.', searching: 'searching files, the web or a codebase.',
+  generating: 'an AI making an image, text or code.', writing: 'drafting, autosaving notes, an assistant writing for you.',
+  syncing: 'syncing devices, backing up, merging changes.', connecting: 'joining a network, reaching a server, turning on a VPN.',
+  uploading: 'sending files, publishing, backing up to the cloud.', downloading: 'fetching files, installing, updating.',
+  done: 'a finished task, a saved change, a payment that went through.', error: 'a failed request, a validation error, anything to retry.',
+  building: 'compiling, deploying, a CI build.', debugging: 'running tests, tracing a bug, inspecting.',
+  heartbeat: 'reading a heart rate, any live health sensor.', scanning: 'Face ID, a document or barcode scan, a security check.',
+  breathing: 'a guided breath, a calm pause, meditation.', calculating: 'a quote, a total, taxes, any sum the user is waiting on.',
+};
+for (const st of STATES) if (USE[st.id]) st.use = USE[st.id];
+for (const st of STATES) if (st.use) st.use = st.use.replace(/^Use it for:?\s*/i, '');
 /* the frozen pose: late in the rest frame, once the previous frame's trail has faded */
 function restTime(sp) { if (sp.rest != null) { let acc = 0; for (let i = 0; i < sp.rest; i++) acc += sp.frames[i].ms; return (acc + sp.frames[sp.rest].ms * 0.85) / 1000; } const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms * 0.85; } acc += f.ms; } return at / 1000; }
 /* ':' is the dim tone: half-lit, no glow. It separates parts (legs from a body, wood from a pencil) without a gap */
@@ -2820,6 +3120,7 @@ function buildDetail(id) {
   const prev = ORDERED[(at - 1 + ORDERED.length) % ORDERED.length], next = ORDERED[(at + 1) % ORDERED.length];
   root.innerHTML = `<h1 class="hero"><span>${esc(st.group)}/</span>${esc(st.label)}</h1>
     <p class="lede">${esc(st.idea)}</p>
+    ${st.use ? `<p class="use"><b>Use it for</b> ${esc(st.use)}</p>` : ''}
     <div class="stage"><div class="stage-view" id="stageView"><span class="loader big" id="bigGlyph"></span></div>
       <div class="stage-panel">
         <p class="panel-k">Size</p><div class="seg" data-set="size" role="group" aria-label="Size"><span class="seg-thumb" aria-hidden="true"></span>${[24, 32, 48, 64].map(v => `<button type="button" class="seg-item" data-v="${v}">${v}</button>`).join('')}</div>
@@ -2832,9 +3133,9 @@ function buildDetail(id) {
   const big = new Matrix($('bigGlyph'), id, S.grid, { variant: 'pixels', exact: true });
   const pill = pillOf(st, id, '', true); $('stageView').appendChild(pill.pill); stateEls['detail:pill'] = pill;
   detail = { id, take: id, big, pill };
-  if (takes.length > 1) for (const [t, name, cap] of takes) {
+  if (takes.length > 1) for (const [t, name, cap, use] of takes) {
     const card = mkEl('button', 'take-card'); card.type = 'button'; card.dataset.take = t; card.setAttribute('aria-pressed', 'false');
-    const l = mkEl('span', 'loader'), txt = mkEl('div', '', `<b>${esc(name)}</b><span class="cap">${esc(cap)}</span>`); card.append(l, txt);
+    const l = mkEl('span', 'loader'), txt = mkEl('div', '', `<b>${esc(name)}</b><span class="cap">${esc(cap)}</span>${use ? `<span class="cap take-use">For ${esc(use)}</span>` : ''}`); card.append(l, txt);
     $('takeCards').appendChild(card);
     stateEls['take:' + t] = { pill: card, m: new Matrix(l, t, S.grid, { variant: 'pixels', exact: true }) };
   }
@@ -2971,7 +3272,8 @@ stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connect
 /* toast */
 (() => {
   /* the agent pill steps through a job, one glow spinner per kind of step */
-  const SPILL = [['glow_tide', 'Planning the change'], ['glow_worm', 'Searching the codebase'], ['glow_fold', 'Drafting the patch'], ['glow_stairs', 'Running the test suite'], ['glow_rain', 'Reviewing the diff'], ['glow_spiral', 'Opening a pull request']];
+  /* each step gets the glow spinner made for its kind of wait */
+  const SPILL = [['glow_seed', 'Planning the change'], ['glow_snake', 'Searching the codebase'], ['glow_ember', 'Drafting the patch'], ['glow_stack', 'Running the test suite'], ['glow_messenger', 'Waiting for review'], ['glow_balloon', 'Opening a pull request']];
   const sm = glyph($('spill'), SPILL[0][0], { exact: true, forceDark: true }); $('spill').prepend(sm.el); let spillAt = -1;
   UC.push({ tick(now) {
     const k = Math.floor(phase(now, SPILL.length * 2.8) / 2.8); if (k === spillAt) return; spillAt = k;
