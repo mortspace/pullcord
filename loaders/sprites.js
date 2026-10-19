@@ -45,8 +45,9 @@ const bubbleWave = k => stamp(DOTS.map(([x, y], i) => { const p = k - i; return 
 
 /* reading: a page with a folded corner and three lines of text. A reading cursor runs along each line and the words it
    has read light up. It dwells on the first word of a line and quickens through the rest, the way eyes read. Then the
-   whole page turns over: the folded corner peels all the way across along a clean 45 degree fold, slow to lift, fast
-   through the middle and easing out, and the next document is underneath, waiting to be read */
+   page peels off like real paper: the dog-eared corner lifts, and the sheet folds back over itself along a 45 degree
+   crease, its back solid and shaded, the crest of the curl catching the light. It slides off to the bottom-left,
+   slow to lift, fast through the middle, and the next document is underneath, waiting to be read */
 const PAGE = bm(
   '..######.....',
   '..#....##....',
@@ -67,22 +68,26 @@ const readUpTo = k => stamp([...TEXT_CELLS.map(([x, y], i) => [x, y, i < k ? '#'
 const LINE_START = new Set(TEXT.map(([y, xs]) => TEXT_CELLS.findIndex(([cx, cy]) => cy === y && cx === xs[0])));
 const LINE_END = new Set(TEXT.map(([y, xs]) => TEXT_CELLS.findIndex(([cx, cy]) => cy === y && cx === xs[xs.length - 1])));
 const readMs = k => LINE_START.has(k) ? 190 : LINE_END.has(k) ? 140 : 100;
-/* the page turning over along the fold x - y = c. Past the fold the next page shows, unread. On this side the turned
-   flap, the back of the page, is blank inside lit edges; the rest is the page that was read. At c = 7 this is exactly
-   the page with its dog-ear, and at c = -11 the old page is gone */
+/* the page peeling along the crease x - y = c. Past the crease the next page shows, unread. On this side lies the
+   turned-back sheet: every peeled cell reflected over the crease, its back a dim fill inside a lit edge, free to hang
+   past the old page as real paper would. The middle of the crease is white, the light on the curl */
 const inPage = (x, y) => x >= 2 && x <= 10 && y >= 0 && y <= 12;
-const pageEdge = (x, y) => x === 2 || x === 10 || y === 0 || y === 12;
+const pageEdge = (x, y) => inPage(x, y) && (x === 2 || x === 10 || y === 0 || y === 12);
 const TEXT_SET = new Set(TEXT_CELLS.map(([x, y]) => x + ',' + y));
-const turnAt = c => Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => {
-  const text = TEXT_SET.has(x + ',' + y);
-  if (x - y > c) return PAGE[y][x] === '#' ? '#' : text ? ':' : '.';
-  if (!inPage(x, y)) return '.';
-  if (x - y === c) return '#';
-  const mx = y + c, my = x - c;
-  if (inPage(mx, my)) return pageEdge(x, y) || pageEdge(mx, my) ? '#' : '.';
-  return pageEdge(x, y) || text ? '#' : '.';
-}).join(''));
-const TURN = [4, 1, -2, -5, -8], TURN_MS = [140, 95, 75, 80, 110];
+const peelAt = c => {
+  const g = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => {
+    const text = TEXT_SET.has(x + ',' + y);
+    if (x - y > c) return PAGE[y][x] === '#' ? '#' : text ? ':' : '.';
+    return inPage(x, y) && (pageEdge(x, y) || text) ? '#' : '.';
+  }));
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (inPage(x, y) && x - y > c) {
+    const fx = y + c, fy = x - c; if (fx >= 0 && fx < N && fy >= 0 && fy < N) g[fy][fx] = pageEdge(x, y) ? '#' : ':';
+  }
+  const crease = Array.from({ length: N }, (_, y) => [y + c, y]).filter(([x, y]) => inPage(x, y)), mid = (crease.length - 1) / 2;
+  crease.forEach(([x, y], i) => { g[y][x] = crease.length >= 3 && Math.abs(i - mid) <= 1 ? 'W' : '#'; });
+  return g.map(r => r.join(''));
+};
+const TURN = [6, 4, 1, -2, -5, -8], TURN_MS = [170, 110, 80, 65, 65, 85];
 
 /* analyzing: four bars rise a beat apart. Each one eases out, overshoots its height by a cell and settles back, like a
    spring. A light runs across their tops, they hold, then they drop away left to right, quickening as they fall */
@@ -179,25 +184,23 @@ const strokeTo = (from, to, tip) => put(put(EMPTY, CHECK_PAIRS.slice(from, to).f
 const CHECK = strokeTo(0, CHECK_PAIRS.length, false);
 const glint = c => put(CHECK, CHECK_PAIRS.flat().filter(([x]) => x === c || x === c + 1), 'W');
 
-/* done, Ring take (the default): a check in a circle. The ring draws itself clockwise from twelve o'clock with a
-   white-hot head, slow off the mark, fast round the sides and slow into the close. The check strokes in, short arm then
-   long, and the moment it lands the circle fills for a beat, the way a button confirms a press, and clears. In a loop
-   the ring then erases the way it came, tail chasing head. The check sits clear of the ring all round. */
-const RING = (() => {
-  const pts = new Map(); let x = 0, y = 6, d = -5;
-  while (x <= y) { for (const [a, b] of [[x, y], [y, x], [-x, y], [-y, x], [x, -y], [y, -x], [-x, -y], [-y, -x]]) pts.set((6 + a) + ',' + (6 + b), [6 + a, 6 + b]); if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; } x++; }
-  const turn = ([px, py]) => (Math.atan2(px - 6, 6 - py) + 2 * Math.PI) % (2 * Math.PI);
-  return [...pts.values()].sort((p, q) => turn(p) - turn(q));
-})();
-const TICK = [[3,6],[4,7],[5,8],[6,7],[7,6],[8,5],[9,4]];
-const RING_SET = new Set(RING.map(([x, y]) => x + ',' + y));
-const INSIDE = Array.from({ length: N * N }, (_, i) => [i % N, (i / N) | 0]).filter(([x, y]) => !RING_SET.has(x + ',' + y) && (x - 6) ** 2 + (y - 6) ** 2 < 30);
-/* ring cells from..to, the head white while it is still drawing; tick cells; the inside filled dim for the landing beat */
-const ringDone = (from, to, tick = 0, { tickTone = '#', fill = false } = {}) => stamp([
-  ...RING.slice(from, to).map(([x, y], i) => [x, y, from === 0 && to < RING.length && i === to - 1 ? 'W' : '#']),
-  ...TICK.slice(0, tick).map(([x, y], i) => [x, y, i === tick - 1 && tick < TICK.length ? 'W' : tickTone]),
-  ...(fill ? INSIDE.map(([x, y]) => [x, y, ':']) : [])]);
-const RING_STEPS = Array.from({ length: RING.length / 2 }, (_, k) => 2 * (k + 1)), RING_MS = ease(RING_STEPS.length, 75, 28);
+/* done, Morph take (the default): the loader becomes the check, the way Face ID's ring turns into its check.
+   Three dots wait in a row and a wave runs through them. They dip, then fly to the three points of the check, easing out:
+   one to the end of the short arm, one to the vertex, one to the tip. As they land the end dots lean into the line's
+   45 degree angle and the vertex dot drops a cell past its mark and springs back. Then the arms join them, a light runs
+   along the check, and it holds. In a loop it comes apart the same way and the dots go back to waiting. */
+const DOT = ([x, y], c = '#') => [[x, y, c], [x + 1, y, c], [x, y + 1, c], [x + 1, y + 1, c]];
+const DOT_ROW = [[1, 5], [5, 5], [9, 5]];
+const DOT_TO = [[0, 7], [3, 9], [11, 2]];
+const pairCells = (...is) => is.flatMap(i => CHECK_PAIRS[i]);
+const LANDED = [pairCells(0, 1), DOT([3, 9]).map(([x, y]) => [x, y]), pairCells(10, 11)];
+const flyAt = (p, tone = '#') => stamp(DOT_ROW.flatMap((r, i) => DOT([Math.round(r[0] + (DOT_TO[i][0] - r[0]) * p), Math.round(r[1] + (DOT_TO[i][1] - r[1]) * p)], tone)));
+const waveAt = k => stamp(DOT_ROW.flatMap((r, i) => DOT(i === k ? [r[0], r[1] - 1] : r, i <= k ? '#' : ':')));
+const landed = (vertexDrop = 0) => stamp([...LANDED[0], ...LANDED[1].map(([x, y]) => [x, y + vertexDrop]), ...LANDED[2]].map(([x, y]) => [x, y, '#']));
+const joined = n => stamp([...LANDED.flat(), ...pairCells(...Array.from({ length: n }, (_, k) => [2, 5, 6, 7, 8, 9][k]))].map(([x, y]) => [x, y, '#']));
+const MORPH_IN = [F(stamp(DOT_ROW.flatMap(r => DOT(r, ':'))), 220), ...[0, 1, 2].map(k => F(waveAt(k), 115)), F(flyAt(0), 120), F(stamp(DOT_ROW.flatMap(r => DOT([r[0], r[1] + 1]))), 90),
+  F(flyAt(0.5), 70), F(flyAt(0.85), 60), F(landed(1), 75), F(landed(), 90), F(joined(2), 55), F(joined(4), 45), F(joined(6), 60)];
+const MORPH_OUT = [F(joined(4), 45), F(joined(1), 50), F(landed(), 70), F(flyAt(0.6), 70), F(flyAt(0.2), 80), F(flyAt(0), 110)];
 
 /* error: a warning triangle with a rounded top, eleven cells wide so it has room to move. The exclamation mark has a
    four-cell bar, a gap, a dot, and two clear rows above the base. It holds, then gives the shake a Mac gives a wrong
@@ -295,7 +298,7 @@ const DRAW_MS = ease(SIGMA_PATH.length, 90, 32);
 
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
-  reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(turnAt(c), TURN_MS[i])), F(turnAt(-11), 240)), { still: readUpTo(TEXT_CELLS.length) }),
+  reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
   analyzing: restAtLongest(seq(...[1, 2, 3, 4, 5, 6, 7].map(f => F(bars(BAR_H.map((H, i) => riseH(H, f - i))), 95)), ...[0, 1, 2, 3].map(i => F(bars(BAR_H, i), 140)), F(bars(BAR_H), 900), ...[1, 2, 3, 4, 5, 6].map(f => F(bars(BAR_H.map((H, i) => fallH(H, f - i))), [90, 75, 65, 60, 60, 60][f - 1])), F(EMPTY, 180))),
   searching: Object.assign(seq(...MAG_PATH.map(([x, y], i) => F(i === 0 ? put(magAt(x, y), GLINT.map(([gx, gy]) => [gx + x, gy + y])) : magAt(x, y), MAG_MS[i]))), { still: magAt(2, 2), trail: 0.6 }),
   generating: Object.assign(seq(F(sparkle(1, 2), 190), F(sparkle(2, 1), 105), F(sparkle(4, 0, 'big'), 125), F(sparkle(3, 0), 620), F(sparkle(3, 1), 110), F(sparkle(2, 2, 'small'), 125), F(sparkle(1, 2), 150), F(sparkle(-1, 2), 110)), { still: sparkle(4, 2) }),
@@ -304,8 +307,7 @@ const SPRITES = {
   connecting: restAtLongest(seq(...[0, 1].flatMap(() => [0, 1, 2, 3, 4, 5].map(p => F(wave(p), p === 5 ? 170 : 115))), F(fan('W###'), 120), F(fan('####'), 1100), F(fan(':###'), 90), F(fan('::##'), 90), F(fan(':::#'), 90), F(fan('::::'), 220))),
   uploading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, true), streamMs(t)))), { rest: 10, trail: 0.45 }),
   downloading: Object.assign(seq(...Array.from({ length: ARROW_GAP }, (_, t) => F(trayFrame(t, false), streamMs(t)))), { rest: 9, trail: 0.45 }),
-  done: restAtLongest(seq(...RING_STEPS.map((to, k) => F(ringDone(0, to), RING_MS[k])), ...[1, 2, 3, 4, 5, 6, 7].map(t => F(ringDone(0, RING.length, t), [75, 55, 50, 40, 40, 45, 60][t - 1])),
-    F(ringDone(0, RING.length, 7, { tickTone: 'W', fill: true }), 110), F(ringDone(0, RING.length, 7), 1300), ...[8, 16, 24].map(k => F(ringDone(k, RING.length, 7, { tickTone: ':' }), 60)), F(EMPTY, 320))),
+  done: restAtLongest(seq(...MORPH_IN, ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 1150), ...MORPH_OUT)),
   done_stroke: restAtLongest(seq(...CHECK_PAIRS.map((_, k) => F(strokeTo(0, k + 1, true), [80,70,60,55,50,45,45,45,50,55,65,80][k])), F(CHECK, 520), ...Array.from({ length: 14 }, (_, c) => F(glint(c - 1), 35)), F(CHECK, 900), ...CHECK_PAIRS.slice(1).map((_, k) => F(strokeTo(k + 1, CHECK_PAIRS.length, false), 40)), F(EMPTY, 280))),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -7), 60), F(shift(CHECK, 0, -4), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(put(CHECK, CHECK_PAIRS[3], 'W'), 100), F(CHECK, 1500), F(shift(CHECK, 0, 3), 60), F(shift(CHECK, 0, 7), 60), F(EMPTY, 320))),
   error: Object.assign(seq(F(alarm(0), 1000), F(alarm(-1, true), 65), F(alarm(1, true), 65), F(alarm(-1, true), 75), F(alarm(1, true), 90), F(alarm(0, true), 130), F(alarm(0), 130), F(alarm(0, true), 130), F(alarm(0), 420)), { rest: 0, trail: 0.35 }),
