@@ -344,8 +344,8 @@ function maMagic(t) {
 }
 /* ---------- Building ----------
    Nailing a plank. A board lies on the ground at its right with nails standing along it, one every 5 cells. The
-   builder holds its hammer a cell above the nail to aim, eyes on it. The hammer lifts high (it leans back a cell),
-   swings down through one blurred frame (two smear cells trail the head) and lands: the body squashes, the board dents under the blow, a spark flies and the nail
+   builder grips its claw hammer in a fist and holds it a cell above the nail to aim, eyes on it. The hammer lifts high (it leans back a cell),
+   swings down through a half-way frame and lands: the body squashes, the board dents under the blow, a spark flies and the nail
    sinks halfway. It aims again, lifts, and the second blow drives the nail flush with a puff of sawdust either side.
    The proud look: eyes shut, a blush, the hammer held up like a trophy while the nail head glints. Then its eyes go
    to the next nail and the board slides one nail along, so the loop ends where it began with one more nail done.
@@ -362,11 +362,16 @@ const MA_HARD = [
 const maArmTo = (o, hx, hy) => { const b = maBody(o), dx = hx - b.sx, dy = hy - b.sy, c = [];
   for (let i = 1; i <= dx; i++) { const yy = Math.round(dy * i / dx); c.push([i, yy, 'o'], [i, yy + 1, 'O']); }
   return c; };
-/* the hammer from the hand: flat (striking down), up (raised high), diag (mid swing). Steel head, brown handle */
-const maHammer = (hx, hy, k) => k === 'flat' ? [[hx + 1, hy, 'B'], [hx + 2, hy, 'b'], [hx + 3, hy - 1, 'M'], [hx + 4, hy - 1, 'c'], [hx + 3, hy, 'M'], [hx + 4, hy, 'm'], [hx + 3, hy + 1, 'M'], [hx + 4, hy + 1, 'M']]
-  : k === 'up' ? [[hx + 1, hy - 1, 'B'], [hx + 1, hy - 2, 'b'], [hx + 1, hy - 3, 'b'], [hx, hy - 5, 'M'], [hx + 1, hy - 5, 'm'], [hx + 2, hy - 5, 'c'], [hx, hy - 4, 'M'], [hx + 1, hy - 4, 'M'], [hx + 2, hy - 4, 'M']]
-  : [[hx + 1, hy - 1, 'B'], [hx + 2, hy - 2, 'b'], [hx + 2, hy - 4, 'M'], [hx + 3, hy - 4, 'c'], [hx + 3, hy - 3, 'M'], [hx + 4, hy - 3, 'm'], [hx + 4, hy - 2, 'M'], [hx + 5, hy - 2, 'M'],
-    [hx + 1, hy - 5, 'm'], [hx + 3, hy - 6, 'm']];
+/* the hammer, one shape at three angles, always gripped by a fist at (hx, hy): a charcoal head lit at its top right,
+   so it never mixes with the steel of the nails, and a wooden handle running light to dark from the head to the fist.
+   'strike': the handle level and the head standing on its end, face down. 'up': the handle upright over the fist and
+   the head across its top, face toward the nail. 'swing': half way, handle and head at 45 degrees */
+const maHammer = (hx, hy, k) => {
+  const fist = [[hx, hy, 'o'], [hx - 1, hy, 'o'], [hx, hy + 1, 'O'], [hx - 1, hy + 1, 'O']];
+  if (k === 'strike') return [[hx + 1, hy, 'B'], [hx + 2, hy, 'b'], [hx + 3, hy, 'n'], ...mArt(['.h', 'gh', 'gg', 'GG'], hx + 4, hy - 2), ...fist];
+  if (k === 'up') return [[hx, hy - 1, 'B'], [hx, hy - 2, 'b'], [hx, hy - 3, 'n'], ...mArt(['.ggh', 'GggG'], hx - 2, hy - 5), ...fist];
+  return [[hx + 1, hy - 1, 'B'], [hx + 2, hy - 2, 'b'], [hx + 3, hy - 3, 'n'], ...mArt(['..h', '.gg', 'gG.'], hx + 3, hy - 6), ...fist];
+};
 /* a nail with its shank at x and its head on row r; it sinks as r grows, flush at row 22 */
 const maNail = (x, r) => [[x - 1, r, 'M'], [x, r, 'M'], [x + 1, r, 'm'], ...Array.from({ length: Math.max(0, 22 - r) }, (_, j) => [x, r + 1 + j, 'M'])];
 /* the board on the ground, rows 23 to 25, slid s cells left; dent drops its top a row under a blow at that x */
@@ -396,11 +401,13 @@ function maBuild(t) {
   /* hand positions: aim puts the hammer face on the nail head; up raises it; swing is half way down */
   /* once the board has slid, the nail under the hammer is the next one, still standing */
   const aimAt = t >= MA_SLIDE + 380 ? 20 : head;
-  const b = maBody(o), hand = pose === 'aim' ? [MA_NAIL - 4, aimAt - (dent != null ? 2 : 3)] : pose === 'recoil' ? [MA_NAIL - 4, head - 4] : pose === 'up' ? [b.sx + 3, b.sy - 3]
-    : pose === 'swing' ? [b.sx + 3, b.sy - 2] : [b.sx + 2, b.sy];
-  const arm = maArmTo(o, hand[0], hand[1]);
+  /* the fist: striking, the head's face sits on the nail head (or on it as it lands); raised, the hammer is up over the
+     shoulder; swinging, half way between */
+  const b = maBody(o), hand = pose === 'aim' ? [MA_NAIL - 4, aimAt - 3 + (dent != null ? 1 : 0)] : pose === 'recoil' ? [MA_NAIL - 4, head - 4]
+    : pose === 'up' || pose === 'proud' ? [b.sx + 3, b.sy - 2] : [b.sx + 3, b.sy - 1];
+  const arm = maArmTo(o, hand[0] - 1, hand[1]);
   o.arms = ['rest', arm];
-  const hk = pose === 'aim' || pose === 'recoil' ? 'flat' : pose === 'up' || pose === 'proud' ? 'up' : 'diag';
+  const hk = pose === 'aim' || pose === 'recoil' ? 'strike' : pose === 'up' || pose === 'proud' ? 'up' : 'swing';
   L.push(maPlank(s, dent));
   for (let k = -1; k <= 2; k++) { const nx = MA_NAIL + k * MA_GAP - s, r = k < 0 ? 22 : k === 0 ? head : 20; if (nx >= 18 && nx <= 29) L.push(maNail(nx, r)); }
   L.push(mShadow(0, x), mascot(o), maHat(MA_HARD, o), maHammer(hand[0], hand[1], hk));
@@ -432,79 +439,77 @@ const mbBody = (x, y, sq = 0) => { const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0)
 const mbAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic()));
 
 /* ---------- Detective (state: searching) ----------
-   A deerstalker on its head and a magnifying glass in its right hand, it hunts for a clue. The eyes always move first,
-   then the glass follows: it scans the floor with the lens low and one eye squinting, the eyes flick up and the lens
-   sweeps high, it steals a sneaky glance back over its shoulder, then the eyes drop and it tiptoes in, leaning over the
-   lens. A band of light slides across the glass and flares at the rim, and that is when it sees it: a jolt up with both
-   eyes wide and brows raised, a gold sparkle rising out of the lens, then a held raised brow before it creeps back to
-   scanning. It is the wait for a search or a scan, and the sparkle is the find. Mascot sits 3 cells left of home so the
-   glass balances it on the right. */
+   A deerstalker on its head, it holds a magnifying glass right up to its right eye, and we see that eye through the
+   glass: big, round, with a catchlight, the way a magnifier blows up whatever is behind it. The other eye squints. It
+   searches by leaning one way and the other while the big eye darts ahead of it, then ducks to peer at the floor. Then
+   it finds it: the big eye pops taller, the squint springs open under a raised brow, it jumps a little and a glint
+   flares off the rim. It holds the look, settles, and goes back to searching. The glass and the eye behind it are the
+   whole idea, so they move with the face every frame. */
 const mbHat = [
-  '....B.....B....',
-  '...BnB...BnB...',
-  '...BBBBBBBBB...',
-  '..BbnbbnbbnnB..',
-  '.BbbbbbbbbbbnB.',
+  '.....BnBnB.....',
+  '....BbbbbbB....',
+  '..BBbnbbbnbBB..',
+  '.BbbbbnbnbbbnB.',
+  '.BbnbbbbbbbnbB.',
   'BBBBBBBBBBBBBBB',
-  '.BbbbbbbbbbbnB.',
-  '...BBBBBBBBB...'];
+  '.BbbbbbbbbbbbB.'];
 const mbHatAt = (x, y, sq = 0) => mArt(mbHat, x - 1, mbBody(x, y, sq).by - mbHat.length);
-/* the magnifying glass: a 6 x 6 ring, charcoal rim lit at the top right, a pale lens with a two-cell glint.
-   sweep 0..2 runs a band of light across the glass from the lower left, 3 is the glint flaring at the rim */
-const mbLens = (rx, ry, sweep = -1) => {
-  const cells = mArt([
-    '.Gggh.',
-    'GCcwwh',
-    'GCcccg',
-    'GCCccg',
-    'GCCCcG',
-    '.GGGG.'], rx, ry);
-  if (sweep >= 0 && sweep < 3) { const c = -2 + sweep * 2;
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const d = i - (3 - j); if (d === c || d === c + 1) cells.push([rx + 1 + i, ry + 1 + j, 'w']); } }
-  if (sweep === 3) cells.push(...fxSparkle(rx + 5, ry, 1, 'y'));
-  return cells;
+/* the glass over the right eye: a round charcoal rim, lit at the top right and dark at the bottom left, a pale lens
+   that shows the clay behind it lighter, a two-cell glint, and a short wooden handle leaving the bottom right where the
+   hand holds it. (cx, cy) is the centre of the lens */
+const MB_RIM = [
+  '..ggh..',
+  '.g...h.',
+  'g.....h',
+  'g.....g',
+  'G.....g',
+  '.G...g.',
+  '..GGg..'];
+const mbGlass = (cx, cy, glint = 0) => {
+  const c = mArt(MB_RIM, cx - 3, cy - 3);
+  for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (Math.abs(x) + Math.abs(y) < 4) c.unshift([cx + x, cy + y, 'p']);
+  c.push([cx + 1, cy - 2, 'w'], [cx + 2, cy - 1, 'w']);
+  if (glint) c.push(...fxSparkle(cx + 4, cy - 4, glint));
+  c.push([cx + 3, cy + 3, 'n'], [cx + 4, cy + 4, 'b'], [cx + 5, cy + 5, 'B']);
+  return c;
 };
-/* where the glass sits for each arm pose: the hand is the arm's last cell, the handle leads from it to the ring */
-const mbGlass = (pose, x, y, sq = 0, sweep = -1) => {
-  const { sx, ay } = mbBody(x, y, sq), rx = sx + 5;
-  const P = {
-    high: { arm: 'reach', ry: ay - 10, h: [[sx + 4, ay - 4], [sx + 5, ay - 5]] },
-    mid: { arm: 'out', ry: ay - 7, h: [[sx + 4, ay - 1], [sx + 5, ay - 2]] },
-    lowmid: { arm: 'rest', ry: ay - 3, h: [[sx + 3, ay + 1], [sx + 4, ay + 1]] },
-    low: { arm: 'down', ry: ay - 1, h: [[sx + 3, ay + 2], [sx + 4, ay + 2]] },
-  }[pose];
-  return { arm: P.arm, cells: [...P.h.map(([a, b]) => [a, b, 'b']), ...mbLens(rx, P.ry, sweep)], rx, ry: P.ry };
+/* the eye seen through the glass, magnified: 'open' two wide and three tall with a catchlight, 'wide' a row taller,
+   'blink' a two-cell lid. It keeps a clear cell from the rim: dx 0 looks left, 1 looks right */
+const mbBigEye = (cx, cy, kind, dx = 0) => {
+  const x = cx - 1 + dx, y = cy - 1;
+  if (kind === 'blink') return [[x, y + 2, 'k'], [x + 1, y + 2, 'k']];
+  if (kind === 'wide') return mArt(['kw', 'kk', 'kk', 'kk'], x, y - 1);
+  return mArt(['kw', 'kk', 'kk'], x, y);
 };
+const MB_FIND = 1500;
 const mbDetective = t => {
-  let x = 6, y = 15, legs = 'stand', sq = 0, pose = 'low', eyes = ['squint', 'open'], look = [1, 1], brows = null, sweep = -1;
-  if (t >= 160 && t < 300) { y = 16; legs = 'crouch'; }                       /* a creeping dip while it scans the floor */
-  if (t >= 420 && t < 1240) look = [1, -1];                                   /* the eyes go up a beat before the lens */
-  if (t >= 480) pose = t < 560 ? 'lowmid' : t < 640 ? 'mid' : 'high';
-  if (t >= 760 && t < 860) eyes = 'blink';
-  if (t >= 980 && t < 1120) { eyes = 'open'; look = [-1, 0]; }               /* a sneaky glance over its shoulder */
-  if (t >= 1240) look = [1, 1];                                               /* and down again before the lens follows */
-  if (t >= 1300) pose = t < 1380 ? 'mid' : t < 1460 ? 'lowmid' : 'low';
-  if (t >= 1380 && t < 2640) { x = 7; legs = t < 1460 ? 'stepA' : 'crouch'; y = t < 1460 ? 15 : 16; }  /* tiptoe and lean in */
-  if (t >= 1600 && t < 1860) sweep = Math.min(3, Math.floor((t - 1600) / 60));
-  if (t >= 1860) eyes = 'wide';
-  if (t >= 1920 && t < 2010) { sq = -1; y = 15; legs = 'stand'; brows = 'up'; }   /* the take: a jolt up, eyes wide, brows up */
-  if (t >= 2010 && t < 2560) { y = 15; legs = 'stand'; eyes = 'open'; brows = 'up'; }
-  if (t >= 2560) { eyes = ['squint', 'open']; brows = null; }
-  if (t >= 2640) { x = 6; y = 15; legs = t < 2720 ? 'stepB' : 'stand'; }
-  const g = mbGlass(pose, x, y, sq, sweep);
-  const spark = [], sa = t - 1920;
-  if (sa >= 0 && sa < 600) { const p = mEase.out(sa / 600), s = sa < 70 ? 1 : sa < 330 ? 2 : sa < 470 ? 1 : 0;
-    spark.push(...fxSparkle(Math.round(g.rx + 3 + 1 * p), Math.round(g.ry - 1 - 5 * p), s)); }
-  return [mShadow(0, x), mascot({ x, y, legs, squash: sq, eyes, look, brows, arms: ['rest', g.arm] }), mbHatAt(x, y, sq), g.cells, spark];
+  /* lean left, lean right, duck to the floor, find it, hold, settle, lean left again */
+  let x = 6, y = 15, legs = 'stand', sq = 0, eye = 'open', dx = 0, left = 'squint', brows = null, glint = 0;
+  if (t >= 520 && t < 1000) { x = Math.round(mTween(t, 520, 760, 6, 8)); dx = 1; legs = t < 640 ? 'stepA' : 'stand'; }
+  if (t >= 470 && t < 520) dx = 1;                                       /* the eye leads the lean */
+  if (t >= 1000 && t < MB_FIND) { x = 8; dx = t < 1240 ? 1 : 0; y = 16; legs = 'crouch'; }       /* duck to peer at the floor */
+  if (t >= 300 && t < 400) eye = 'blink';
+  if (t >= 1320 && t < 1400) eye = 'blink';
+  if (t >= MB_FIND) { x = 8; eye = 'wide'; dx = 1; left = 'wide'; brows = 'up'; }
+  if (t >= MB_FIND && t < MB_FIND + 90) { sq = -1; y = 14; legs = 'air'; }                    /* the jolt */
+  else if (t >= MB_FIND + 90 && t < MB_FIND + 180) { y = 14; legs = 'air'; }
+  else if (t >= MB_FIND + 180 && t < MB_FIND + 260) { sq = 1; legs = 'crouch'; }
+  if (t >= MB_FIND && t < MB_FIND + 420) glint = t < MB_FIND + 140 ? 1 : t < MB_FIND + 300 ? 2 : 1;
+  if (t >= 2260) { eye = 'open'; left = 'squint'; brows = null; dx = t < 2450 ? 1 : 0; }      /* settle, and the eye looks left first */
+  if (t >= 2500) { x = Math.round(mTween(t, 2500, 2800, 8, 6)); legs = t < 2650 ? 'stepB' : 'stand'; }
+  const b = mbBody(x, y, sq), cx = b.bx + 10, cy = b.by + 3;
+  return [mShadow(legs === 'air' ? 2 : 0, x), mascot({ x, y, legs, squash: sq, eyes: [left, 'open'], brows, arms: ['rest', 'rest'] }),
+    mbHatAt(x, y, sq), mbGlass(cx, cy, glint), mbBigEye(cx, cy, eye, dx)];
 };
 
 /* ---------- Bug hunt (state: debugging) ----------
    A tiny green beetle scuttles in from the right, pauses, and stops just in front of the mascot. The mascot's eyes are
-   on it the whole way; the brows drop as it locks on, it crouches and wiggles like a cat (the anticipation), stretches
-   off the ground and pounces with both paws up. At the top of the arc the beetle bolts, straight under the mascot, which
-   lands in a squash with its eyes squeezed shut. It stares at its feet, blinks, looks right, looks left with a worried
-   brow and a sweat drop, then shuffles back grumpily, glaring the wrong way while the beetle wanders back in from the
-   other side, which starts the hunt again. Debugging is a chase, and the joke is the near miss. */
+   on it the whole way; they narrow as it locks on, it crouches and wiggles like a cat (the anticipation), and with
+   its eyes wide it stretches off the ground and pounces with both paws up. At the top of the arc the beetle bolts, straight under the mascot, which
+   lands in a squash with its eyes squeezed shut. A happy blink (got it!), a peek underneath, then its eyes shrink to
+   dots and a question mark pops up as it looks right and left: nothing. It shuffles back in a huff, squinting the
+   wrong way while the beetle wanders back in from the other side, which starts the hunt again. Debugging is a chase,
+   and the joke is the near miss. */
 /* a five-cell beetle facing left: antenna, dark head, round green back, and legs that tick between two poses */
 const mbBugF = [['E.ee.', '.Eeee', '.E.E.'], ['E.ee.', '.Eeee', 'E.E.E']];
 const mbBug = (x, ph) => mArt(mbBugF[ph & 1], x, 23);
@@ -521,88 +526,94 @@ const mbBugAt = t => {
   return { x: 20, ph: 0 };
 };
 const mbHunt = t => {
-  let x = 6, y = 15, legs = 'stand', sq = 0, eyes = 'open', look = [1, 1], brows = null, arms = ['rest', 'rest'], lift = 0;
-  if (t >= 640 && t < 1400) brows = 'down';                                         /* it locks on */
+  let x = 6, y = 15, legs = 'stand', sq = 0, eyes = 'open', look = [1, 1], brows = null, arms = ['rest', 'rest'], lift = 0, blush = false;
+  if (t >= 640 && t < 1100) eyes = 'squint';                                        /* it locks on */
   if (t >= 700 && t < 1100) { y = 16; legs = 'crouch'; x = [6, 5, 6, 5, 6][Math.floor((t - 700) / 80)]; }   /* crouch and wiggle */
-  if (t >= 1100 && t < 1160) { sq = -1; arms = ['up', 'up']; }                      /* take-off */
+  if (t >= 1100 && t < 1160) { sq = -1; arms = ['up', 'up']; eyes = 'wide'; }       /* take-off */
   if (t >= 1160 && t < 1400) {                                                       /* the pounce */
     const p = (t - 1160) / 240; x = 6 + Math.round(5 * mEase.out(p)); y = 15 - Math.round(4 * Math.sin(Math.PI * p)); lift = 15 - y;
-    legs = 'air'; arms = ['up', 'up']; if (t < 1210) sq = -1; }
+    legs = 'air'; arms = ['up', 'up']; eyes = 'wide'; if (t < 1210) sq = -1; }
   if (t >= 1400 && t < 2300) x = 11;
   if (t >= 1400 && t < 1500) { sq = 1; eyes = 'closed'; arms = ['out', 'out']; }    /* splat */
-  if (t >= 1500 && t < 1700) { eyes = 'wide'; look = [0, 1]; }                      /* got it? */
-  if (t >= 1700 && t < 1800) { eyes = 'blink'; look = [0, 0]; }
-  if (t >= 1800 && t < 2050) { look = [1, 0]; brows = 'worry'; }
-  if (t >= 2050 && t < 2300) { look = [-1, 0]; brows = 'worry'; }
-  if (t >= 2300 && t < 3020) { look = [-1, 0]; brows = 'down'; }                    /* grumpy, staring the wrong way */
+  if (t >= 1500 && t < 1660) { eyes = 'happy'; blush = true; look = [0, 0]; }       /* got it! */
+  if (t >= 1660 && t < 1800) { eyes = 'open'; look = [0, 1]; }                      /* a peek underneath */
+  if (t >= 1800 && t < 2300) { eyes = 'dot'; look = t < 2050 ? [1, 0] : [-1, 0]; }  /* nothing there: tiny eyes, right, left */
+  if (t >= 2300 && t < 3020) { look = [-1, 0]; eyes = 'squint'; }                   /* huffy, staring the wrong way */
   if (t >= 2300 && t < 2750) { const k = Math.floor((t - 2300) / 90); x = 10 - k; legs = k % 2 ? 'stepB' : 'stepA'; }
+  if (t >= 3020 && t < 3110) eyes = 'blink';
   const b = mbBugAt(t), bug = b ? [mbBug(b.x, b.ph), b.dash ? fxDash(b.x + 6, 24, 2, 1) : []] : [];
-  const fx = [], sa = t - 1850;
-  if (sa >= 0 && sa < 500) { const dy = Math.round(2 * mEase.out(Math.min(1, sa / 380))); fx.push(...(sa < 400 ? fxSweat(x + 14, 12 + dy) : [[x + 14, 15 + dy, 'l']])); }
-  return [mShadow(lift, x), ...bug, mascot({ x, y, legs, squash: sq, eyes, look, brows, arms }), fx];
+  /* the question mark pops up over its head when it finds nothing, bobs once and goes */
+  const fx = [], qa = t - 1820;
+  if (qa >= 0 && qa < 480) fx.push(...fxMark(x + 6, 7 - (qa < 80 ? 0 : qa < 160 ? 1 : 0) + (qa > 400 ? 1 : 0), '?'));
+  return [mShadow(lift, x), ...bug, mascot({ x, y, legs, squash: sq, eyes, look, brows, arms, blush }), fx];
 };
 
 /* ---------- Reading (state: reading docs) ----------
-   Round reading glasses on, an open book held in both hands at belly height. The eyes read three lines, left to right
-   and back to the margin, with a blink on one return. Then they go to the page corner, the hand flicks, and the right
-   page peels at the corner, lifts with its shaded underside showing, stands on the spine, falls over to the left
-   showing its lit back and lands, pushing out a little puff of air. A happy little nod follows: eyes curved, a blush
-   and two dips, with a sparkle. It is the wait while something is read, and the turned page is the progress. The book
-   is 13 wide, more than the 10 x 10 held-prop limit, because it is held in both hands and has to reach both arms. */
-/* round reading glasses: a charcoal ring round each eye, lit at the top right, a pale lens with a one-cell glint, a
-   bridge and two temples. The kit's own eye cells are laid back over the lens so the eyes show through the glass */
-const mbRing = (x, y) => mArt(['.ggh.', 'gccwh', 'Gcccg', '.GGg.'], x, y);
-const mbSpecs = (bx, by, face) => [...mbRing(bx + 1, by + 1), ...mbRing(bx + 7, by + 1), [bx + 6, by + 2, 'g'], [bx, by + 2, 'g'], [bx + 12, by + 2, 'G'],
-  ...face.filter(([a, b, k]) => k === 'k' && b >= by + 2 && b <= by + 3)];
-/* the open book, 13 x 6, held at belly height: two cream pages that dip toward the spine, two lines of text a page,
-   the blue cover showing underneath */
+   It holds an open book up under its eyes and reads over the top of it. The eyes drop to the page and follow each line,
+   left page then right, while a small gold mark keeps pace along the text, with a little nod at each new line. At the
+   end of the spread its hand flicks, the right page peels at the corner, lifts with its shaded underside showing,
+   stands on the spine, falls over to the left and lands with a puff of air. A happy nod follows: curved eyes, a blush
+   and a sparkle. It is the wait while something is read, and the turned page is the progress. */
+/* the open book, 15 x 7, held up in both hands so only the eyes show over it: two pages with a dip at the spine, two
+   lines of text a page, the blue cover below. The hands grip its outer edges */
 const mbBookArt = [
-  '.cwww...wwww.',
-  'CcMMMwCwMMMwC',
-  'CcwwwwCwwwwwC',
-  'CcMMwwCwMMMwC',
-  'UuuuuuUuuuuuU',
-  '.UUUUUUUUUUU.'];
-/* the turning page, by stage: 1 its top corner peels up, 2 the sheet lifts off the right page, curling, its shaded
-   underside toward us, 3 it stands on the spine, 4 it falls over to the left showing its lit back, 5 it lands with the
-   corner still curled. Cells are relative to the book's top left */
+  '.CCCCCC.CCCCCC.',
+  'CwwwwwwCwwwwwwC',
+  'CwMMMMwCwMMMMwC',
+  'CwwwwwwCwwwwwwC',
+  'CwMMMwwCwMMMwwC',
+  'UuuuuuuUuuuuuuU',
+  '.UUUUUUUUUUUUU.'];
+/* the lines in reading order, as [row, first column, length] in the book */
+const MB_LINES = [[2, 2, 4], [4, 2, 3], [2, 9, 4], [4, 9, 3]];
+/* the turning page, by stage: 1 its top corner peels up, 2 it lifts off the right page, curling, its shaded underside
+   toward us, 3 it stands on the spine, 4 it falls over to the left, 5 it lands with the corner still curled. Cells are
+   relative to the book's top left */
 const mbPage = st => ({
-  1: mArt(['...........c', '..........CC', '...........C'], 0, -1),
-  2: mArt(['...........c', '.........ccC', '.......CcccC', '......CCccC.', '......CCcC..', '......CC....'], 0, -2),
-  3: mArt(['......c', '......Cw', '......Cw', '......Cw', '......Cw', '......Cw'], 0, -3),
-  4: mArt(['C', 'Cww', 'CwwwC', '.CwMwCC', '..CwwCC', '....CCC'], 1, -2),
-  5: mArt(['.c', '.CC', '.C'], 0, -1),
+  1: mArt(['.............Cw', '............Cww'], 0, -1),
+  2: mArt(['..........wwC', '........wwwC.', '.......CwC...'], 0, -3),
+  3: mArt(['.......w', '......Cw', '......Cw', '......Cw'], 0, -4),
+  4: mArt(['..Cww', '...Cwww', '.....Cww'], 0, -3),
+  5: mArt(['wC', 'wwC'], 0, -1),
 }[st] || []);
+const MB_READ_END = 1400;
 const mbRead = t => {
-  let y = 15, eyes = 'open', look = [0, 0], arms = ['rest', 'rest'], st = 0, blush = false;
-  if (t < 1200) { const p = t % 400; look = [p < 110 ? -1 : p < 250 ? 0 : 1, 0]; }      /* three lines, each left to right */
-  if (t >= 400 && t < 490) eyes = 'blink';                                    /* a blink on the way back to the margin */
-  if (t >= 1200) look = [1, 0];                                               /* the eyes go to the corner first */
-  if (t >= 1300 && t < 1740) { const k = Math.floor((t - 1300) / 88); st = k + 1; look = [[1, 0], [1, 0], [0, 0], [-1, 0], [-1, 0]][k]; }
-  if (t >= 1280 && t < 1480) arms = ['rest', [[1, -1, 'o'], [2, -1, 'o'], [1, 0, 'O'], [2, 0, 'O']]];   /* a flick of the hand */
-  if (t >= 1740) look = [-1, 0];
-  if (t >= 1820 && t < 2440) { eyes = 'happy'; look = [0, 0]; blush = true; }              /* a happy little nod, twice */
-  if ((t >= 1900 && t < 2020) || (t >= 2120 && t < 2240)) y = 16;
-  if (t >= 2440 && t < 2700) look = [0, 0];
-  if (t >= 2700) look = [-1, 0];
-  const bx = 9, m = mascot({ x: bx, y, eyes, look, arms, blush });
-  const fx = [], sa = t - 1960;
-  if (sa >= 0 && sa < 420) { const p = mEase.out(sa / 420); fx.push(...fxSparkle(Math.round(bx + 14 + 2 * p), Math.round(y + 3 - 4 * p), sa < 260 ? 1 : 0)); }
-  const pa = t - 1652;                                                        /* the air the page pushes out as it lands */
-  if (pa >= 0 && pa < 200) fx.push(...fxPuff(bx - 2 - Math.round(2 * mEase.out(pa / 200)), y + 7, pa < 110 ? 2 : 1, true));
-  return [mShadow(0, bx), m, mbSpecs(bx, y, m), mArt(mbBookArt, bx, y + 6), mbPage(st).map(([a, b, k]) => [a + bx, b + y + 6, k]), fx];
+  let y = 15, eyes = 'open', look = [0, 1], arms = ['rest', 'rest'], st = 0, blush = false, cursor = null;
+  if (t < MB_READ_END) { const k = Math.floor(t / 350), u = (t % 350) / 350, [r, c0, n] = MB_LINES[k];
+    cursor = [c0 + Math.min(n - 1, Math.floor(u * n)), r]; look = [k < 2 ? (u < 0.5 ? -1 : 0) : (u < 0.5 ? 0 : 1), 1];
+    if (t % 350 < 70) y = 16; }                                                 /* a nod at each new line */
+  if (t >= 560 && t < 650) eyes = 'blink';
+  if (t >= MB_READ_END) look = [1, 1];                                        /* the eyes go to the corner first */
+  if (t >= MB_READ_END && t < MB_READ_END + 180) arms = ['rest', [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']]];   /* a flick */
+  if (t >= MB_READ_END + 60 && t < MB_READ_END + 510) { st = Math.floor((t - MB_READ_END - 60) / 90) + 1; look = [st < 3 ? 1 : st === 3 ? 0 : -1, 0]; }
+  if (t >= MB_READ_END + 510) look = [-1, 1];
+  if (t >= 2000 && t < 2560) { eyes = 'happy'; blush = true; look = [0, 0]; }
+  if ((t >= 2060 && t < 2160) || (t >= 2280 && t < 2380)) y = 16;
+  if (t >= 2560) look = [-1, 1];
+  if (t >= 2760 && t < 2850) eyes = 'blink';
+  const bx = 9, bk = [bx - 1, y + 5];
+  const book = mArt(mbBookArt, bk[0], bk[1]);
+  if (cursor) book.push([bk[0] + cursor[0], bk[1] + cursor[1], 'y']);
+  const fx = [], sa = t - 2080;
+  if (sa >= 0 && sa < 440) { const p = mEase.out(sa / 440); fx.push(...fxSparkle(Math.round(bx + 16 + p), Math.round(y + 1 - 4 * p), sa < 280 ? 1 : 0)); }
+  const pa = t - (MB_READ_END + 420);                                          /* the air the page pushes out as it lands */
+  if (pa >= 0 && pa < 220) fx.push(...fxPuff(bk[0] - 2 - Math.round(2 * mEase.out(pa / 220)), bk[1] - 1, pa < 120 ? 2 : 1, true));
+  const m = mascot({ x: bx, y, eyes, look, arms, blush });
+  /* the hands: the outer cells of each arm stay in front of the book's edges */
+  const hands = m.filter(([x, yy]) => (x < bk[0] || x > bk[0] + 14) && yy >= bk[1]);
+  return [mShadow(0, bx), m, book, mbPage(st).map(([a, b, k]) => [a + bk[0], b + bk[1], k]), hands, fx];
 };
 
 /* the stills: the find with its raised brow, the page mid-turn, the pounce with the beetle already bolting beneath */
 const MSC_B = {
-  mascot_detective: Object.assign(mFilm(mbDetective, 3000), { still: mbAt(mbDetective, 2120) }),
-  mascot_read: Object.assign(mFilm(mbRead, 3000), { still: mbAt(mbRead, 1430) }),
+  mascot_detective: Object.assign(mFilm(mbDetective, 3000), { still: mbAt(mbDetective, 1900) }),
+  mascot_read: Object.assign(mFilm(mbRead, 3000), { still: mbAt(mbRead, 800) }),
   mascot_bughunt: Object.assign(mFilm(mbHunt, MB_HUNT), { still: mbAt(mbHunt, 1330) }),
 };
 const MSC_B_META = {
-  mascot_read: ['Reading', 'Round glasses on, it reads an open book line by line, flicks the page over and gives a happy little nod.', 'Use it for: reading docs, parsing a file, loading an article.'],
-  mascot_bughunt: ['Bug hunt', 'A tiny green bug scuttles in. It crouches, wiggles and pounces, the bug shoots out from under it, and it blinks, looks around and sweats while the bug wanders back in from the other side.', 'Use it for: debugging, running tests, fixing an error.'],
-  mascot_detective: ['Detective', 'In a deerstalker, it creeps along sweeping a magnifying glass low then high with one eye squinting. The lens glints, it jolts with wide eyes and a raised brow, and a gold sparkle rises from the find.', 'Use it for: searching, scanning files, looking something up.'],
+  mascot_read: ['Reading', 'Peeking over an open book, its eyes follow each line with a nod, then it flicks the page over and gives a happy little nod.', 'Use it for: reading docs, parsing a file, loading an article.'],
+  mascot_bughunt: ['Bug hunt', 'A tiny green bug scuttles in. It squints, wiggles and pounces wide-eyed, thinks it got it, then finds nothing: tiny eyes, a question mark, and a huff while the bug wanders back in behind it.', 'Use it for: debugging, running tests, fixing an error.'],
+  mascot_detective: ['Detective', 'In a deerstalker, it holds a magnifying glass up to one eye, so we see that eye big and round through the lens. It leans and peers about, ducks to check the floor, then the big eye pops wide, it jumps, and the rim flashes: found it.', 'Use it for: searching, scanning files, looking something up.'],
 };
 
 /* PixelLoader mascot scenes by the c folder: typing, thinking and snoozing. Built only from kit.js. Every top level
@@ -613,44 +624,52 @@ const mtKey = c => c[0] + ',' + c[1];
 const mtArms = o => { const bare = new Set(mascot({ ...o, arms: ['hide', 'hide'] }).map(mtKey));
   return mascot(o).filter(c => !bare.has(mtKey(c))); };
 
-/* Typing: the laptop sits on the floor in front of it, back of the lid towards us with a small light logo, so only
-   the top of the body shows. It types in quick turns: one hand presses down over the lid edge while the other lifts,
-   then they swap, two phrases with a tiny breath between them, the head nodding as each phrase starts. It stops and reads the line back, eyes sliding from
-   the start of the line to its end. Then the send: the right arm winds up high, the body rises, a beat of hold, and it
-   stabs the key; the body squashes on the press, the eyes go happy with a blush and a small gold sparkle leaves the
-   corner of the screen and drifts up. The eyes go back to the screen a beat before the hands start again.
+/* Typing: a keyboard sits on the floor in front of it, a charcoal slab with rows of light keys and a long space bar,
+   so the top of the body shows behind it. Its hands drop onto the keys at either end in quick turns, each key it
+   strikes flashing gold, two phrases with a breath between them and a
+   nod as each one starts. It stops and reads the line back, eyes sliding from the start of the line to its end. Then
+   the send: the right arm winds up high, a beat of hold, and it slams the long Enter key; the body squashes, the key
+   flashes, and the eyes go happy with a blush as a sparkle drifts up. The eyes go back to the keys a beat before the
+   hands start again.
    Use it for: writing, composing a reply, saving a draft. */
-const MT_LID = [
-  'GGGGGGGGGGGGGGG',
-  'GggggggggggghhG',
-  'GgggggccwgggggG',
-  'GgggggmccgggggG',
-  'GGGGGGGGGGGGGGG'];
-/* the typing hands (right arm, relative to the shoulder; the kit mirrors the left): 'press' drapes over the lid edge
-   onto the keys, 'lift' rises clear of the lid ready for the next key */
-const MT_PRESS = [[1, 0, 'o'], [0, 1, 'o'], [1, 1, 'O'], [0, 2, 'O'], [-1, 2, 'O']];
-const MT_LIFT = [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']];
+const MT_KB_X = 7, MT_KB_Y = 21;
+const MT_KB = [
+  '.hhhhhhhhhhhhhhh.',
+  'gcccgcccgcccgcccg',
+  'ggggggggggggggggg',
+  'gccgcccccccccgccg',
+  '.GGGGGGGGGGGGGGG.'];
+/* the key under each hand as it strikes, and the Enter key at the top right */
+const MT_KEY_L = [[1, 1], [2, 1], [3, 1], [1, 3]], MT_KEY_R = [[13, 1], [14, 1], [15, 1], [15, 3]];
+const MT_ENTER = [[13, 1], [14, 1], [15, 1]];
+const mtKeyboard = lit => { const k = mArt(MT_KB, MT_KB_X, MT_KB_Y); for (const [c, r] of lit) k.push([MT_KB_X + c, MT_KB_Y + r, 'y']); return k; };
+/* the typing hands (right arm, relative to the shoulder; the kit mirrors the left): 'press' is the nub dropped a row
+   onto the keyboard's end keys, and lifting is the nub back at rest, hovering over the keyboard's edge */
+const MT_PRESS = [[1, 1, 'o'], [2, 1, 'o'], [1, 2, 'O'], [2, 2, 'O']];
+const MT_LIFT = 'rest';
 const MT_TAPS = [0, 110, 220, 330, 440, 560, 700, 810, 920, 1040, 1150];
-const mtSendSpark = t => { const a = t - 2110; if (a < 0 || a >= 640) return [];   /* tiny: a dot, a plus, a dot */
-  const p = mEase.out(a / 640), x = Math.round(24 + 3 * p), y = Math.round(20 - 9 * p);
+const mtSendSpark = t => { const a = t - 2110; if (a < 0 || a >= 640) return [];
+  const p = mEase.out(a / 640), x = Math.round(25 + 2 * p), y = Math.round(19 - 9 * p);
   return fxSparkle(x, y, a < 80 || a >= 500 ? 0 : 1); };
 const mtTypePose = t => {
-  const o = { y: 15, look: [0, 1], arms: [MT_PRESS, MT_PRESS] };
-  if (t < 1300) { const i = MT_TAPS.filter(k => k <= t).length - 1;
-    o.arms = i % 2 ? [MT_LIFT, MT_PRESS] : [MT_PRESS, MT_LIFT];
+  const o = { y: 15, look: [0, 1], arms: [MT_LIFT, MT_LIFT] }, lit = [], fx = [];
+  if (t < 1300) { const i = MT_TAPS.filter(k => k <= t).length - 1, left = i % 2 === 0, pressed = t - MT_TAPS[i] < 70;
+    o.arms = left ? [pressed ? MT_PRESS : MT_LIFT, MT_LIFT] : [MT_LIFT, pressed ? MT_PRESS : MT_LIFT];
+    if (pressed) lit.push((left ? MT_KEY_L : MT_KEY_R)[(i >> 1) % 4]);
     if (t < 110 || (t >= 700 && t < 810)) { o.y = 16; o.legs = 'crouch'; }   /* each phrase lands with a small nod */
-    if (t >= 590 && t < 690) o.eyes = 'blink'; }
+    if (t >= 590 && t < 690) o.eyes = 'blink';
+  }
   else if (t < 1560) o.look = [-1, 1];                                   /* reads the line back from its start */
-  else if (t < 1800) o.look = [1, 1];                                    /* to its end, where the send key is */
-  else if (t < 1880) { o.look = [1, 1]; o.brows = 'up'; o.arms = [MT_PRESS, MT_LIFT]; }      /* wind up */
-  else if (t < 2060) { o.y = 14; o.look = [1, 1]; o.brows = 'up'; o.arms = [MT_PRESS, 'up']; }
-  else if (t < 2130) { o.squash = 1; o.eyes = 'squint'; }               /* the press */
-  else if (t < 2260) { o.y = 14; o.eyes = 'happy'; o.blush = true; o.arms = [MT_LIFT, MT_LIFT]; }
+  else if (t < 1800) o.look = [1, 1];                                    /* to its end, where Enter is */
+  else if (t < 1880) { o.look = [1, 1]; o.brows = 'up'; o.arms = [MT_LIFT, 'out']; }        /* wind up */
+  else if (t < 2060) { o.y = 14; o.look = [1, 1]; o.brows = 'up'; o.arms = [MT_LIFT, 'up']; }
+  else if (t < 2130) { o.squash = 1; o.eyes = 'squint'; o.arms = [MT_LIFT, MT_PRESS]; lit.push(...MT_ENTER); }   /* the press */
+  else if (t < 2260) { o.y = 14; o.eyes = 'happy'; o.blush = true; o.arms = ['out', 'out']; lit.push(...MT_ENTER); }
   else if (t < 2660) { o.eyes = 'happy'; o.blush = true; }
-  return o;
+  return { o, lit, fx };
 };
-const mtType = t => { const o = mtTypePose(t);
-  return [mShadow(0, 8, 15), mascot({ ...o, arms: ['hide', 'hide'] }), mArt(MT_LID, 8, 21), mtArms(o), mtSendSpark(t)]; };
+const mtType = t => { const { o, lit, fx } = mtTypePose(t);
+  return [mShadow(0, 8, 15), mascot({ ...o, arms: ['hide', 'hide'] }), mtKeyboard(lit), mtArms(o), fx, mtSendSpark(t)]; };
 
 /* Thinking: arms at rest and eyes turned up to the side, it ponders. Little puffs rise off the top of its head and a
    thought bubble forms, three dots light one by one while one pair of feet taps in time, and it gives one slow blink
@@ -744,9 +763,7 @@ const mtSleepPose = t => {
 const mtSleep = t => [mShadow(0, MT_SX), mascot(mtSleepPose(t)), mtZ(t, 2700), mtZ(t, 500, 1330)];
 
 const MSC_C = {
-  mascot_type: Object.assign(mFilm(mtType, 3000), { still: mDone([mShadow(0, 8, 15),
-    mascot({ look: [0, 1], arms: ['hide', 'hide'] }), mArt(MT_LID, 8, 21), mtArms({ look: [0, 1], arms: [MT_PRESS, MT_LIFT] }),
-    fxSparkle(25, 13, 1)].reduce((g, l) => mPut(g, l), mPic())) }),
+  mascot_type: Object.assign(mFilm(mtType, 3000), { still: mDone([].concat(mtType(240)).reduce((g, l) => mPut(g, l), mPic())) }),
   mascot_think: Object.assign(mFilm(mtThink, 3200), { still: mDone([mShadow(0, MT_TX), mArt(MT_CLOUD, 17, 2),
     mtDot(20, 5, 1), mtDot(23, 5, 1), mtDot(26, 5, 0), fxPuff(19, 13, 1, true), fxPuff(20, 10, 2, true),
     mascot({ x: MT_TX, look: [1, -1] })].reduce((g, l) => mPut(g, l), mPic())) }),
@@ -755,7 +772,7 @@ const MSC_C = {
     fxZ(21, 10), fxZ(24, 4, true)].reduce((g, l) => mPut(g, l), mPic())) }),
 };
 const MSC_C_META = {
-  mascot_type: ['Typing', 'Behind its laptop it taps away with both hands in turn, reads the line back, then stabs the send key and beams as a little gold sparkle flies off the screen.', 'Use it for: writing, composing a reply, saving or sending.'],
+  mascot_type: ['Typing', 'Behind a keyboard it taps away with both hands in turn, each key flashing gold, reads the line back, then slams Enter and beams.', 'Use it for: writing, composing a reply, saving or sending.'],
   mascot_think: ['Thinking', 'Eyes turned up and a foot tapping, it watches three dots light in a thought bubble until they spark into an idea and it hops for joy.', 'Use it for: thinking, planning, working out an answer.'],
   mascot_sleep: ['Snoozing', 'It dozes on its feet, breathing slowly with Zs drifting up, nods off, catches itself wide eyed, and drifts back to sleep.', 'Use it for: paused jobs, idle sessions, anything waiting on you.'],
 };
