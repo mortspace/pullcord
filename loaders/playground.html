@@ -129,17 +129,42 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .step.pending { display: none; }
 .answer { margin-top: 0.5rem; padding: 0.75rem 1rem; background: var(--bg); border-radius: 12px; font-size: 0.92rem; line-height: 1.5; min-height: 3.6em; }
 .answer:empty { display: none; }
-.phone { background: var(--bg); border-radius: 22px; padding: 10px 18px; position: relative; height: 96px; overflow: hidden; }
-.status { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: var(--ink); padding: 2px 6px 0; }
-.island { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); height: 37px; min-width: 124px; background: #000; color: #fff; border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0 14px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; transition: min-width .45s cubic-bezier(.32,.72,0,1); }
-.island .loader { --s: 20px; }
-.island .sub { color: #8e8e93; font-weight: 500; }
-.island:empty { padding: 0; }
+/* a slice of an iPhone 15 Pro screen at 1:1 points: the status bar and a Live Activity in the Dynamic Island */
+.phone-wrap { position: relative; width: 100%; overflow: hidden; }
+.phone13 { --spring: cubic-bezier(.32,.72,0,1); position: relative; width: 393px; height: 150px; border-radius: 55px 55px 0 0; overflow: hidden; color: #fff; transform-origin: top left; background: radial-gradient(130% 150% at 15% 0%, #4a5aa8 0%, #232a5a 42%, #140f2a 100%); font-family: -apple-system, 'SF Pro Text', 'Inter', system-ui, sans-serif; }
+.sb-time { position: absolute; top: 11px; left: 0; width: 133px; height: 37px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sb-icons { position: absolute; top: 11px; right: 30px; height: 37px; display: flex; align-items: center; }
+.sb-icons svg { display: block; fill: #fff; }
+.sb-sig { display: inline-flex; width: 17px; margin-right: 6px; overflow: hidden; transition: width .3s var(--spring), margin .3s var(--spring), opacity .2s ease; }
+.sb-wifi { margin-right: 6px; }
+.phone13[data-mode="compact"] .sb-sig, .phone13[data-mode="done"] .sb-sig { width: 0; margin-right: 0; opacity: 0; }
+.di { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 126px; height: 37px; border-radius: 18.5px; background: #000; overflow: hidden; transition: width .5s var(--spring), height .5s var(--spring), border-radius .5s var(--spring); }
+.phone13[data-mode="compact"] .di, .phone13[data-mode="done"] .di { width: 210px; }
+.phone13[data-mode="expanded"] .di { width: 371px; height: 116px; border-radius: 44px; }
+.di-c, .di-x { position: absolute; inset: 0; opacity: 0; transition: opacity .18s ease; }
+.phone13[data-mode="compact"] .di-c, .phone13[data-mode="done"] .di-c { opacity: 1; transition-delay: .2s; }
+.phone13[data-mode="expanded"] .di-x { opacity: 1; transition-delay: .24s; }
+.di-lead { position: absolute; left: 7px; top: 6.5px; line-height: 0; }
+.di-lead .loader { --s: 24px; }
+.di-trail { position: absolute; right: 13px; top: 0; height: 37px; display: flex; align-items: center; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.di-xlead { position: absolute; left: 20px; top: 18px; line-height: 0; }
+.di-xlead .loader { --s: 34px; }
+.di-xtrail { position: absolute; right: 22px; top: 18px; height: 34px; display: flex; align-items: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.di-xcenter { position: absolute; left: 70px; right: 70px; top: 46px; text-align: center; white-space: nowrap; }
+.di-xcenter b { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.di-xcenter span { display: block; font-size: 13px; color: #98989f; margin-top: 1px; }
+.di-bar { position: absolute; left: 20px; right: 20px; bottom: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.16); overflow: hidden; }
+.di-bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: currentColor; transition: width .6s var(--spring); }
 .inline-l { --s: 1.2em; margin: 0 0.3em; vertical-align: -0.25em; }
 .uc .sentence { font-size: 1rem; line-height: 1.7; margin: 0; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-width: 160px; background: var(--ink); color: var(--bg); border: 0; border-radius: 12px; padding: 0.62rem 1rem; font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: transform .12s ease; }
+/* buttons: the glyph takes the label colour, the way a system spinner does, and sits where a leading icon would */
+.btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 184px; height: 44px; padding: 0 18px; border: 0; border-radius: 12px; font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; cursor: pointer; transition: transform .12s ease, background-color .2s ease; }
 .btn:active { transform: scale(.97); }
 .btn .loader { --s: 18px; }
+.btn-fill { background: #0a84ff; color: #fff; }
+:root[data-theme="light"] .btn-fill { background: #007aff; }
+.btn-plain { background: var(--ink); color: var(--bg); }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .canvas { background: var(--bg); border-radius: 14px; height: 120px; position: relative; overflow: hidden; }
 .toast { position: absolute; right: 14px; bottom: 14px; display: flex; align-items: center; gap: 0.6rem; background: var(--pill); color: var(--ink); border: 1px solid var(--pill-line); border-radius: 12px; padding: 0.6rem 0.9rem; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transform: translateY(24px); opacity: 0; transition: transform .35s cubic-bezier(.32,.72,0,1), opacity .25s ease; }
@@ -161,7 +186,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .health .pill { --g: 28px; }
 .bpm { font-size: 2rem; font-weight: 680; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
 .bpm small { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.3rem; letter-spacing: 0; }
-@media (prefers-reduced-motion: reduce) { .island, .toast, .btn { transition: none; } .term .cur { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .di, .di-c, .di-x, .di-bar i, .toast, .btn { transition: none; } .term .cur { animation: none; } }
 
 /* knobs */
 .controls { display: grid; gap: 1rem; margin-top: 1.2rem; }
@@ -200,8 +225,15 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
     <div class="uc">
       <p class="uc-k">Dynamic Island</p>
-      <div class="phone"><div class="status"><span>9:41</span><span>●●●●</span></div><div class="island" id="island"></div></div>
-      <p class="cap">The island widens for the activity, shows progress beside the glyph, and collapses after the check.</p>
+      <div class="phone-wrap" id="phoneWrap"><div class="phone13" id="phone" data-mode="idle">
+        <div class="sb-time">9:41</div>
+        <div class="sb-icons"><span class="sb-sig"><svg width="17" height="11" viewBox="0 0 17 11" aria-hidden="true"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg></span><span class="sb-wifi"><svg width="15" height="11" viewBox="0 0 15 11" aria-hidden="true"><path d="M7.5 2.1c2.2 0 4.2.9 5.7 2.3l1.1-1.2C12.5 1.5 10.1.5 7.5.5S2.5 1.5.7 3.2l1.1 1.2c1.5-1.4 3.5-2.3 5.7-2.3zm0 3.3c1.3 0 2.5.5 3.4 1.3l1.1-1.2C10.8 4.4 9.2 3.8 7.5 3.8s-3.3.6-4.5 1.7l1.1 1.2c.9-.8 2.1-1.3 3.4-1.3zm0 3.2c.5 0 1 .2 1.3.5L7.5 10.5 6.2 9.1c.3-.3.8-.5 1.3-.5z"/></svg></span><svg width="27" height="12" viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="23" height="11" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2"/><path d="M25 4.2v3.6c.8-.3 1.3-1 1.3-1.8S25.8 4.5 25 4.2z" fill-opacity=".45"/></svg></div>
+        <div class="di" id="island">
+          <div class="di-c"><div class="di-lead" id="diLead"></div><div class="di-trail" id="diTrail"></div></div>
+          <div class="di-x"><div class="di-xlead" id="diXLead"></div><div class="di-xtrail" id="diXTrail"></div><div class="di-xcenter"><b>Uploading photos</b><span id="diXSub"></span></div><div class="di-bar"><i id="diBar"></i></div></div>
+        </div>
+      </div></div>
+      <p class="cap">A Live Activity, laid out the way the Dynamic Island asks. Compact: the glyph on the leading side and a short count on the trailing side, both hugging the camera and inset to stay concentric with the island. Expanded: the glyph, the count, a title and progress arranged around the camera. It collapses after the check.</p>
     </div>
 
     <div class="uc">
@@ -212,8 +244,8 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
     <div class="uc">
       <p class="uc-k">Button with a state</p>
-      <button type="button" class="btn" id="saveBtn"><span class="loader" id="saveGlyph" hidden></span><span id="saveLbl">Save changes</span></button>
-      <p class="cap">Click it. The label gives way to the glyph while it saves, lands on the check, then returns. It also runs itself every few seconds.</p>
+      <div class="btns"><button type="button" class="btn btn-fill" id="saveBtn"><span class="loader" hidden></span><span class="lbl">Save changes</span></button><button type="button" class="btn btn-plain" id="connectBtn"><span class="loader" hidden></span><span class="lbl">Connect</span></button></div>
+      <p class="cap">The glyph takes the label colour, the way a system spinner does, so it reads on any button fill. It sits where a leading icon would, at the label's size, and the button keeps its width so nothing jumps. Click either one; they also run on their own.</p>
     </div>
 
     <div class="uc">
@@ -747,14 +779,14 @@ const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
 
 /* ---------- color ramp: bed -> vivid lit -> white-hot, in sRGB hsl so the hue stays saturated ---------- */
 const RAMP_N = 40, rampCache = new Map();
-function ramp(hue, light) {
-  const key = hue + ':' + (light ? 'l' : 'd') + ':' + S.bed;
+function ramp(hue, light, bed = S.bed) {
+  const key = hue + ':' + (light ? 'l' : 'd') + ':' + bed;
   if (rampCache.has(key)) return rampCache.get(key);
   const fills = [], alphas = [];
   const litL = light ? 46 : 56, hotL = light ? 22 : 97, bedL = light ? 55 : 42;
   for (let i = 0; i < RAMP_N; i++) {
     const v = i / (RAMP_N - 1); let L, Sat, A;
-    if (v < 0.5) { const u = v / 0.5; L = lerp(bedL, litL, u); Sat = lerp(85, 100, u); A = lerp(S.bed, 1, u); }
+    if (v < 0.5) { const u = v / 0.5; L = lerp(bedL, litL, u); Sat = lerp(85, 100, u); A = lerp(bed, 1, u); }
     else { const u = (v - 0.5) / 0.5; L = lerp(litL, hotL, u * u); Sat = 100; A = 1; }
     fills.push(`hsl(${hue} ${Sat.toFixed(0)}% ${L.toFixed(1)}%)`); alphas.push(+A.toFixed(3));
   }
@@ -766,16 +798,26 @@ const IOS = { blue: ['#0A84FF', '#007AFF'], green: ['#30D158', '#34C759'], red: 
 const IOS_MAP = { thinking: 'purple', reading: 'blue', analyzing: 'blue', searching: 'blue', generating: 'purple', writing: 'blue', syncing: 'teal', connecting: 'teal', uploading: 'indigo', downloading: 'indigo', done: 'green', error: 'red', building: 'orange', debugging: 'yellow', heartbeat: 'pink', scanning: 'purple', breathing: 'mint', calculating: 'blue' };
 const iosName = id => (S.hueMode === 'brand' && id !== 'done' && id !== 'error') ? 'blue' : IOS_MAP[id];
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-function rampHex(hex) {
-  const key = 'hex:' + hex + ':' + S.bed;
+function rampHex(hex, bed = S.bed) {
+  const key = 'hex:' + hex + ':' + bed;
   if (rampCache.has(key)) return rampCache.get(key);
   const [r, g, b] = hexRgb(hex), fills = [], alphas = [];
   for (let i = 0; i < RAMP_N; i++) {
     const v = i / (RAMP_N - 1);
-    if (v < 0.5) { fills.push(`rgb(${r} ${g} ${b})`); alphas.push(+lerp(S.bed, 1, v / 0.5).toFixed(3)); }
+    if (v < 0.5) { fills.push(`rgb(${r} ${g} ${b})`); alphas.push(+lerp(bed, 1, v / 0.5).toFixed(3)); }
     else { const u = ((v - 0.5) / 0.5) ** 2; fills.push(`rgb(${Math.round(lerp(r, 255, u))} ${Math.round(lerp(g, 255, u))} ${Math.round(lerp(b, 255, u))})`); alphas.push(1); }
   }
   const out = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
+  rampCache.set(key, out); return out;
+}
+/* one colour taken from the surrounding text, for glyphs inside controls: lit cells take the label colour, dim cells half of it,
+   unlit cells nothing, and there is no glow */
+function rampInk(color) {
+  const key = 'ink:' + color;
+  if (rampCache.has(key)) return rampCache.get(key);
+  const fills = [], alphas = [];
+  for (let i = 0; i < RAMP_N; i++) { const v = i / (RAMP_N - 1); fills.push(color); alphas.push(v < 0.5 ? +(v / 0.5).toFixed(3) : 1); }
+  const out = { fills, alphas, edge: color, bed: color };
   rampCache.set(key, out); return out;
 }
 const isLight = () => document.documentElement.dataset.theme === 'light';
@@ -795,7 +837,7 @@ const io = new IntersectionObserver(es => { for (const e of es) { const m = live
 
 class Matrix {
   constructor(el, stateId, N, opts = {}) {
-    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings'; this.forceDark = !!opts.forceDark; this.frozen = false;
+    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings'; this.forceDark = !!opts.forceDark; this.ink = !!opts.ink; this.quiet = !!opts.quiet; this.frozen = false;
     this.hue = null; this.build();
     if (!this.static) { io.observe(el); live.push(this); }
   }
@@ -825,6 +867,7 @@ class Matrix {
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
     this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][(isLight() && !this.forceDark) ? 1 : 0] : null;
     this.accentCss = this.accent || `hsl(${hue} 100% 56%)`;
+    if (this.ink) this.inkColor = getComputedStyle(this.el).color;
   }
   get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
   set(stateId, N) { this.stateId = stateId; this.N = N; this.frozen = false; this.build(); }
@@ -844,9 +887,9 @@ class Matrix {
     for (let i = 0; i < buf.length; i++) { let v = buf[i] * kd; const t = tg[i]; if (t > v) v += (t - v) * kr; buf[i] = v; }
   }
   paint(o) {
-    const light = isLight() && !this.forceDark, rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
+    const light = isLight() && !this.forceDark, bed = this.quiet ? 0 : S.bed, rp = this.ink ? rampInk(this.inkColor) : this.accent ? rampHex(this.accent, bed) : ramp(this.hue, light, bed);
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
-    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1) * ((this.variant === 'pixels' && this.state.sprite && this.state.sprite.glow) || 1);
+    const lv = S.levels, buf = this.buf, glow = this.ink ? 0 : S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1) * ((this.variant === 'pixels' && this.state.sprite && this.state.sprite.glow) || 1);
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3; const tgt = this.tg[i]; if (tgt > 0 && tgt < 0.5 && buf[i] <= 0.5) v = tgt;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
@@ -929,7 +972,8 @@ function buildStates() {
 /* ---------- use cases: small product mocks sequenced on the page clock ---------- */
 const UC = [];
 const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-const glyph = (parent, id, opts = {}) => { const l = mk('span', 'loader'); parent.appendChild(l); return new Matrix(l, id, S.grid, { variant: 'pixels', ...opts }); };
+/* inside product mocks a glyph is an icon, so it draws without the unlit grid; the labelled pill keeps its grid */
+const glyph = (parent, id, opts = {}) => { const l = mk('span', 'loader'); parent.appendChild(l); return new Matrix(l, id, S.grid, { variant: 'pixels', quiet: true, ...opts }); };
 const T0 = performance.now();
 const phase = (now, period) => ((now - T0) / 1000) % period;
 
@@ -952,39 +996,50 @@ const phase = (now, period) => ((now - T0) / 1000) % period;
   } });
 })();
 
-/* dynamic island */
+/* dynamic island: a Live Activity in its presentations. Idle is the bare island. Compact puts the glyph on the leading side
+   and a short count on the trailing side, both against the camera. Expanded adds the count in words, a title and progress */
 (() => {
-  const island = $('island'); let shown = '';
-  const m = glyph(island, 'uploading', { forceDark: true }); const lbl = mk('span'), sub = mk('span', 'sub'); island.append(lbl, sub);
+  const phone = $('phone'), wrap = $('phoneWrap');
+  const lead = glyph($('diLead'), 'uploading', { forceDark: true }), leadX = glyph($('diXLead'), 'uploading', { forceDark: true });
+  const trail = $('diTrail'), xtrail = $('diXTrail'), bar = $('diBar'), xsub = $('diXSub');
+  const fit = () => { const w = wrap.clientWidth, k = Math.min(1, w / 393); phone.style.transform = `scale(${k})`; phone.style.marginLeft = Math.max(0, (w - 393 * k) / 2) + 'px'; wrap.style.height = 150 * k + 'px'; };
+  new ResizeObserver(fit).observe(wrap); fit();
+  const STEPS = [[0, 'idle'], [1.2, 'compact', 2], [2.6, 'compact', 3], [3.9, 'expanded', 3], [5.2, 'expanded', 4], [6.5, 'compact', 4], [7.5, 'compact', 5], [8.3, 'done'], [9.8, 'idle']];
+  let shown = '';
   UC.push({ tick(now) {
-    const t = phase(now, 6.5); let mode;
-    if (t < 1.4) mode = 'idle'; else if (t < 4.6) mode = t < 3.2 ? 'up3' : 'up4'; else mode = 'done';
-    if (mode === shown) return; shown = mode;
-    if (mode === 'idle') { m.el.hidden = true; lbl.textContent = ''; sub.textContent = ''; island.style.minWidth = '124px'; }
-    else if (mode.startsWith('up')) { m.show('uploading'); m.el.hidden = false; lbl.textContent = 'Uploading'; sub.textContent = mode === 'up3' ? '3 of 5' : '4 of 5'; island.style.minWidth = '210px'; }
-    else { m.show('done', true); lbl.textContent = 'Uploaded'; sub.textContent = ''; island.style.minWidth = '170px'; }
+    const t = phase(now, 10.8); let cur = STEPS[0]; for (const s of STEPS) if (t >= s[0]) cur = s;
+    const [, mode, n] = cur, key = mode + (n || '');
+    if (key !== shown) {
+      shown = key; phone.dataset.mode = mode;
+      if (mode === 'done') { lead.show('done', true); trail.textContent = 'Done'; }
+      else if (mode !== 'idle') { lead.show('uploading'); leadX.show('uploading'); trail.textContent = n + '/5'; xtrail.textContent = n + ' of 5'; bar.style.width = n * 20 + '%'; xsub.textContent = n >= 4 ? 'About 30 s left' : 'About 1 min left'; }
+    }
+    /* text on the black island takes a lighter tint than the glyph, the way system tints brighten on dark */
+    const src = mode === 'done' ? lead : leadX, tint = src.accent || `hsl(${src.hue} 100% 68%)`;
+    if (trail.style.color !== tint) { trail.style.color = tint; xtrail.style.color = tint; bar.parentElement.style.color = tint; }
   } });
 })();
 
 /* inline sentence + health glyphs */
-for (const el of document.querySelectorAll('.loader[data-uc]')) new Matrix(el, el.dataset.uc, S.grid, { variant: 'pixels' });
+for (const el of document.querySelectorAll('.loader[data-uc]')) new Matrix(el, el.dataset.uc, S.grid, { variant: 'pixels', quiet: !el.closest('.pill') });
 
-/* button */
-(() => {
-  const btn = $('saveBtn'), g = $('saveGlyph'), lbl = $('saveLbl'); const m = new Matrix(g, 'uploading', S.grid, { variant: 'pixels', forceDark: !isLight() }); g.hidden = true;
-  let mode = 'idle', at = 0, lastAuto = performance.now();
-  const go = (now) => { mode = 'saving'; at = now; };
-  btn.addEventListener('click', () => { if (mode === 'idle') go(performance.now()); });
+/* buttons: the glyph is drawn in the label colour and replaces nothing; it sits before the label like a leading icon */
+const stateButton = (btn, labels, busyGlyph, offset) => {
+  const g = btn.querySelector('.loader'), lbl = btn.querySelector('.lbl'), m = new Matrix(g, busyGlyph, S.grid, { variant: 'pixels', ink: true });
+  let mode = 'idle', at = 0, lastAuto = performance.now() + offset;
+  btn.addEventListener('click', () => { if (mode === 'idle') { mode = 'busy'; at = performance.now(); } });
   UC.push({ tick(now) {
-    if (mode === 'idle' && now - lastAuto > 7000) { go(now); }
-    if (mode === 'saving') { g.hidden = false; m.forceDark = !isLight(); m.show('uploading'); lbl.textContent = 'Saving'; if (now - at > 1900) { mode = 'saved'; at = now; } }
-    else if (mode === 'saved') { m.show('done', true); lbl.textContent = 'Saved'; if (now - at > 1500) { mode = 'idle'; lastAuto = now; g.hidden = true; lbl.textContent = 'Save changes'; } }
+    if (mode === 'idle' && now - lastAuto > 7000) { mode = 'busy'; at = now; }
+    if (mode === 'busy') { if (g.hidden) { m.show(busyGlyph); g.hidden = false; lbl.textContent = labels[1]; } if (now - at > 1900) { mode = 'done'; at = now; m.show('done', true); lbl.textContent = labels[2]; } }
+    else if (mode === 'done' && now - at > 1500) { mode = 'idle'; lastAuto = now; g.hidden = true; lbl.textContent = labels[0]; }
   } });
-})();
+};
+stateButton($('saveBtn'), ['Save changes', 'Saving…', 'Saved'], 'uploading', 0);
+stateButton($('connectBtn'), ['Connect', 'Connecting…', 'Connected'], 'connecting', 2200);
 
 /* toast */
 (() => {
-  const toast = $('toast'), lbl = $('toastLbl'); const m = new Matrix($('toastGlyph'), 'syncing', S.grid, { variant: 'pixels' });
+  const toast = $('toast'), lbl = $('toastLbl'); const m = new Matrix($('toastGlyph'), 'syncing', S.grid, { variant: 'pixels', quiet: true });
   UC.push({ tick(now) {
     const t = phase(now, 7.5);
     if (t < 0.6) toast.classList.remove('on');
