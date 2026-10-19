@@ -1052,6 +1052,400 @@ const OPTS_D = {
   breathing_float: Object.assign(seq(...brtZenLoop), { still: brtFloat(1, 7) }),
 };
 
+/* Spinners, set one: ring, snake, dual, orbit, cascade. Every name here carries the prefix rng. */
+
+/* rings of cells round the centre cell, each in clockwise order from twelve o'clock. The radius 3, 5 and 6 circles are
+   midpoint circles. The cascade nests three rings, and concentric midpoint circles two cells apart touch corner to
+   corner on the diagonals, so its small and middle rings are the eight cells round the centre and a radius 4 octagon,
+   each kept two clear cells from the next */
+const rngAngle = ([x, y]) => (Math.atan2(x - 6, 6 - y) * 180 / Math.PI + 360) % 360;
+const rngSort = cs => cs.sort((p, q) => rngAngle(p) - rngAngle(q));
+const rngCircle = r => {
+  const pts = new Map(); let x = 0, y = r, d = 1 - r;
+  while (x <= y) {
+    for (const [a, b] of [[x, y], [y, x], [-x, y], [-y, x], [x, -y], [y, -x], [-x, -y], [-y, -x]]) pts.set(a + ',' + b, [6 + a, 6 + b]);
+    if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; } x++;
+  }
+  return rngSort([...pts.values()]);
+};
+const rngBand = (lo, hi) => rngSort(Array.from({ length: N * N }, (_, i) => [i % N, Math.floor(i / N)]).filter(([x, y]) => Math.hypot(x - 6, y - 6) >= lo && Math.hypot(x - 6, y - 6) < hi));
+const rngR3 = rngCircle(3), rngR5 = rngCircle(5), rngR6 = rngCircle(6), rngS1 = rngBand(0.9, 1.5);
+const rngO4 = rngSort([[0, 4], [1, 4], [2, 3], [3, 2], [4, 1]].flatMap(([a, b]) => [[a, b], [b, -a], [-a, -b], [-b, a]]).map(([a, b]) => [6 + a, 6 - b]));
+const rngAt = (ring, i) => ring[((Math.round(i) % ring.length) + ring.length) % ring.length];
+const rngTone = (cells, t) => cells.map(([x, y]) => [x, y, t]);
+/* n cells of a ring centred on angle a (degrees); tip names the tone of the leading cell going clockwise (1) or
+   anticlockwise (-1) */
+const rngArcAt = (ring, a, n, tone, tip, dir = 1) => { const c = Math.round(a * ring.length / 360 - (n - 1) / 2);
+  return Array.from({ length: n }, (_, k) => [...rngAt(ring, c + k), tip && k === (dir > 0 ? n - 1 : 0) ? tip : tone]); };
+/* film a motion: sample it every millisecond through the loop, cut a frame wherever the picture changes, and fold any
+   frame shorter than 30 ms into the next one. The holds then carry the easing exactly */
+const rngFilm = (fn, total) => { const raw = [];
+  for (let t = 0; t < total; t++) { const b = fn(t), last = raw[raw.length - 1];
+    if (last && last.b.join('') === b.join('')) last.ms++; else raw.push(F(b, 1)); }
+  const out = [];
+  raw.forEach((f, i) => { if (f.ms < 30 && i < raw.length - 1) raw[i + 1].ms += f.ms; else out.push(f); });
+  if (out.length > 1 && out[out.length - 1].ms < 30) out[out.length - 2].ms += out.pop().ms;
+  return out; };
+const rngSine = p => p <= 0 ? 0 : p >= 1 ? 1 : (1 - Math.cos(Math.PI * p)) / 2;
+const rngQuad = p => p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? 2 * p * p : 1 - 2 * (1 - p) * (1 - p);
+
+/* spinner, Ring take: a comet runs round a dim ring like a bead round a loop-the-loop. It creeps over the top, falls
+   down the right side gathering speed, whips round the bottom and coasts up the left side, slowing, to creep over the
+   top again. Its tail is its speed: short and tight at the top, stretched long through the bottom, white head, lit
+   body, and the tail runs out into the dim track */
+const rngRING_N = rngR5.length;
+const rngRingMs = i => { const th = 2 * Math.PI * (i + 0.5) / rngRING_N, vt = 1 / 150, vb = 1 / 34, c = (vb * vb - vt * vt) / 2;
+  return Math.round(1 / Math.sqrt(vt * vt + c * (1 - Math.cos(th)))); };
+const rngRingLen = i => Math.round(2 + 5 * (150 / rngRingMs(i) - 1) / (150 / 34 - 1));
+const rngComet = (h, L) => stamp([...rngTone(rngR5, ':'), ...Array.from({ length: L }, (_, k) => [...rngAt(rngR5, h - 1 - k), '#']), [...rngAt(rngR5, h), 'W']]);
+const rngRING = Array.from({ length: rngRING_N }, (_, i) => F(rngComet(i, rngRingLen(i)), rngRingMs(i)));
+
+/* spinner, Snake take: the arc that chases its own tail. The head runs ahead and the arc grows until it nearly closes
+   while the tail creeps; then the head creeps and the tail runs to catch up, until the arc is a short dash again. Each
+   run is eased, slow off the mark and slow into the end, and in one loop the arc has gone round once. The head is
+   white and the last cell of the tail is dim, so it always reads which way it is going */
+const rngSNAKE_RUN = 24, rngSNAKE_CREEP = 4, rngSNAKE_MIN = 3, rngSNAKE_HALF = 820;
+const rngSnakeArc = (t, h) => stamp(Array.from({ length: h - t + 1 }, (_, k) => [...rngAt(rngR5, t + k), k === h - t ? 'W' : k === 0 ? ':' : '#']));
+/* the runner eases, the creeper walks, and the tail never comes closer than a three-cell dash behind the head */
+const rngSnakeAt = ms => { const u = (ms % rngSNAKE_HALF) / rngSNAKE_HALF, run = Math.round(rngSNAKE_RUN * rngQuad(u)), creep = Math.round(rngSNAKE_CREEP * u);
+  const h = ms < rngSNAKE_HALF ? rngSNAKE_MIN - 1 + run : rngSNAKE_MIN - 1 + rngSNAKE_RUN + creep, t = ms < rngSNAKE_HALF ? creep : rngSNAKE_CREEP + run;
+  return rngSnakeArc(Math.min(t, h - rngSNAKE_MIN + 1), h); };
+const rngSNAKE = rngFilm(rngSnakeAt, 2 * rngSNAKE_HALF);
+
+/* spinner, Dual take: two arcs on two rings, turning opposite ways. They cross at the top and at the bottom, nested
+   one inside the other, and slow as they cross so the pair is seen, then part and race round the far sides. The outer
+   arc is lit with a white leading tip; the inner one is dim with a lit tip, further away */
+const rngDUAL_HALF = 900;
+const rngDualAt = a => stamp([...rngArcAt(rngR3, -a, 5, ':', '#', -1), ...rngArcAt(rngR5, a, 7, '#', 'W', 1)]);
+const rngDUAL = rngFilm(t => rngDualAt(180 * Math.floor(t / rngDUAL_HALF) + 180 * rngSine((t % rngDUAL_HALF) / rngDUAL_HALF)), 2 * rngDUAL_HALF);
+
+/* spinner, Orbit take: a moon round a planet. The planet is a round dot, a lit cross with its corners dim. The moon
+   is a short comet on a dotted path: a white head, a lit body and a dim tail that fades through the gaps of the path.
+   It hangs at the top and at the bottom and swings quickly down and up the sides, two easy beats to a lap */
+const rngPLANET = [[6, 6, '#'], [6, 5, '#'], [7, 6, '#'], [6, 7, '#'], [5, 6, '#'], [5, 5, ':'], [7, 5, ':'], [7, 7, ':'], [5, 7, ':']];
+const rngORBIT_PATH = rngR5.filter((_, i) => i % 2 === 0);
+const rngOrbitAt = i => stamp([...rngTone(rngORBIT_PATH, ':'), ...rngPLANET,
+  [...rngAt(rngR5, i), 'W'], [...rngAt(rngR5, i - 1), '#'], [...rngAt(rngR5, i - 2), '#'], ...[3, 4, 5].map(k => [...rngAt(rngR5, i - k), ':'])]);
+const rngOrbitMs = ease(14, 130, 40);
+const rngORBIT = Array.from({ length: rngR5.length }, (_, i) => F(rngOrbitAt(i), rngOrbitMs[i % 14]));
+
+/* spinner, Cascade take: three nested arcs, a signal. They stand stacked like the bars of a signal icon, then turn
+   half a turn together but not quite in step: the turn starts at the middle and spreads outward, the small arc a beat
+   ahead of the middle one and the middle one ahead of the big one, so the stack fans open into a spiral as it swings
+   and folds back into a stack on the far side, the big arc swinging a cell past and settling. Folded, a light runs out
+   through the middle of the three arcs, the signal sent, and it turns again */
+const rngCAS_RINGS = [rngS1, rngO4, rngR6], rngCAS_LEN = [3, 7, 11], rngCAS_MOVE = 760;
+/* when each arc turns, as fractions of the move: the small one first, the big one last */
+const rngCAS_GO = [[0, 0.84], [0.08, 0.92], [0.16, 1]];
+/* the big arc runs a cell past the stack and springs back: eased out to the far point, then eased back */
+const rngSpring = p => p < 0.88 ? 1.045 * rngSine(p / 0.88) : 1.045 - 0.045 * rngSine((p - 0.88) / 0.12);
+const rngCascadeAt = (as, hot = -1) => stamp(as.flatMap((a, i) => rngArcAt(rngCAS_RINGS[i], a, rngCAS_LEN[i], '#').map((c, k) => i === hot && k === (rngCAS_LEN[i] - 1) / 2 ? [c[0], c[1], 'W'] : c)));
+const rngCascadeHalf = h => { const end = [0, 1, 2].map(() => 180 * (h + 1));
+  return [...rngFilm(t => rngCascadeAt(rngCAS_GO.map(([a, b], i) => { const p = Math.min(1, Math.max(0, (t / rngCAS_MOVE - a) / (b - a)));
+      return 180 * h + 180 * (i === 2 ? rngSpring : rngSine)(p); })), rngCAS_MOVE),
+    ...[0, 1, 2].map(i => F(rngCascadeAt(end, i), [55, 55, 65][i])), F(rngCascadeAt(end), 140)]; };
+const rngCASCADE = [...rngCascadeHalf(0), ...rngCascadeHalf(1)];
+
+const OPTS_SP1 = {
+  spinner_ring: Object.assign(seq(...rngRING), { still: rngComet(4, 3) }),
+  spinner_snake: Object.assign(seq(...rngSNAKE), { still: rngSnakeArc(0, 17) }),
+  spinner_dual: Object.assign(seq(...rngDUAL), { still: rngDualAt(90) }),
+  spinner_orbit: Object.assign(seq(...rngORBIT), { still: rngOrbitAt(4) }),
+  spinner_cascade: Object.assign(seq(...rngCASCADE), { still: rngCascadeAt([0, 0, 0]), trail: 0.7 }),
+};
+
+/* Spinners, second set: blocks, slide, leap, gather, swirl, eclipse. Every name here carries the prefix dts. */
+
+/* round pixel discs of odd diameter, centred on a cell. A bare plus reads as a cross, so the small ones are softened
+   with dim corners, the pixel version of anti-aliasing: 3 a lit plus with dim corners, 5 a 5x5 with the corners off,
+   7 the radius-3 disc */
+const dtsDisc = (cx, cy, d, t = '#') => { const r = (d - 1) / 2, cs = [];
+  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+    const corner = Math.abs(x) === r && Math.abs(y) === r;
+    if (d === 7 ? Math.hypot(x, y) < 3.6 : !(d === 5 && corner)) cs.push([cx + x, cy + y, d === 3 && corner ? ':' : t]); }
+  return cs; };
+
+/* spinner, Blocks take: a three by three grid of square blocks, three cells each with two-cell gutters, so it fills
+   the frame edge to edge. A wave runs down the diagonal from the top-left corner to the bottom-right: each block in
+   turn softens its corners, shrinks to a point, dims, and grows back, a beat after its neighbour, so the valley of the
+   wave is three diagonals wide and slides through the grid like a ripple across tiles. Each block comes back whole
+   with a white glint at its heart, so a line of light follows the valley out. The wave sets off slowly, runs fast
+   through the long middle diagonal and slows into the far corner; the grid holds whole for a breath and goes again */
+const dtsBLK_C = [1, 6, 11];
+/* a block at stage 3 whole, 2 with its corners softened, 1 a point, 0 a dim point */
+const dtsBlock = (cx, cy, s) => [-1, 0, 1].flatMap(y => [-1, 0, 1].map(x => { const k = Math.abs(x) + Math.abs(y);
+  const t = s >= 3 ? '#' : s === 2 ? (k === 2 ? ':' : '#') : k === 0 ? (s === 1 ? '#' : ':') : null;
+  return t ? [cx + x, cy + y, t] : null; })).filter(Boolean);
+/* stage of a block p frames after the wave reached its diagonal */
+const dtsBLK_DIP = [2, 1, 0, 1, 2];
+const dtsBlkStage = p => p < 0 || p >= dtsBLK_DIP.length ? 3 : dtsBLK_DIP[p];
+const dtsBlocks = t => stamp(dtsBLK_C.flatMap((cy, j) => dtsBLK_C.flatMap((cx, i) => { const p = t - 2 * (i + j);
+  return [...dtsBlock(cx, cy, dtsBlkStage(p)), ...(p === dtsBLK_DIP.length || p === dtsBLK_DIP.length + 1 ? [[cx, cy, 'W']] : [])]; })));
+const dtsBLK_N = 2 * 4 + dtsBLK_DIP.length + 2;
+const dtsBLOCKS = [...Array.from({ length: dtsBLK_N }, (_, t) => F(dtsBlocks(t), ease(dtsBLK_N, 115, 55)[t])), F(dtsBlocks(-1), 300)];
+
+/* spinner, Slide take: the fifteen puzzle cut down to four squares. Three rounded tiles sit in a two by two tray with
+   one slot empty, a dim recess, and they take turns sliding into it, so the gap walks round the tray one way while the
+   tiles walk round the other. Each slide eases out of rest, crosses the gutter quickly and eases in against the wall.
+   A short pause, and the next tile goes */
+/* the four slots in turn round the tray, clockwise from top-left, as the top-left cell of a 5x5 tile */
+const dtsSLOTS = [[1, 1], [7, 1], [7, 7], [1, 7]];
+/* a rectangle from (x0, y0) to (x1, y1) inclusive with dim corners */
+const dtsTile = (x0, y0, x1, y1, t = '#') => { const cs = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cs.push([x, y, (x === x0 || x === x1) && (y === y0 || y === y1) ? ':' : t]); return cs; };
+const dtsTileAt = ([x, y], dx = 0, dy = 0) => dtsTile(x + dx, y + dy, x + 4 + dx, y + 4 + dy);
+/* the empty slot: a dim outline with its corners off */
+const dtsRecess = ([x0, y0]) => { const cs = []; for (let y = y0; y <= y0 + 4; y++) for (let x = x0; x <= x0 + 4; x++) { const ex = x === x0 || x === x0 + 4, ey = y === y0 || y === y0 + 4; if ((ex || ey) && !(ex && ey)) cs.push([x, y, ':']); } return cs; };
+/* gap g: the empty slot; the tile in slot g-1 (counter-clockwise neighbour) slides into it, moving k cells */
+const dtsSLIDE_K = [1, 3, 5, 6], dtsSLIDE_MS = [110, 60, 55, 90];
+const dtsSlideFrame = (g, k) => { const from = (g + 3) % 4, [ax, ay] = dtsSLOTS[from], [bx, by] = dtsSLOTS[g];
+  const still = [0, 1, 2, 3].filter(s => s !== g && s !== from).flatMap(s => dtsTileAt(dtsSLOTS[s]));
+  const dx = Math.sign(bx - ax), dy = Math.sign(by - ay);
+  return stamp([...dtsSLOTS.flatMap(dtsRecess), ...still, ...dtsTileAt(dtsSLOTS[from], dx * k, dy * k)]); };
+const dtsSlideMove = g => [F(dtsSlideFrame(g, 0), 240), ...dtsSLIDE_K.map((k, i) => F(dtsSlideFrame(g, k), dtsSLIDE_MS[i]))];
+const dtsSLIDE = [1, 0, 3, 2].flatMap(g => dtsSlideMove(g));
+
+/* spinner, Leap take: leapfrog. Three dots wait in a row; the last one crouches, springs, and sails over the other two
+   in a high arc, hanging for a moment at the top with a white core, while the two it jumps slide back under it to
+   make room. It lands at the front, squashes flat for a beat and stands up, and now a different dot is last in line.
+   The row never moves off centre, so it plays over and over like a treadmill of little jumps */
+const dtsLEAP_Y = 8;
+/* a squashed dot, wide and low on the same ground, for the crouch and the landing */
+const dtsSquat = cx => [-1, 0, 1].flatMap(x => [0, 1].map(y => [cx + x, dtsLEAP_Y + y, '#']));
+const dtsLeapAt = (p, pose) => { const e = p * p * (3 - 2 * p), lx = Math.round(2 + 8 * e), ly = Math.round(dtsLEAP_Y - 20 * p * (1 - p));
+  const leaper = pose === 'squat' ? dtsSquat(lx) : [...dtsDisc(lx, ly, 3), ...(pose === 'air' ? [[lx, ly, 'W']] : [])];
+  return stamp([...dtsDisc(Math.round(6 - 4 * e), dtsLEAP_Y, 3), ...dtsDisc(Math.round(10 - 4 * e), dtsLEAP_Y, 3), ...leaper]); };
+const dtsLEAP = [F(dtsLeapAt(0), 320), F(dtsLeapAt(0, 'squat'), 140), ...[0.15, 0.32, 0.5, 0.68, 0.85].map((p, i) => F(dtsLeapAt(p, 'air'), [65, 85, 140, 85, 65][i])),
+  F(dtsLeapAt(1, 'squat'), 120)];
+const dtsLEAP_STILL = stamp([2, 6, 10].flatMap(x => dtsDisc(x, 6, 3)));
+
+/* spinner, Gather take: four rounded squares wait in the corners. They draw in to the middle, slowing as they meet,
+   with a white spark where they touch, and the little cluster clicks round an eighth of a turn as one: the squares
+   become diamonds and the cross of gutters between them becomes an X. Then they spread out to the middles of the sides, draw in again, click another
+   eighth and spread back to the corners, so each loop turns the cluster a quarter. No in-between angle is drawn:
+   a square turned a little on this grid grows a notch on every side and reads as a pinwheel, so the turn is a soft
+   cut, and the engine's afterglow blends one pose into the next */
+/* a 4x4 block with dim corners, centred off the middle by o (a half-cell) along each diagonal */
+const dtsSquares = o => stamp([-1, 1].flatMap(sy => [-1, 1].flatMap(sx => dtsTile(6 + sx * o - 1.5, 6 + sy * o - 1.5, 6 + sx * o + 1.5, 6 + sy * o + 1.5))));
+/* a radius-2 diamond at distance d from the middle on each axis */
+const dtsDiamond = (cx, cy) => [-2, -1, 0, 1, 2].flatMap(y => [-2, -1, 0, 1, 2].map(x => Math.abs(x) + Math.abs(y) <= 2 ? [cx + x, cy + y, '#'] : null)).filter(Boolean);
+const dtsDiamonds = d => stamp([[0, -d], [d, 0], [0, d], [-d, 0]].flatMap(([x, y]) => dtsDiamond(6 + x, 6 + y)));
+/* as the four meet, a white spark at the point where they touch, the middle of the gutters */
+const dtsTOUCH = [[6, 6, 'W']];
+const dtsGATHER = [F(dtsSquares(4.5), 360), F(dtsSquares(3.5), 100), F(stamp(dtsTOUCH, dtsSquares(2.5)), 70), F(dtsSquares(2.5), 130), F(dtsDiamonds(3), 190),
+  F(dtsDiamonds(4), 360), F(stamp(dtsTOUCH, dtsDiamonds(3)), 70), F(dtsDiamonds(3), 130), F(dtsSquares(2.5), 190), F(dtsSquares(3.5), 100)];
+
+/* spinner, Swirl take: eight dots on the edge of a square, at its corners and the middles of its sides, a dim track
+   of points, and a light that chases round them. The head is a round dot with a white core, the dot behind it is
+   lit, and the tail shrinks and fades back into the track. It does not tick at one speed: it winds up, whips round
+   with its tail stretched long, and coasts in with the tail drawn short, so it feels thrown rather than driven */
+const dtsSWIRL_AT = [[1, 1], [6, 1], [11, 1], [11, 6], [11, 11], [6, 11], [1, 11], [1, 6]];
+/* a dot at level 3 head, 2 lit, 1 a lit point, 0 the dim track */
+const dtsSwDot = (x, y, l) => l === 3 ? [...dtsDisc(x, y, 3), [x, y, 'W']] : l === 2 ? dtsDisc(x, y, 3) : [[x, y, l === 1 ? '#' : ':']];
+/* the ring with the head at position h and a tail of tl dots behind it */
+const dtsSwirl = (h, tl) => stamp(dtsSWIRL_AT.flatMap(([x, y], i) => { const back = ((h - i) % 8 + 8) % 8;
+  return dtsSwDot(x, y, back === 0 ? 3 : back > tl ? 0 : back === tl ? 1 : 2); }));
+const dtsSWIRL_MS = [150, 120, 95, 80, 65, 55, 50, 50, 50, 55, 65, 80, 95, 120, 150, 170];
+const dtsSWIRL = dtsSWIRL_MS.map((ms, t) => F(dtsSwirl(t % 8, ms < 70 ? 3 : ms < 110 ? 2 : 1), ms));
+
+/* spinner, Eclipse take: two discs orbit each other, seen edge-on, so the orbit is told by depth alone. The disc that
+   swings in front catches a white glint on its upper edge like a lit sphere and swells; the one that passes behind
+   dims to the shadow tone and slips behind it, so for a moment only its rim shows past the front one, a dim crescent,
+   then nothing, then the crescent on the other side. Side by side they are the same size and both lit. The orbit
+   lingers at the sides and quickens through the crossing. Half an orbit is a whole loop, since after it the two have
+   simply swapped places. (A far disc that also shrank was tried: at three cells it was hidden whole or left as a
+   sliver, so the far one keeps its size and depth is told by tone) */
+const dtsORBIT = 4;
+/* one disc at depth z (1 nearest, -1 farthest). Coming forward it catches a white glint, then swells; going back it
+   dims */
+const dtsBody = (x, z) => {
+  if (z > 0.6) return [...dtsDisc(x, 6, 7), [x - 1, 4, 'W'], [x - 2, 5, 'W']];
+  if (z > 0.3) return [...dtsDisc(x, 6, 5), [x - 1, 5, 'W']];
+  return dtsDisc(x, 6, 5, z > -0.3 ? '#' : ':'); };
+const dtsEclipse = th => { const xa = Math.round(6 - dtsORBIT * Math.cos(th)), za = Math.sin(th), xb = 12 - xa, zb = -za;
+  const [front, back] = za >= zb ? [dtsBody(xa, za), dtsBody(xb, zb)] : [dtsBody(xb, zb), dtsBody(xa, za)];
+  const cover = new Set(front.map(([x, y]) => x + ',' + y)), seen = back.filter(([x, y]) => !cover.has(x + ',' + y));
+  /* fewer than three cells of the far disc would only read as a stray, so it is hidden instead */
+  return stamp([...(seen.length >= 3 ? seen : []), ...front]); };
+/* frames at every angle where something on screen changes, each held for as long as the orbit stays there. The orbit
+   runs at a speed that eases: theta(t) = pi t - 0.3 sin(2 pi t), slower at the sides, quicker through the crossing */
+const dtsECL_T = 1300;
+const dtsECLIPSE = (() => { const steps = 1300, out = []; let prev = null, start = 0;
+  for (let s = 0; s <= steps; s++) { const t = s / steps, b = s < steps ? dtsEclipse(Math.PI * t - 0.3 * Math.sin(2 * Math.PI * t)).join('') : null;
+    if (b !== prev) { if (prev !== null) out.push([prev, s - start]); prev = b; start = s; } }
+  /* a pose held for less than 40 ms only flickers, so it folds into the one before */
+  const fs = []; for (const [b, n] of out) { const ms = Math.round(dtsECL_T * n / steps); if (ms < 40 && fs.length) fs[fs.length - 1].ms += ms; else fs.push(F(b.match(/.{13}/g), ms)); }
+  return fs; })();
+
+const OPTS_SP2 = {
+  spinner_blocks: Object.assign(seq(...dtsBLOCKS), { still: dtsBlocks(-1) }),
+  spinner_slide: Object.assign(seq(...dtsSLIDE), { still: dtsSlideFrame(1, 0) }),
+  spinner_leap: Object.assign(seq(...dtsLEAP), { still: dtsLEAP_STILL, trail: 0.8 }),
+  spinner_gather: Object.assign(seq(...dtsGATHER), { still: dtsSquares(4.5) }),
+  spinner_swirl: Object.assign(seq(...dtsSWIRL), { still: dtsSwirl(2, 2) }),
+  spinner_eclipse: Object.assign(seq(...dtsECLIPSE), { still: dtsEclipse(Math.PI / 4) }),
+};
+
+/* spinners, set three. Shared helpers first */
+
+/* round pixel circles of radius 1 to 6 round the centre cell, as [x, y] cells sorted clockwise from twelve o'clock.
+   Each is given by one octant, from the top to the diagonal, and mirrored eight ways. These are the circles a pixel
+   artist draws (flat runs at the poles, short steps on the shoulders), rounder than the plain midpoint rasterisation,
+   which turns radius 6 into an octagon */
+const shpAngle = ([x, y]) => (Math.atan2(x - 6, 6 - y) + 2 * Math.PI) % (2 * Math.PI);
+const shpOCTANT = { 1: [[0, -1], [1, -1]], 2: [[0, -2], [1, -2]], 3: [[0, -3], [1, -3], [2, -2]], 4: [[0, -4], [1, -4], [2, -3], [3, -3]], 5: [[0, -5], [1, -5], [2, -4], [3, -4]], 6: [[0, -6], [1, -6], [2, -6], [3, -5], [4, -5]] };
+const shpCircle = r => {
+  const out = new Map();
+  for (const [a, b] of shpOCTANT[r]) for (const [p, q] of [[a, b], [-a, b], [a, -b], [-a, -b], [b, a], [-b, a], [b, -a], [-b, -a]]) out.set((6 + p) + ',' + (6 + q), [6 + p, 6 + q]);
+  return [...out.values()].sort((m, n) => shpAngle(m) - shpAngle(n));
+};
+/* frames whose bitmaps repeat back to back are merged into one held frame */
+const shpMerge = frames => frames.reduce((acc, f) => { const last = acc[acc.length - 1]; if (last && last.b.join('') === f.b.join('')) last.ms += f.ms; else acc.push({ b: f.b, ms: f.ms }); return acc; }, []);
+const shpMod = (a, n) => ((a % n) + n) % n;
+
+/* spinner, Spokes take: the activity indicator every iPhone has shown, redrawn on the pixel grid. Eight spokes stand
+   round a clear hole, the straight ones four cells long and the diagonals three, so both run from radius 3 out to 6 and
+   the wheel is round. The light steps round the wheel the way the original does: one spoke white, the two behind it lit,
+   the rest dim, so the whole wheel is always there and only the brightness turns */
+const shpDIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+const shpSpoke = i => { const [dx, dy] = shpDIRS[i]; return (dx && dy ? [2, 3, 4] : [3, 4, 5, 6]).map(k => [6 + dx * k, 6 + dy * k]); };
+const shpSPOKE_TONE = ['W', '#', '#', ':', ':', ':', ':', ':'];
+const shpSpokes = head => stamp(shpDIRS.flatMap((_, i) => shpSpoke(i).map(([x, y]) => [x, y, shpSPOKE_TONE[shpMod(head - i, 8)]])));
+const shpSPOKES = Array.from({ length: 8 }, (_, k) => F(shpSpokes(k), 120));
+
+/* spinner, Dot Ring take: a dotted circle, twelve single pixels set round the radius 6 circle at the hours of a clock
+   face, an even ring an LED matrix would draw. It always shows dim. A lit run with a white head goes round it and
+   breathes as it goes, the way the Material spinner does: the head eases away and the run stretches out over half the
+   ring, then the tail eases after it and the run gathers to a short dash half a turn on, rests a beat, and goes again.
+   Two breaths make one turn */
+const shpDOTS = [[6, 0], [9, 1], [11, 3], [12, 6], [11, 9], [9, 11], [6, 12], [3, 11], [1, 9], [0, 6], [1, 3], [3, 1]];
+const shpDotRun = (tail, head) => stamp([...shpDOTS.map(([x, y]) => [x, y, ':']),
+  ...Array.from({ length: head - tail + 1 }, (_, k) => { const [x, y] = shpDOTS[shpMod(tail + k, 12)]; return [x, y, k === head - tail ? 'W' : '#']; })]);
+/* one breath, half a turn: [tail, head, ms]. The head eases away while the tail waits, then the tail eases in
+   behind it, and the run rests as a dash before the next breath */
+const shpBREATH = [[0, 1, 220], [0, 2, 100], [0, 3, 70], [0, 4, 52], [0, 5, 45], [1, 6, 45], [2, 7, 50], [3, 7, 52], [4, 7, 62], [5, 7, 85]];
+const shpDOTRING = [0, 6].flatMap(o => shpBREATH.map(([t, h, ms]) => F(shpDotRun(t + o, h + o), ms)));
+
+/* spinner, Trace take: a rounded square drawn dim, and a bright stroke tracing round it. The stroke speeds down the
+   straight sides and slows into each corner, the way a pen slows to turn. Its tail is wherever the head was a moment
+   ago, so on the straights it stretches out and in the corners it bunches up and wraps the bend */
+const shpTRACK = (() => {
+  const p = [];
+  for (let x = 6; x <= 9; x++) p.push([x, 1]);
+  p.push([10, 2]);
+  for (let y = 3; y <= 9; y++) p.push([11, y]);
+  p.push([10, 10]);
+  for (let x = 9; x >= 3; x--) p.push([x, 11]);
+  p.push([2, 10]);
+  for (let y = 9; y >= 3; y--) p.push([1, y]);
+  p.push([2, 2]);
+  for (let x = 3; x <= 5; x++) p.push([x, 1]);
+  return p;
+})();
+/* ms per cell for the head: slowest on the corner cell, quickest mid-side */
+const shpCornerDist = i => Math.min(...[4, 12, 20, 28].map(c => Math.min(Math.abs(i - c), 32 - Math.abs(i - c))));
+const shpTRACE_MS = Array.from({ length: 32 }, (_, i) => [120, 80, 52, 38, 32][shpCornerDist(i)]);
+const shpTRACE_T = shpTRACE_MS.reduce((a, ms) => (a.push(a[a.length - 1] + ms), a), [0]);
+/* where the head was `lag` ms before it reached cell i, as a path index that may run below 0 into the previous lap */
+const shpTraceTail = (i, lag) => { let t = shpTRACE_T[i] - lag, off = 0; while (t < 0) { t += shpTRACE_T[32]; off -= 32; } let j = 0; while (shpTRACE_T[j + 1] <= t) j++; return j + off; };
+const shpTrace = (head, tail) => stamp([...shpTRACK.map(([x, y]) => [x, y, ':']), ...Array.from({ length: head - tail + 1 }, (_, k) => { const [x, y] = shpTRACK[shpMod(tail + k, 32)]; return [x, y, k === head - tail ? 'W' : '#']; })]);
+const shpTRACE = Array.from({ length: 32 }, (_, i) => F(shpTrace(i, Math.min(i - 1, shpTraceTail(i, 250))), shpTRACE_MS[i]));
+
+/* spinner, Morph take: a square tile that rounds into a disc while it turns, then squares up again a quarter turn on.
+   Free rotation breaks pixel edges, so the tile only stops at the angles the grid draws cleanly: a slope of one in four,
+   then one in two, by which time it is mostly round, then the disc, then the same slopes mirrored as it squares up the
+   other side of the turn. Lit rim, dim body. Slow off the square, quick through the turn, a beat as a disc. Two
+   opposite corners carry a white glint that rides round a cell at a time, so the tile visibly keeps turning while it
+   is a disc, and lands on the next pair of corners; two quarter turns bring the glints home */
+const shpConvex = pts => { const cs = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const px = x - 6, py = y - 6; if (pts.every(([ax, ay], i) => { const [bx, by] = pts[(i + 1) % pts.length]; return (bx - ax) * (py - ay) - (by - ay) * (px - ax) >= -0.02 * Math.hypot(bx - ax, by - ay); })) cs.push([x, y]); } return cs; };
+const shpShade = cs => { const s = new Set(cs.map(([x, y]) => x + ',' + y)), h = (x, y) => s.has(x + ',' + y); return stamp(cs.map(([x, y]) => [x, y, h(x - 1, y) && h(x + 1, y) && h(x, y - 1) && h(x, y + 1) ? ':' : '#'])); };
+/* a square of half side s turned th, its corners cut back by a fraction f of each side, as cells */
+const shpSquare = (s, th, f) => {
+  const c = [[-s, -s], [s, -s], [s, s], [-s, s]].map(([x, y]) => [x * Math.cos(th) - y * Math.sin(th), x * Math.sin(th) + y * Math.cos(th)]);
+  return shpConvex(c.flatMap((p, i) => { const a = c[(i + 3) % 4], b = c[(i + 1) % 4]; return [[p[0] + (a[0] - p[0]) * f, p[1] + (a[1] - p[1]) * f], [p[0] + (b[0] - p[0]) * f, p[1] + (b[1] - p[1]) * f]]; }));
+};
+/* the disc is the round radius 4 pixel circle filled, the same nine cells across as the square */
+const shpDISC = (() => { const ring = shpCircle(4), cs = []; for (let y = 2; y <= 10; y++) { const xs = ring.filter(c => c[1] === y).map(c => c[0]); for (let x = Math.min(...xs); x <= Math.max(...xs); x++) cs.push([x, y]); } return cs; })();
+/* two opposite corners carry a glint, so the turn shows even while the tile is a disc: the rim cells furthest out
+   along the corner's direction (angle a, clockwise from three o'clock) go white */
+const shpGlint = (cs, a) => {
+  const along = ([x, y]) => (x - 6) * Math.cos(a) + (y - 6) * Math.sin(a), off = ([x, y]) => Math.abs(-(x - 6) * Math.sin(a) + (y - 6) * Math.cos(a));
+  const pick = sign => { const end = cs.filter(c => sign * along(c) >= Math.max(...cs.map(d => sign * along(d))) - 0.6), m = Math.min(...end.map(off)); return end.filter(c => off(c) <= m + 0.3); };
+  return stamp([...pick(1), ...pick(-1)].map(([x, y]) => [x, y, 'W']), shpShade(cs));
+};
+const shpA4 = Math.atan2(1, 4), shpA2 = Math.atan2(1, 2), shpQ = Math.PI / 4;
+/* one quarter turn, starting from turn k: [cells, angle turned, ms] */
+const shpQuarter = k => [[shpSquare(4, 0, 0.12), 0, 380], [shpSquare(4.12, shpA4, 0.15), shpA4, 140], [shpSquare(4.47, shpA2, 0.32), shpA2, 90], [shpDISC, shpQ, 280],
+  [shpSquare(4.47, -shpA2, 0.32), 2 * shpQ - shpA2, 90], [shpSquare(4.12, -shpA4, 0.15), 2 * shpQ - shpA4, 140]].map(([cs, a, ms]) => F(shpGlint(cs, shpQ + a + k * 2 * shpQ), ms));
+const shpMORPH = [...shpQuarter(0), ...shpQuarter(1)];
+
+/* spinner, Ripple take: a drop at the centre. The dot draws itself up into a small plus, white at its heart, and lets
+   go: a ring leaves it and spreads out, quick off the dot and slowing as it widens, dimming as it goes, and at the rim
+   it breaks into every other pixel before it is gone. The dot is already gathering for the next one before the last
+   ring has faded */
+const shpRING = { 2: shpCircle(2), 3: shpCircle(3), 4: shpCircle(4), 5: shpCircle(5), 6: shpCircle(6) };
+/* a ring's cells by its age in 60 ms units */
+const shpRippleRing = age => {
+  const at = [[2, 2, '#'], [4, 3, '#'], [7, 4, '#'], [10, 5, ':'], [14, 6, ':'], [16, 6, '.']].find(([until]) => age < until);
+  if (age < 0 || !at) return [];
+  const [, r, tone] = at, cs = shpRING[r];
+  return tone === '.' ? cs.filter((_, i) => i % 2 === 0).map(([x, y]) => [x, y, ':']) : cs.map(([x, y]) => [x, y, tone]);
+};
+const shpRippleAt = u => {
+  const p = shpMod(u, 12), swell = p >= 10;
+  return stamp([...shpRippleRing(p), ...shpRippleRing(p + 12), ...(swell ? [[6, 6, 'W'], [5, 6, '#'], [7, 6, '#'], [6, 5, '#'], [6, 7, '#']] : [[6, 6, '#']])]);
+};
+const shpRIPPLE = shpMerge(Array.from({ length: 24 }, (_, u) => F(shpRippleAt(u), 60)));
+
+/* spinner, Equalizer take: seven bars standing on a centre line, rising and falling as a wave travels through them,
+   the way a voice memo draws sound. One wavelength spans the seven bars, so as one crest leaves on the right the next
+   is rising on the left and the meter never goes flat; the crest carries white tips as it passes through. Heights move
+   in half cells: a bar between two heights wears dim caps, so no bar ever jumps more than a cell. The bars swell most
+   in the middle and least at the ends, so the silhouette stays balanced while the wave runs across */
+const shpEQ_ENV = [0.5, 0.75, 0.92, 1, 0.92, 0.75, 0.5];
+const shpBars = (hs, hot = -1) => stamp(hs.flatMap((H, i) => {
+  const x = 2 * i, out = [], full = Math.floor((H - 1) / 2);
+  for (let d = 0; d <= full; d++) out.push([x, 6 - d, i === hot && d === full ? 'W' : '#'], [x, 6 + d, i === hot && d === full ? 'W' : '#']);
+  if (H % 2 === 0) out.push([x, 6 - full - 1, ':'], [x, 6 + full + 1, ':']);
+  return out;
+}));
+const shpEqH = u => shpEQ_ENV.map((e, i) => Math.max(1, Math.min(13, Math.round(1 + 12 * e * (0.12 + 0.88 * (0.5 + 0.5 * Math.sin(2 * Math.PI * (u - i / 7))))))));
+/* the crest of the wave, the bar it is passing through, wears white tips */
+const shpEqAt = u => { const hs = shpEqH(u), c = shpMod(Math.round(7 * (u - 0.25)), 7); return shpBars(hs, hs[c] >= 9 ? c : -1); };
+const shpEQ = Array.from({ length: 24 }, (_, k) => F(shpEqAt(k / 24), 60));
+
+/* spinner, Flip take: a square tile turns over. It tips on its horizontal axis: the far edge narrows away in
+   perspective, the near edge catches the light, it goes edge-on as a single bright line and opens onto its back, shaded
+   dim inside a lit rim, the same edge still nearest and still lit. Then it turns on its vertical axis the same way, back to its face. Each turn is slow off the mark, quick through
+   edge-on and slow to land, with a beat on each face */
+const shpTile = (ws, back, glint, vert) => {
+  const y0 = 6 - (ws.length - 1) / 2, cs = [];
+  ws.forEach((w, i) => { for (let k = 0; k < w; k++) { const x = 6 - (w - 1) / 2 + k, y = y0 + i, rim = i === 0 || i === ws.length - 1 || k === 0 || k === w - 1; cs.push([x, y, back && !rim ? ':' : i === glint && Math.abs(x - 6) <= 1 ? 'W' : '#']); } });
+  return stamp(vert ? cs.map(([x, y, c]) => [y, x, c]) : cs);
+};
+const shpR9 = n => Array(n).fill(9);
+/* the shapes of one half turn, face toward the viewer to edge-on: row widths from the far edge to the near edge */
+const shpTURN = [[7, ...shpR9(6)], [7, 7, 9, 9, 9], [5, 7, 9]];
+const shpHalf = (back, vert, opening) => {
+  const fr = shpTURN.map((ws, i) => { const g = i ? ws.length - 1 : -1; return opening ? shpTile(ws.slice().reverse(), back, i ? 0 : -1, vert) : shpTile(ws, back, g, vert); });
+  return opening ? fr.reverse() : fr;
+};
+const shpEDGE = vert => shpTile([9], false, 0, vert);
+const shpFLIP_MS = [150, 90, 60];
+const shpFLIP = [F(shpTile(shpR9(9)), 420), ...shpHalf(false, false, false).map((b, i) => F(b, shpFLIP_MS[i])), F(shpEDGE(false), 50),
+  ...shpHalf(true, false, true).map((b, i) => F(b, shpFLIP_MS[2 - i])), F(shpTile(shpR9(9), true), 380),
+  ...shpHalf(true, true, false).map((b, i) => F(b, shpFLIP_MS[i])), F(shpEDGE(true), 50),
+  ...shpHalf(false, true, true).map((b, i) => F(b, shpFLIP_MS[2 - i]))];
+
+const OPTS_SP3 = {
+  spinner_spokes: Object.assign(seq(...shpSPOKES), { still: shpSpokes(0) }),
+  spinner_dotring: Object.assign(seq(...shpDOTRING), { still: shpDotRun(-2, 1) }),
+  spinner_trace: Object.assign(seq(...shpTRACE), { still: shpTrace(2, -3), trail: 0.8 }),
+  spinner_morph: Object.assign(seq(...shpMORPH), { still: shpMORPH[0].b }),
+  spinner_ripple: Object.assign(seq(...shpRIPPLE), { still: stamp([[6, 6, '#'], ...shpRING[3].map(([x, y]) => [x, y, '#']), ...shpRING[6].map(([x, y]) => [x, y, ':'])]) }),
+  spinner_equalizer: Object.assign(seq(...shpEQ), { still: shpBars([3, 6, 9, 13, 9, 6, 3], 3) }),
+  spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTile(shpR9(9)) }),
+};
+
 const SPRITES = {
   thinking: Object.assign(seq(...[0, 1, 2, 3, 4].map(k => F(bubbleWave(k), 125)), F(bubbleWave(5), 480)), { still: bubbleWave('all') }),
   reading: Object.assign(seq(F(readUpTo(0), 420), ...Array.from({ length: TEXT_CELLS.length - 1 }, (_, k) => F(readUpTo(k + 1), readMs(k + 1))), F(readUpTo(TEXT_CELLS.length), 700), ...TURN.map((c, i) => F(peelAt(c), TURN_MS[i])), F(peelAt(-11), 260)), { still: readUpTo(TEXT_CELLS.length) }),
@@ -1089,5 +1483,5 @@ const SPRITES = {
   calculating_keypad: restAtLongest(seq(...KEYPAD)),
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
-Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D);
+Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
