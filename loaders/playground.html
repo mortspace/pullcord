@@ -3,250 +3,199 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pixel Loaders Lab</title>
+<title>PixelLoader</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;680&display=swap">
 <style>
-/* Layout: a stage on the left (hero + frame strip + every state as a pill), a sticky control rail on the right; rail stacks under the stage on phones. */
+/* FeralUI docs register: one 640px column, quiet, typographic. Tokens and spacing follow LAYOUT-RULES.md. */
 :root {
-  --bg: #161618;
-  --surface: #1d1d20;
-  --surface-2: #26262a;
-  --line: rgba(255,255,255,.07);
-  --fg: #f2f2f4;
-  --muted: #8d8d96;
-  --dot: rgba(255,255,255,.06);
+  --bg: #101012;
+  --ink: #e8e8ea;
+  --muted: #9a9aa2;
+  --hairline: rgba(255, 255, 255, 0.1);
+  --code-bg: #18181c;
+  --surface: color-mix(in srgb, var(--ink) 6%, transparent);
+  --surface-hover: color-mix(in srgb, var(--ink) 10%, transparent);
   --pill: #000000;
-  --pill-line: rgba(255,255,255,.06);
-  --accent-l: .78; --accent-c: .19;
-  --glow-mul: 1;
-  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pill-line: rgba(255, 255, 255, 0.06);
   color-scheme: dark;
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
-    --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07); --pill: #ffffff; --pill-line: rgba(0,0,0,.1);
-    --accent-l: .55; --accent-c: .22; --glow-mul: .5; color-scheme: light;
-  }
+html[data-theme='light'] {
+  --bg: #f4f4f2;
+  --ink: #1a1a1c;
+  --muted: #6e6e76;
+  --hairline: rgba(0, 0, 0, 0.12);
+  --code-bg: #ffffff;
+  --surface: rgba(0, 0, 0, 0.045);
+  --surface-hover: rgba(0, 0, 0, 0.07);
+  --pill: #ffffff;
+  --pill-line: rgba(0, 0, 0, 0.1);
+  color-scheme: light;
 }
-:root[data-theme="light"] {
-  --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ededf0; --line: rgba(0,0,0,.08);
-  --fg: #141416; --muted: #6b6b75; --dot: rgba(0,0,0,.07); --pill: #ffffff; --pill-line: rgba(0,0,0,.1);
-  --accent-l: .55; --accent-c: .22; --glow-mul: .5; color-scheme: light;
-}
-:root[data-font="system"] { --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif; }
-/* iOS: system background, grouped-cell surfaces, SF Pro, no dot grid */
-:root[data-theme="ios"] {
-  --bg: #000000; --surface: #1c1c1e; --surface-2: #2c2c2e; --line: rgba(255,255,255,.08);
-  --fg: #ffffff; --muted: #8e8e93; --dot: transparent; --pill: #1c1c1e; --pill-line: transparent;
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-  --glow-mul: .45; color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-html, body { margin: 0; }
+* { box-sizing: border-box; scrollbar-width: thin; }
+html { background: var(--bg); }
 body {
-  background: var(--bg);
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
-  background-size: 18px 18px;
-  color: var(--fg);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
-  padding-block: 28px 64px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  -webkit-font-smoothing: antialiased;
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased; font-size: 15px; line-height: 1.65;
+  transition: background 0.25s ease, color 0.25s ease;
 }
-.wrap { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 32px; }
-@media (max-width: 880px) { .wrap { grid-template-columns: minmax(0,1fr); } }
+#root { overflow-x: clip; }
+.page {
+  display: flex; flex-direction: column; min-height: 100vh;
+  width: min(100vw, 640px); max-width: 640px; margin: 0 auto;
+  padding-block: 4.5rem 2.5rem;
+  padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  overflow-x: clip;
+}
+.masthead {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
+  margin: -4.5rem -1.5rem 2.5rem; padding: 1.5rem 1.5rem 1rem;
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+}
+.brand { display: inline-flex; align-items: baseline; gap: 0.5rem; text-decoration: none; color: var(--ink); }
+.brand h1 { margin: 0; font-size: 1.05rem; font-weight: 680; letter-spacing: -0.014em; }
+.brand .version { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; color: var(--muted); }
+.tagline { font-size: 1.05rem; line-height: 1.55; color: var(--ink); margin: 0 0 1rem; }
+.repo-link { margin: -0.6rem 0 1.2rem; font-size: 0.85rem; }
+.repo-link a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--hairline); }
+.repo-link a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+section { margin-bottom: 3rem; }
+h2 { font-size: 1.1rem; font-weight: 680; line-height: 1.3; letter-spacing: -0.014em; color: var(--ink); margin: 0 0 1rem; }
+p { margin: 0 0 1rem; color: var(--ink); }
+p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--hairline); border-radius: 4px; padding: 0.08em 0.35em; }
+.code { position: relative; background: var(--surface); border-radius: 16px; overflow: auto; margin-bottom: 2rem; }
+.code pre { margin: 0; padding: 1rem 1.2rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; line-height: 1.6; color: var(--ink); }
+.props { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.props th { text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 0.75rem 0.5rem 0; border-bottom: 1px solid var(--hairline); }
+.props td { padding: 0.55rem 0.75rem 0.55rem 0; border-bottom: 1px solid var(--hairline); vertical-align: top; color: var(--ink); }
+.props td.k { color: var(--muted); }
+.tbl { overflow-x: auto; }
 
-header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; }
-header h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
-header p { margin: 0; color: var(--muted); max-width: 62ch; }
+/* segmented control and switch, the shared primitives */
+.seg { position: relative; display: inline-flex; align-items: stretch; padding: 3px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 6%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); }
+.seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; border-radius: 9px; background: color-mix(in srgb, var(--ink) 16%, transparent); box-shadow: 0 1px 2px rgba(0,0,0,.35), inset 0 0 0 .5px color-mix(in srgb, var(--ink) 22%, transparent); pointer-events: none; transition: transform .34s cubic-bezier(.32,.72,0,1), width .34s cubic-bezier(.32,.72,0,1); }
+.seg-item { position: relative; z-index: 1; border: 0; background: transparent; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; line-height: 1; color: var(--muted); padding: 6px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap; transition: color .2s ease, transform .12s ease; user-select: none; }
+.seg-item[data-active='true'] { color: var(--ink); }
+.seg-item:active { transform: scale(.94); }
+.seg-item:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.ui-switch { display: inline-flex; align-items: center; gap: 0.6rem; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 0.84rem; cursor: pointer; padding: 0; }
+.ui-switch-track { position: relative; width: 36px; height: 22px; border-radius: 11px; background: color-mix(in srgb, var(--ink) 14%, transparent); transition: background .2s ease; }
+.ui-switch[aria-checked='true'] .ui-switch-track { background: var(--ink); }
+.ui-switch-knob { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transition: transform .25s cubic-bezier(.32,.72,0,1), background .2s ease; }
+.ui-switch[aria-checked='true'] .ui-switch-knob { transform: translateX(14px); background: var(--bg); }
+.ui-switch:focus-visible .ui-switch-track { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .seg-thumb, .ui-switch-knob { transition: none; } }
 
-.stage { min-width: 0; display: grid; gap: 28px; align-content: start; }
-.stage > section { min-width: 0; }
-section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
-
-.hero > * { min-width: 0; }
-.hero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 36px 28px 28px; display: grid; gap: 22px; }
-.hero-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-.hero-row .v { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 100%; min-width: 0; }
-.hero-row .v em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; }
-.ruling { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; display: grid; gap: 14px; }
-.ruling p { margin: 0; color: var(--muted); max-width: 72ch; }
-.ruling > * { min-width: 0; }
-.ruling .tbl { overflow-x: auto; }
-.ruling table { border-collapse: collapse; font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
-.ruling th, .ruling td { text-align: left; padding: 7px 14px 7px 0; border-bottom: 1px solid var(--line); font-weight: 500; }
-.ruling th { color: var(--muted); font-weight: 500; }
-.ruling td.k { color: var(--muted); }
-.ruling ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 4px; }
-.ruling ul b { color: var(--fg); font-weight: 500; }
-.hero-meta { color: var(--muted); font-family: var(--font-mono); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
-.hero-meta b { color: var(--fg); font-weight: 500; }
-.hero-idea { margin: 0; color: var(--muted); max-width: 70ch; }
-
-.strip { display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: thin; }
-.strip .f { flex: 0 0 auto; display: grid; justify-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
-.strip .f .loader { width: 38px; height: 38px; }
+/* demo */
+.pl-variants { display: flex; justify-content: center; margin: 0.25rem 0 1.5rem; }
+.pl-group { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.5rem; }
+.pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 272px), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.pl-grid:last-child { margin-bottom: 0; }
 
 /* Ruling: every dimension of a button derives from the glyph size G (--g). */
 .pill {
-  --g: 48px;
-  display: inline-flex; align-items: center; box-sizing: border-box;
-  gap: calc(var(--g) * .4);
-  height: calc(var(--g) * 1.6);
+  --g: 32px;
+  display: inline-flex; align-items: center; box-sizing: border-box; max-width: 100%; min-width: 0;
+  gap: calc(var(--g) * .4); height: calc(var(--g) * 1.6);
   padding: 0 calc(var(--g) * .6) 0 calc(var(--g) * .45);
   border-radius: calc(var(--g) * .5);
   font-size: calc(var(--g) * .52); font-weight: 600; letter-spacing: -.015em; line-height: 1;
-  background: var(--pill); border: 1px solid var(--pill-line); color: var(--fg);
-  max-width: 100%;
+  background: var(--pill); border: 1px solid var(--pill-line); color: var(--ink);
 }
 .pill.fixed { width: min(calc(var(--g) * 8.5), 100%); }
 .pill .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.pill .loader { --s: var(--g); }
-.loader { display: inline-block; vertical-align: middle; width: var(--s, 20px); height: var(--s, 20px); flex: 0 0 auto; }
+.loader { display: inline-block; vertical-align: middle; width: var(--s, var(--g, 32px)); height: var(--s, var(--g, 32px)); flex: 0 0 auto; }
 .loader svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .loader.still svg { animation: breathe 2.8s ease-in-out infinite; }
 @keyframes breathe { 0%,100% { opacity: .75 } 50% { opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { .loader.still svg { animation: none; } }
 
-.states { display: flex; flex-wrap: wrap; gap: 14px 10px; align-items: flex-start; }
-.state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; min-width: 0; }
-.pair { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; min-width: 0; width: 100%; }
-.pair .v { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; min-width: 0; }
-.pair .v em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
-.state:hover { border-color: var(--line); }
-.state.sel { border-color: color-mix(in srgb, var(--accent, hsl(var(--h) 90% 55%)) 55%, transparent); background: var(--surface-2); }
-.state:focus-visible { outline: 2px solid var(--accent, hsl(var(--h) 90% 55%)); outline-offset: 2px; }
-.state small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-.state small i { font-style: normal; display: inline-flex; align-items: center; gap: 5px; }
-.state small i::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--accent, hsl(var(--h) 100% 56%)); }
-.group-title { flex-basis: 100%; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
-
-.contexts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.ctx { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
-.ctx h3 { margin: 0; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.ctx p { margin: 0; font-size: 15px; line-height: 1.6; }
-.ctx .inline-l { --s: 1.2em; margin: 0 .25em; position: relative; top: -.06em; }
-.ctx .card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: var(--pill); border: 1px solid var(--pill-line); }
-.ctx .card .t { font-weight: 600; font-size: 15px; }
-.ctx .card .d { color: var(--muted); font-size: 12.5px; }
-.ctx .bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.ctx .bar i { display: block; height: 100%; width: 38%; background: var(--accent, hsl(var(--h) 100% 56%)); }
-
-.rail { position: sticky; top: 16px; align-self: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 14px; display: grid; gap: 14px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
-@media (max-width: 880px) { .rail { position: static; max-height: none; } }
-.rail h2 { margin: 0; }
-.ctl { display: grid; gap: 6px; }
-.ctl label, .ctl .lab { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
-.ctl label output, .ctl .lab output { font-family: var(--font-mono); color: var(--fg); }
-.seg { display: flex; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
-.seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; padding: 6px 4px; border-radius: 7px; cursor: pointer; }
-.seg button.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
-.seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
-input[type=range] { width: 100%; accent-color: hsl(var(--h, 268) 90% 60%); margin: 0; }
-.rail .note { font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.45; }
-.rail .copy { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 12px; font-weight: 500; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
-.rail .copy:focus-visible { outline: 2px solid var(--fg); }
-details.tokens pre { margin: 8px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; background: var(--surface-2); padding: 10px; border-radius: 9px; overflow-x: auto; }
-details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+/* knobs */
+.controls { display: grid; gap: 1rem; margin-top: 1.2rem; }
+.row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.row .name { flex: none; width: 6.4rem; font-size: 0.84rem; color: var(--ink); }
+.knobs { display: grid; gap: 0.9rem; margin-top: 1.2rem; }
+.knob { display: flex; align-items: center; gap: 0.8rem; }
+.knob .name { flex: none; width: 6.4rem; font-size: 0.84rem; color: var(--ink); }
+.knob input[type=range] { flex: 1; min-width: 0; accent-color: var(--ink); margin: 0; }
+.knob output { flex: none; width: 3.2rem; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; color: var(--muted); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Pixel Loaders Lab</h1>
-    <p>Every icon is hand-drawn pixel art on a 9×9 grid, with strings running cell to cell along its outline. Each loop gathers the pixels in from the edge, stitches them, snaps the icon together, brings it alive for a moment, and lets it go. Click a state to inspect it, tune the rail, copy the tokens.</p>
+<div id="root"><div class="page">
+  <header class="masthead">
+    <a class="brand" href="https://feralui.vercel.app/"><h1>FeralUI</h1><span class="version">v0.1.1</span></a>
+    <button type="button" class="ui-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Light theme"><span>Light</span><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button>
   </header>
 
-  <div class="stage">
-    <section>
-      <div class="hero" id="hero">
-        <div class="hero-row">
-          <div class="v"><em>B · PIXELS ONLY</em><div class="pill fixed" id="heroPillB" style="--g: 32px"><span class="loader" id="heroLoaderB"></span><span class="lbl" id="heroLabelB">Thinking</span></div></div>
-          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 32px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
-        </div>
-        <p class="hero-idea" id="heroIdea"></p>
-        <div class="hero-meta" id="heroMeta"></div>
-        <div>
-          <h2>Across one loop</h2>
-          <div class="strip" id="strip"></div>
-        </div>
-      </div>
-    </section>
+  <p class="tagline">Loading states that say what is happening. Each one is a hand-drawn 9×9 pixel sprite on a ruled black button: a heart that beats, a hammer that strikes, a page that fills. Every loop is continuous.</p>
+  <div class="pl-variants"><div class="seg" data-set="palette" role="group" aria-label="Palette"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button></div></div>
+  <p class="repo-link"><a href="https://github.com/mortspace/pullcord" target="_blank" rel="noreferrer">GitHub</a></p>
 
-    <section>
-      <h2>Ruling</h2>
-      <div class="ruling">
-        <p>One number rules a button: the glyph size G. Everything else is a fixed multiple of it, so every button in a tier is the same height, radius and width, and the label sits in the same place.</p>
-        <div class="tbl"><table id="rulingTable"></table></div>
-        <ul>
-          <li><b>Grid.</b> Art is always 9×9 cells. Cell pitch is G ÷ 9, the gap is 26% of a cell, cell radius is 15% of a cell. Bigger grids only add padding around the same art.</li>
-          <li><b>Glyph.</b> A G×G box, flush left inside the button, vertically centered.</li>
-          <li><b>Label.</b> Inter 600, size 0.52 G, line-height 1, letter-spacing −1.5%, left-aligned, vertically centered on the glyph. One line; it never wraps.</li>
-          <li><b>Button.</b> Height 1.6 G. Left padding 0.45 G, gap to label 0.4 G, right padding 0.6 G. Radius 0.5 G. Width is fixed at 8.5 G so a row of buttons lines up and a 22-character label fits; switch to Fit for natural width.</li>
-          <li><b>Loop.</b> Every loader loops continuously: the last frame flows into the first with no blank reset. Done is the one exception in a product, where it stops on the check.</li>
-          <li><b>Color.</b> Three stops per hue: bed at 16% alpha, lit at full saturation, white-hot. Button fill is pure black in dark mode and pure white in light mode.</li>
-        </ul>
-      </div>
-    </section>
+  <div class="code"><pre>npm install pixel-loader</pre></div>
 
-    <section>
-      <h2>States</h2>
-      <div class="states" id="states"></div>
-    </section>
+  <section>
+    <h2>States</h2>
+    <p>Eighteen states in four families. Hover one to read its color and loop time.</p>
+    <div id="states"></div>
+  </section>
 
-    <section>
-      <h2>In context</h2>
-      <div class="contexts">
-        <div class="ctx" id="ctxInline">
-          <h3>Inline, G = 1.2em</h3>
-          <p>Your results will be ready in a moment. We are<span class="loader inline-l" data-grid="9" data-state="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-grid="9" data-state="reading"></span>reading the attached report.</p>
-        </div>
-        <div class="ctx" id="ctxCard">
-          <h3>Card, G = 36</h3>
-          <div class="card"><span class="loader" data-grid="9" data-state="heartbeat" style="--s: 36px"></span><div><div class="t">Reading your heartbeat</div><div class="d">Hold still for a few seconds</div></div></div>
-          <div class="bar" style="--h: 352"><i></i></div>
-        </div>
-        <div class="ctx" id="ctxStack">
-          <h3>Steps, G = 24</h3>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="reading" style="--s: 22px"></span><div class="t" style="font-size:14px">Reading docs</div></div>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="building" style="--s: 24px"></span><div class="t" style="font-size:14px">Building</div></div>
-          <div class="card" style="padding: 10px 14px"><span class="loader" data-grid="9" data-state="done" style="--s: 24px"></span><div class="t" style="font-size:14px">Done</div></div>
-        </div>
-      </div>
-    </section>
-  </div>
+  <section>
+    <h2>Make it yours</h2>
+    <p>These drive every loader on this page live.</p>
+    <div class="controls">
+      <div class="row"><span class="name">Color</span><div class="seg" data-set="hueMode" role="group" aria-label="Color"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="state">Per state</button><button type="button" class="seg-item" data-v="brand">One tint</button></div></div>
+      <div class="row"><span class="name">Size</span><div class="seg" data-set="size" role="group" aria-label="Size"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="24">S 24</button><button type="button" class="seg-item" data-v="32">M 32</button><button type="button" class="seg-item" data-v="48">L 48</button><button type="button" class="seg-item" data-v="64">XL 64</button></div></div>
+      <div class="row"><span class="name">Width</span><div class="seg" data-set="width" role="group" aria-label="Width"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="fixed">Fixed 8.5G</button><button type="button" class="seg-item" data-v="fit">Fit</button></div></div>
+      <div class="row"><span class="name">Motion</span><div class="seg" data-set="motion" role="group" aria-label="Motion"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="on">Animated</button><button type="button" class="seg-item" data-v="reduced">Still</button></div></div>
+      <div class="row"><span class="name">White-hot</span><button type="button" class="ui-switch" id="hotSwitch" role="switch" aria-checked="true" aria-label="White-hot pixels"><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button></div>
+    </div>
+    <div class="knobs">
+      <label class="knob"><span class="name">Trail</span><input type="range" id="decay" min="60" max="600" step="10" value="140"><output id="decayOut">140 ms</output></label>
+      <label class="knob"><span class="name">Bloom</span><input type="range" id="glow" min="0" max="1" step="0.05" value="0.75"><output id="glowOut">0.75</output></label>
+      <label class="knob"><span class="name">Bed</span><input type="range" id="bed" min="0" max="0.4" step="0.01" value="0.16"><output id="bedOut">0.16</output></label>
+      <label class="knob"><span class="name">Brand hue</span><input type="range" id="brandHue" min="0" max="360" step="1" value="250"><output id="brandHueOut">250</output></label>
+    </div>
+  </section>
 
-  <aside class="rail" aria-label="Controls">
-    <h2>Controls</h2>
-    <div class="ctl"><span class="lab">Theme</span><div class="seg" data-set="theme"><button data-v="system">System</button><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="ios">iOS</button></div></div>
-    <div class="ctl"><span class="lab">Label font</span><div class="seg" data-set="font"><button data-v="inter">Inter</button><button data-v="system">System</button></div></div>
-    <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
-    <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
-    <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="9">9×9</button><button data-v="11">11×11</button><button data-v="13">13×13</button></div></div>
-    <div class="ctl"><span class="lab">Variant</span><div class="seg" data-set="variant"><button data-v="pixels">B pixels</button><button data-v="strings">A strings</button><button data-v="both">Both</button></div></div>
-    <div class="ctl"><span class="lab">White-hot pixels</span><div class="seg" data-set="hot"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
-    <div class="ctl"><span class="lab">Size (G)</span><div class="seg" data-set="size"><button data-v="24">S 24</button><button data-v="32">M 32</button><button data-v="48">L 48</button><button data-v="64">XL 64</button></div></div>
-    <div class="ctl"><span class="lab">Button width</span><div class="seg" data-set="width"><button data-v="fixed">Fixed 8.5G</button><button data-v="fit">Fit</button></div></div>
-    <div class="ctl"><span class="lab">Palette</span><div class="seg" data-set="levels"><button data-v="2">3 colors</button><button data-v="3">4</button><button data-v="4">5</button><button data-v="0">Smooth</button></div></div>
-    <div class="ctl"><label for="step">Time step <output id="stepOut">smooth</output></label><input type="range" id="step" min="0" max="240" step="10" value="0"></div>
-    <div class="ctl"><label for="rise">Rise <output id="riseMsOut">30 ms</output></label><input type="range" id="rise" min="10" max="300" step="10" value="30"></div>
-    <div class="ctl"><label for="decay">Trail <output id="decayOut">140 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="140"></div>
-    <div class="ctl"><label for="glow">Bloom <output id="glowOut">0.75</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.75"></div>
-    <div class="ctl"><label for="bed">Bed <output id="bedOut">0.16</output></label><input type="range" id="bed" min="0" max="0.5" step="0.01" value="0.16"></div>
-    <div class="ctl"><span class="lab">Motion</span><div class="seg" data-set="motion"><button data-v="on">Animated</button><button data-v="reduced">Reduced</button></div></div>
-    <button class="copy" id="copyBtn">Copy tokens as JSON</button>
-    <details class="tokens"><summary>Current tokens</summary><pre id="tokensPre"></pre></details>
-    <p class="note">Reduced motion freezes each state at its most recognizable moment and breathes the whole glyph slowly.</p>
-  </aside>
-</div>
+  <section>
+    <h2>Sizing</h2>
+    <p>One number rules a button: the glyph size G. Cell pitch is G ÷ 9, the label is 0.52 G, the button is 1.6 G tall with a 0.5 G radius and a fixed width of 8.5 G, so every button in a tier is the same box and the label sits in the same place. The art is always 9×9.</p>
+    <div class="tbl"><table class="props" id="rulingTable"></table></div>
+  </section>
+
+  <section>
+    <h2>Usage</h2>
+    <p>One component, one prop that names the state. Color follows the state unless you pass a tint. <code>done</code> and <code>error</code> stop on their final frame.</p>
+    <div class="code"><pre>import { PixelLoader } from 'pixel-loader'
+import 'pixel-loader/pixel-loader.css'
+
+&lt;PixelLoader state="heartbeat" size={32} label="Reading your heartbeat" /&gt;
+&lt;PixelLoader state="done" size={32} label="Done" /&gt;
+&lt;PixelLoader state="building" palette="ios" tint="systemBlue" /&gt;</pre></div>
+  </section>
+
+  <section>
+    <h2>Props</h2>
+    <table class="props">
+      <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>state</code></td><td><code>StateName</code></td><td><code>'thinking'</code></td><td>Which sprite to play. One of the eighteen below.</td></tr>
+        <tr><td><code>label</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Text beside the glyph. Omit it for a bare glyph.</td></tr>
+        <tr><td><code>size</code></td><td><code>24 | 32 | 48 | 64</code></td><td><code>32</code></td><td>Glyph size G. Everything else derives from it.</td></tr>
+        <tr><td><code>palette</code></td><td><code>'vivid' | 'ios'</code></td><td><code>'vivid'</code></td><td>Saturated hues, or Apple system colors.</td></tr>
+        <tr><td><code>tint</code></td><td><code>number | string</code></td><td><code>undefined</code></td><td>One color for every in-progress state. Done and error keep theirs.</td></tr>
+        <tr><td><code>width</code></td><td><code>'fixed' | 'fit'</code></td><td><code>'fixed'</code></td><td>Fixed 8.5 G so rows line up, or natural width.</td></tr>
+        <tr><td><code>trail</code></td><td><code>number</code></td><td><code>140</code></td><td>Milliseconds a lit cell takes to cool. Smooths motion between frames.</td></tr>
+        <tr><td><code>bloom</code></td><td><code>number</code></td><td><code>0.75</code></td><td>Glow behind lit cells, 0 to 1.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div></div>
 
 <script>
 (() => {
@@ -254,7 +203,7 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 
 /* ---------- settings ---------- */
 const S = {
-  theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
+  theme: 'dark', palette: 'vivid', hueMode: 'state', brandHue: 250,
   grid: 9, size: 32, levels: 2, step: 0, rise: 30, decay: 140, glow: 0.75, bed: 0.16,
   variant: 'pixels', hot: 'on', width: 'fixed', motion: 'on',
 };
@@ -661,7 +610,7 @@ function ramp(hue, light) {
   rampCache.set(key, r); return r;
 }
 /* iOS system colors (dark surface values) and how each state maps onto them */
-const IOS = { blue: '#0A84FF', green: '#30D158', red: '#FF453A', orange: '#FF9F0A', yellow: '#FFD60A', pink: '#FF375F', purple: '#BF5AF2', teal: '#40C8E0', indigo: '#5E5CE6', mint: '#63E6E2' };
+const IOS = { blue: ['#0A84FF', '#007AFF'], green: ['#30D158', '#34C759'], red: ['#FF453A', '#FF3B30'], orange: ['#FF9F0A', '#FF9500'], yellow: ['#FFD60A', '#FFCC00'], pink: ['#FF375F', '#FF2D55'], purple: ['#BF5AF2', '#AF52DE'], teal: ['#40C8E0', '#30B0C7'], indigo: ['#5E5CE6', '#5856D6'], mint: ['#63E6E2', '#00C7BE'] };
 const IOS_MAP = { thinking: 'purple', reading: 'blue', analyzing: 'blue', searching: 'blue', generating: 'purple', writing: 'blue', syncing: 'teal', connecting: 'teal', uploading: 'indigo', downloading: 'indigo', done: 'green', error: 'red', building: 'orange', debugging: 'yellow', heartbeat: 'pink', scanning: 'purple', breathing: 'mint', calculating: 'blue' };
 const iosName = id => (S.hueMode === 'brand' && id !== 'done' && id !== 'error') ? 'blue' : IOS_MAP[id];
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -677,7 +626,7 @@ function rampHex(hex) {
   const out = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
   rampCache.set(key, out); return out;
 }
-const isLight = () => getComputedStyle(document.documentElement).colorScheme.includes('light');
+const isLight = () => document.documentElement.dataset.theme === 'light';
 
 /* ---------- matrix renderer ---------- */
 const NS = 'http://www.w3.org/2000/svg';
@@ -722,10 +671,10 @@ class Matrix {
   applyHue() {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
-    this.accent = S.theme === 'ios' ? IOS[iosName(this.stateId)] : null;
+    this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][isLight() ? 1 : 0] : null;
     this.accentCss = this.accent || `hsl(${hue} 100% 56%)`;
   }
-  get swatch() { return S.theme === 'ios' ? iosName(this.stateId) + ' ' + IOS[iosName(this.stateId)] : `${byId[this.stateId].hueName} ${this.hue}`; }
+  get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
   set(stateId, N) { this.stateId = stateId; this.N = N; this.build(); }
   get period() { return (this.variant === 'pixels' && this.state.sprite) ? this.state.sprite.period : this.state.period; }
   scene(t) {
@@ -745,7 +694,7 @@ class Matrix {
   paint(o) {
     const light = isLight(), rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
-    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.theme === 'ios' ? 0.45 : 1);
+    const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1);
     for (let i = 0; i < buf.length; i++) {
       let v = buf[i]; if (S.hot === 'off' && v > 0.66) v = 0.66; if (lv) v = Math.round(v / 1.3 * lv) / lv * 1.3;
       const idx = Math.round(v / 1.3 * (RAMP_N - 1));
@@ -777,137 +726,61 @@ class Matrix {
 
 /* ---------- page wiring ---------- */
 ensureFilters();
-let selected = 'thinking';
 const $ = id => document.getElementById(id);
-const heroLoader = new Matrix($('heroLoader'), selected, S.grid, { variant: 'strings' });
-const heroLoaderB = new Matrix($('heroLoaderB'), selected, S.grid, { variant: 'pixels' });
 const stateEls = {};
-const stripMats = [];
-
-function captionFor(id, m) { const st = byId[id], per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period); const sw = m ? m.swatch : `${st.hueName} ${st.hue}`; return `<i>${sw}</i><span>${per.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
+const GROUPS = [...new Set(STATES.map(s => s.group))];
 function buildStates() {
   const root = $('states');
-  for (const id in stateEls) for (const m of stateEls[id].ms) m.destroy();
+  for (const id in stateEls) stateEls[id].m.destroy();
   for (const k in stateEls) delete stateEls[k];
   root.innerHTML = '';
-  const variants = S.variant === 'both' ? ['strings', 'pixels'] : [S.variant];
-  let group = null;
-  for (const st of STATES) {
-    if (st.group !== group) { group = st.group; const g = document.createElement('div'); g.className = 'group-title'; g.textContent = group; root.appendChild(g); }
-    const b = document.createElement('button'); b.className = 'state'; b.type = 'button'; b.dataset.id = st.id;
-    const pair = document.createElement('div'); pair.className = 'pair';
-    const ms = [], pills = [];
-    for (const v of variants) {
-      const wrap = document.createElement('div'); wrap.className = 'v';
-      if (variants.length > 1) { const em = document.createElement('em'); em.textContent = v === 'strings' ? 'A' : 'B'; wrap.appendChild(em); }
-      const pill = document.createElement('span'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
+  for (const g of GROUPS) {
+    const h = document.createElement('p'); h.className = 'pl-group'; h.textContent = g; root.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'pl-grid'; root.appendChild(grid);
+    for (const st of STATES.filter(s => s.group === g)) {
+      const pill = document.createElement('div'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
       const l = document.createElement('span'); l.className = 'loader';
       const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
-      pill.append(l, lbl); wrap.appendChild(pill); pair.appendChild(wrap);
-      const m = new Matrix(l, st.id, S.grid, { variant: v }); ms.push(m); pills.push(pill);
-      pill.style.setProperty('--h', m.hue); pill.style.setProperty('--accent', m.accentCss);
+      pill.append(l, lbl); grid.appendChild(pill);
+      const m = new Matrix(l, st.id, S.grid, { variant: 'pixels' });
+      stateEls[st.id] = { pill, m };
     }
-    const small = document.createElement('small'); small.innerHTML = captionFor(st.id, ms[0]);
-    b.append(pair, small);
-    b.style.setProperty('--h', ms[0].hue); b.style.setProperty('--accent', ms[0].accentCss);
-    b.addEventListener('click', () => select(st.id));
-    root.appendChild(b);
-    stateEls[st.id] = { b, ms, pills, small };
   }
-  markSelected();
 }
 function rulingHtml() {
-  const tiers = [['S', 24], ['M', 32], ['L', 48], ['XL', 64]];
-  const r = (v) => Math.round(v * 10) / 10;
-  const rows = [
-    ['Glyph G', g => g + ' px'], ['Cell pitch', g => r(g / 9) + ' px'], ['Cell', g => r(g / 9 * (CELL / PITCH)) + ' px'], ['Gap', g => r(g / 9 * (GAP / PITCH)) + ' px'],
-    ['Label size', g => r(g * .52) + ' px'], ['Button height', g => r(g * 1.6) + ' px'], ['Pad left', g => r(g * .45) + ' px'], ['Glyph → label', g => r(g * .4) + ' px'], ['Pad right', g => r(g * .6) + ' px'],
-    ['Radius', g => r(g * .5) + ' px'], ['Width (fixed)', g => r(g * 8.5) + ' px'], ['Use', g => ({ 24: 'inline status, lists', 32: 'cards, toasts', 48: 'panels, empty states', 64: 'hero, full-screen' })[g]],
-  ];
+  const tiers = [['S', 24], ['M', 32], ['L', 48], ['XL', 64]], r = v => Math.round(v * 10) / 10;
+  const rows = [['Glyph G', g => g + ' px'], ['Cell pitch', g => r(g / 9) + ' px'], ['Label size', g => r(g * .52) + ' px'], ['Button height', g => r(g * 1.6) + ' px'], ['Pad left', g => r(g * .45) + ' px'], ['Glyph to label', g => r(g * .4) + ' px'], ['Pad right', g => r(g * .6) + ' px'], ['Radius', g => r(g * .5) + ' px'], ['Width', g => r(g * 8.5) + ' px'], ['Use', g => ({ 24: 'inline, lists', 32: 'cards, toasts', 48: 'panels', 64: 'hero' })[g]]];
   return '<tr><th></th>' + tiers.map(t => `<th>${t[0]}</th>`).join('') + '</tr>' + rows.map(([k, f]) => `<tr><td class="k">${k}</td>` + tiers.map(t => `<td>${f(t[1])}</td>`).join('') + '</tr>').join('');
 }
-function markSelected() { for (const id in stateEls) stateEls[id].b.classList.toggle('sel', id === selected); }
-
-function renderHero() {
-  const st = byId[selected];
-  $('heroLabel').textContent = st.label; $('heroLabelB').textContent = st.label;
-  $('heroIdea').textContent = st.idea;
-  $('heroPill').style.setProperty('--h', heroLoader.hue); $('heroPillB').style.setProperty('--h', heroLoaderB.hue); $('heroPill').style.setProperty('--accent', heroLoader.accentCss); $('heroPillB').style.setProperty('--accent', heroLoaderB.accentCss);
-  const per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period);
-  $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>color <b>${heroLoaderB.swatch}</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${per.toFixed(1)} s</b></span>${st.sprite && S.variant !== 'strings' ? `<span>frames <b>${st.sprite.frames.length}</b></span>` : ''}<span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
-  const strip = $('strip'); strip.innerHTML = ''; stripMats.length = 0;
-  const K = 14;
-  for (let k = 0; k < K; k++) {
-    const d = document.createElement('div'); d.className = 'f';
-    const box = document.createElement('span'); box.className = 'loader'; d.appendChild(box);
-    const n = document.createElement('span'); n.textContent = ((S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period)) * k / K).toFixed(1) + 's'; d.appendChild(n);
-    strip.appendChild(d);
-    const m = new Matrix(box, selected, S.grid, { static: true, variant: S.variant === 'strings' ? 'strings' : 'pixels' }); m.snapshot(m.period * k / K); stripMats.push(m);
+function placeThumbs() {
+  for (const seg of document.querySelectorAll('.seg')) {
+    const active = seg.querySelector('[data-active="true"]'), thumb = seg.querySelector('.seg-thumb');
+    if (active && thumb) { thumb.style.transform = `translateX(${active.offsetLeft}px)`; thumb.style.width = active.offsetWidth + 'px'; thumb.style.opacity = 1; }
   }
 }
-function select(id) { selected = id; heroLoader.set(id, S.grid); heroLoaderB.set(id, S.grid); renderHero(); markSelected(); }
-
-const ctxMats = [];
-for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid, { variant: 'pixels' }));
-function syncCtxAccent() { for (const m of ctxMats) m.el.closest('.ctx').style.setProperty('--accent', m.accentCss); }
-
 function applyAll() {
-  if (S.theme === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = S.theme;
-  $('brandHueOut').textContent = S.theme === 'ios' ? 'systemBlue' : S.brandHue; $('brandHue').disabled = S.theme === 'ios';
-  document.documentElement.dataset.font = S.font;
-  $('brandCtl').hidden = S.hueMode !== 'brand';
+  document.documentElement.dataset.theme = S.theme;
+  $('themeSwitch').setAttribute('aria-checked', S.theme === 'light');
+  $('hotSwitch').setAttribute('aria-checked', S.hot === 'on');
   rampCache.clear();
-  for (const m of live) m.applyHue();
-  syncCtxAccent();
-  const reduced = S.motion === 'reduced';
-  for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.variant === 'pixels' && m.state.sprite ? restTime(m.state.sprite) : m.state.still); }
-  for (const id in stateEls) { const { b, ms, pills, small } = stateEls[id]; pills.forEach((pill, i) => { pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.style.setProperty('--h', ms[i].hue); pill.style.setProperty('--accent', ms[i].accentCss); }); b.style.setProperty('--h', ms[0].hue); b.style.setProperty('--accent', ms[0].accentCss); small.innerHTML = captionFor(id, ms[0]); }
-  for (const id of ['heroPill', 'heroPillB']) $(id).classList.toggle('fixed', S.width === 'fixed');
+  for (const m of live) { m.applyHue(); m.el.classList.toggle('still', S.motion === 'reduced'); if (S.motion === 'reduced') m.snapshot(restTime(m.state.sprite)); }
+  for (const id in stateEls) { const { pill, m } = stateEls[id]; pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.title = `${m.swatch} · ${m.period.toFixed(1)} s loop${m.state.oneShot ? ' · stops on the last frame' : ''}`; }
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = String(S[seg.dataset.set]) === b.dataset.v;
+  $('brandHue').disabled = S.palette === 'ios'; $('brandHueOut').textContent = S.palette === 'ios' ? 'systemBlue' : S.brandHue;
   $('rulingTable').innerHTML = rulingHtml();
-  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.classList.toggle('on', String(S[seg.dataset.set]) === b.dataset.v);
-  renderHero();
-  $('tokensPre').textContent = tokensJson();
+  placeThumbs();
 }
-function regrid() { heroLoader.set(selected, S.grid); heroLoaderB.set(selected, S.grid); buildStates(); }
-for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const key = seg.dataset.set, v = b.dataset.v; S[key] = isNaN(+v) ? v : +v;
-  if (key === 'grid') regrid();
-  if (key === 'variant') buildStates();
-  applyAll();
-});
-const ranges = { brandHue: ['brandHueOut', v => v], step: ['stepOut', v => +v ? v + ' ms' : 'smooth'], rise: ['riseMsOut', v => v + ' ms'], decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)] };
+for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => { const b = e.target.closest('.seg-item'); if (!b) return; const v = b.dataset.v; S[seg.dataset.set] = isNaN(+v) ? v : +v; applyAll(); });
+$('themeSwitch').addEventListener('click', () => { S.theme = S.theme === 'light' ? 'dark' : 'light'; applyAll(); });
+$('hotSwitch').addEventListener('click', () => { S.hot = S.hot === 'on' ? 'off' : 'on'; applyAll(); });
+const ranges = { decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)], brandHue: ['brandHueOut', v => v] };
 for (const id in ranges) $(id).addEventListener('input', e => { S[id] = +e.target.value; $(ranges[id][0]).textContent = ranges[id][1](e.target.value); applyAll(); });
-
-function tokensJson() {
-  return JSON.stringify({
-    grid: { cells: S.grid, cellUnits: CELL, gapUnits: GAP, radiusUnits: 0.55 },
-    ruling: { G: S.size, cellPitch: 'G/9', gapOfCell: 0.26, cellRadiusOfCell: 0.15, labelSize: '0.52G', labelWeight: 600, labelLetterSpacing: '-0.015em', buttonHeight: '1.6G', padLeft: '0.45G', glyphToLabel: '0.4G', padRight: '0.6G', radius: '0.5G', width: S.width === 'fixed' ? '8.5G' : 'fit', tiers: { S: 24, M: 32, L: 48, XL: 64 } },
-    variant: S.variant, whiteHot: S.hot === 'on',
-    render: { artGrid: ART, pixels: 'hand-drawn cells', strings: 'vector lines between consecutive path cells', palette: S.levels ? S.levels + 1 + ' colors' : 'smooth', timeStepMs: S.step || 'smooth' },
-    ramp: { space: 'hsl', dark: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 56%)', hot: 'hsl(h 100% 97%)' }, light: { bed: 'hsl(h 85% 50% / bed)', lit: 'hsl(h 100% 46%)', hot: 'hsl(h 100% 22%)' }, bed: S.bed },
-    color: S.theme === 'ios' ? { theme: 'ios', hueMode: S.hueMode, system: IOS, stateColors: Object.fromEntries(STATES.map(s => [s.id, iosName(s.id)])) } : { hueMode: S.hueMode, brandHue: S.brandHue, stateHues: Object.fromEntries(STATES.map(s => [s.id, s.hue])) },
-    motion: { riseMs: S.rise, trailMs: S.decay, trailMul: Object.fromEntries(STATES.filter(s => s.decayMul).map(s => [s.id, s.decayMul])), periodS: Object.fromEntries(STATES.map(s => [s.id, s.period])) },
-    glow: { bloom: S.glow, bloomBlurUnits: 2.6, edgeBlurUnits: 1.1, edgeWidthUnits: 0.3 },
-    type: { family: S.font === 'inter' ? 'Inter' : 'system-ui', weight: 600, letterSpacing: '-0.01em' },
-  }, null, 2);
-}
-$('copyBtn').addEventListener('click', async () => {
-  const txt = tokensJson(); const b = $('copyBtn');
-  try { await navigator.clipboard.writeText(txt); b.textContent = 'Copied'; }
-  catch { const pre = $('tokensPre'); pre.closest('details').open = true; const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Select and copy below'; }
-  setTimeout(() => b.textContent = 'Copy tokens as JSON', 1600);
-});
-matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyAll);
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) S.motion = 'reduced';
-
+if (matchMedia('(prefers-color-scheme: light)').matches) S.theme = 'light';
 buildStates();
 applyAll();
-
-function loop(now) {
-  if (S.motion !== 'reduced') for (const m of live) m.tick(now);
-  requestAnimationFrame(loop);
-}
+addEventListener('resize', placeThumbs);
+function loop(now) { if (S.motion !== 'reduced') for (const m of live) m.tick(now); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 })();
 </script>
