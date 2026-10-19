@@ -68,10 +68,11 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .hero > * { min-width: 0; }
 .hero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 36px 28px 28px; display: grid; gap: 22px; }
 .hero-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-.hero-row .v { display: grid; gap: 8px; max-width: 100%; min-width: 0; }
+.hero-row .v { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 100%; min-width: 0; }
 .hero-row .v em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; }
 .ruling { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; display: grid; gap: 14px; }
 .ruling p { margin: 0; color: var(--muted); max-width: 72ch; }
+.ruling > * { min-width: 0; }
 .ruling .tbl { overflow-x: auto; }
 .ruling table { border-collapse: collapse; font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
 .ruling th, .ruling td { text-align: left; padding: 7px 14px 7px 0; border-bottom: 1px solid var(--line); font-weight: 500; }
@@ -111,7 +112,7 @@ section h2 { font-size: 11px; font-weight: 500; text-transform: uppercase; lette
 .states { display: flex; flex-wrap: wrap; gap: 14px 10px; align-items: flex-start; }
 .state { background: transparent; border: 1px solid transparent; border-radius: 20px; padding: 10px 10px 8px; display: grid; gap: 10px; justify-items: start; cursor: pointer; text-align: left; color: inherit; font: inherit; max-width: 100%; min-width: 0; }
 .pair { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; min-width: 0; width: 100%; }
-.pair .v { display: grid; gap: 6px; justify-items: start; max-width: 100%; min-width: 0; }
+.pair .v { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; min-width: 0; }
 .pair .v em { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
 .state:hover { border-color: var(--line); }
 .state.sel { border-color: hsl(var(--h) 90% 55% / .55); background: var(--surface-2); }
@@ -161,13 +162,13 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <section>
       <div class="hero" id="hero">
         <div class="hero-row">
-          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 48px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
           <div class="v"><em>B · PIXELS ONLY</em><div class="pill fixed" id="heroPillB" style="--g: 48px"><span class="loader" id="heroLoaderB"></span><span class="lbl" id="heroLabelB">Thinking</span></div></div>
+          <div class="v"><em>A · PIXELS + STRINGS</em><div class="pill fixed" id="heroPill" style="--g: 48px"><span class="loader" id="heroLoader"></span><span class="lbl" id="heroLabel">Thinking</span></div></div>
         </div>
         <p class="hero-idea" id="heroIdea"></p>
         <div class="hero-meta" id="heroMeta"></div>
         <div>
-          <h2>Across one loop: gather, form, live, dissolve</h2>
+          <h2>Across one loop</h2>
           <div class="strip" id="strip"></div>
         </div>
       </div>
@@ -222,14 +223,14 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
     <div class="ctl"><span class="lab">Hue</span><div class="seg" data-set="hueMode"><button data-v="state">Per state</button><button data-v="brand">One brand hue</button></div></div>
     <div class="ctl" id="brandCtl"><label for="brandHue">Brand hue <output id="brandHueOut">250</output></label><input type="range" id="brandHue" min="0" max="360" step="1" value="250"></div>
     <div class="ctl"><span class="lab">Grid</span><div class="seg" data-set="grid"><button data-v="9">9×9</button><button data-v="11">11×11</button><button data-v="13">13×13</button></div></div>
-    <div class="ctl"><span class="lab">Variant</span><div class="seg" data-set="variant"><button data-v="strings">A strings</button><button data-v="pixels">B pixels</button><button data-v="both">Both</button></div></div>
+    <div class="ctl"><span class="lab">Variant</span><div class="seg" data-set="variant"><button data-v="pixels">B pixels</button><button data-v="strings">A strings</button><button data-v="both">Both</button></div></div>
     <div class="ctl"><span class="lab">White-hot pixels</span><div class="seg" data-set="hot"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
     <div class="ctl"><span class="lab">Size (G)</span><div class="seg" data-set="size"><button data-v="24">S 24</button><button data-v="32">M 32</button><button data-v="48">L 48</button><button data-v="64">XL 64</button></div></div>
     <div class="ctl"><span class="lab">Button width</span><div class="seg" data-set="width"><button data-v="fixed">Fixed 8.5G</button><button data-v="fit">Fit</button></div></div>
     <div class="ctl"><span class="lab">Palette</span><div class="seg" data-set="levels"><button data-v="2">3 colors</button><button data-v="3">4</button><button data-v="4">5</button><button data-v="0">Smooth</button></div></div>
     <div class="ctl"><label for="step">Time step <output id="stepOut">smooth</output></label><input type="range" id="step" min="0" max="240" step="10" value="0"></div>
-    <div class="ctl"><label for="rise">Rise <output id="riseMsOut">60 ms</output></label><input type="range" id="rise" min="10" max="300" step="10" value="60"></div>
-    <div class="ctl"><label for="decay">Trail <output id="decayOut">260 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="260"></div>
+    <div class="ctl"><label for="rise">Rise <output id="riseMsOut">30 ms</output></label><input type="range" id="rise" min="10" max="300" step="10" value="30"></div>
+    <div class="ctl"><label for="decay">Trail <output id="decayOut">140 ms</output></label><input type="range" id="decay" min="60" max="900" step="10" value="140"></div>
     <div class="ctl"><label for="glow">Bloom <output id="glowOut">0.75</output></label><input type="range" id="glow" min="0" max="1" step="0.05" value="0.75"></div>
     <div class="ctl"><label for="bed">Bed <output id="bedOut">0.16</output></label><input type="range" id="bed" min="0" max="0.5" step="0.01" value="0.16"></div>
     <div class="ctl"><span class="lab">Motion</span><div class="seg" data-set="motion"><button data-v="on">Animated</button><button data-v="reduced">Reduced</button></div></div>
@@ -246,8 +247,8 @@ details.tokens summary { font-size: 12px; color: var(--muted); cursor: pointer; 
 /* ---------- settings ---------- */
 const S = {
   theme: 'system', font: 'inter', hueMode: 'state', brandHue: 250,
-  grid: 9, size: 48, levels: 2, step: 0, rise: 40, decay: 220, glow: 0.75, bed: 0.16,
-  variant: 'both', hot: 'on', width: 'fixed', motion: 'on',
+  grid: 9, size: 48, levels: 2, step: 0, rise: 30, decay: 140, glow: 0.75, bed: 0.16,
+  variant: 'pixels', hot: 'on', width: 'fixed', motion: 'on',
 };
 
 /* ---------- math ---------- */
@@ -430,6 +431,89 @@ function assemble(st, t, c, o) {
   }
   if (phase === 'hold' && H.runner) { const off = (c.N - ART) / 2; o.points.push({ x: H.runner[0] + off - c.R, y: H.runner[1] + off - c.R, i: 1.3 }); }
 }
+
+/* ---------- variant B: pixel sprites. Hand-drawn 9x9 frames with timing. '#' lit, 'W' white-hot, '.' off ---------- */
+const bm = (...rows) => rows;
+const EMPTY = bm('.........','.........','.........','.........','.........','.........','.........','.........','.........');
+const rot90 = b => b.map((_, r) => b.map((__, c) => b[8 - c][r]).join(''));
+const shift = (b, dx, dy) => b.map((_, r) => Array.from({ length: 9 }, (__, c) => { const sr = r - dy, sc = c - dx; return (sr >= 0 && sr < 9 && sc >= 0 && sc < 9) ? b[sr][sc] : '.'; }).join(''));
+const over = (...bs) => bs[0].map((_, r) => Array.from({ length: 9 }, (__, c) => { let v = '.'; for (const b of bs) { const ch = b[r][c]; if (ch === 'W') v = 'W'; else if (ch === '#' && v === '.') v = '#'; } return v; }).join(''));
+const hot = b => b.map(r => r.replace(/#/g, 'W'));
+const rowsUpTo = (b, k) => b.map((r, i) => i < k ? r : '.........');
+const colsUpTo = (b, k) => b.map(r => r.slice(0, k) + '.'.repeat(9 - k));
+const put = (b, cells, ch = 'W') => b.map((r, i) => r.split('').map((v, c) => cells.some(([x, y]) => x === c && y === i) ? ch : v).join(''));
+const F = (b, ms) => ({ b, ms });
+const seq = (...frames) => ({ frames, period: frames.reduce((a, f) => a + f.ms, 0) / 1000 });
+
+const TICK = bm('.........','........#','.......##','......##.','#....##..','##..##...','.####....','..##.....','.........');
+const HAM_UP = bm('.#######.','.#######.','...###...','....#....','....#....','....#....','....#....','....#....','.........');
+const HAM_45 = bm('......###','.....####','....#####','...##.##.','..##.....','.##......','##.......','#........','.........');
+const HAM_DN = bm('.........','.........','.......##','.......##','#########','.......##','.......##','.........','.........');
+const RING = bm('...####..','..#....#.','.#.....##','.#....###','.........','###....#.','##.....#.','.#....#..','..####...');
+const LENS = bm('.........','..###....','.#...#...','.#.#.#...','.#...#...','..###....','.....#...','......#..','.........');
+const LENS_G = put(LENS, [[3,3]], 'W');
+const BULB = bm('...###...','..#...#..','.#.....#.','.#..#..#.','.#.#.#.#.','..#...#..','...###...','...#.#...','...###...');
+const FIL = [[4,3],[3,4],[5,4]];
+const PAGE = bm('.#####...','.#...##..','.#...###.','.#.....#.','.#.....#.','.#.....#.','.#.....#.','.#.....#.','.#######.');
+const LINE = (row) => [[3,row],[4,row],[5,row]];
+const STAR_S = bm('.........','.........','.........','....#....','...###...','....#....','.........','.........','.........');
+const STAR_M = bm('.........','....#....','....#....','...###...','..#####..','...###...','....#....','....#....','.........');
+const STAR_L = bm('....#....','....#....','...###...','..#####..','#########','..#####..','...###...','....#....','....#....');
+const QUILL = bm('.....####','....#####','...######','..####...','..###....','.###.....','.##......','##.......','#........');
+const SOCKET = bm('#########','.........','.........','.........','.........','.........','.........','.........','.........');
+const PLUG = bm('.........','.........','.........','..#...#..','..#...#..','.#######.','.#######.','..#####..','....#....');
+const TRAY = bm('.........','.........','.........','.........','.........','.........','#.......#','#.......#','#########');
+const ARR_UP = bm('....#....','...###...','..#####..','....#....','....#....','....#....','.........','.........','.........');
+const ARR_DN = bm('....#....','....#....','....#....','..#####..','...###...','....#....','.........','.........','.........');
+const TRI = bm('....#....','...#.#...','...#.#...','..#...#..','..#...#..','.#.....#.','.#.....#.','#.......#','#########');
+const BANG = [[4,2],[4,3],[4,4],[4,6]];
+const BUG_A = bm('.#.....#.','..#...#..','..#####..','.#.###.#.','#.#####.#','..#####..','#.#####.#','.#.###.#.','..#...#..');
+const BUG_B = bm('.#.....#.','..#...#..','..#####..','#..###..#','.######.#','..#####..','.######.#','#..###..#','..#...#..');
+const HEART_S = bm('.........','..##.##..','.#######.','.#######.','..#####..','...###...','....#....','.........','.........');
+const HEART_M = bm('.........','.##...##.','#########','#########','.#######.','..#####..','...###...','....#....','.........');
+const HEART_L = bm('.##...##.','####.####','#########','#########','.#######.','..#####..','...###...','....#....','.........');
+const LUNG_S = bm('....#....','....#....','...###...','..##.##..','.###.###.','.###.###.','.###.###.','..##.##..','.........');
+const LUNG_M = bm('....#....','....#....','..#####..','.###.###.','.###.###.','####.####','.###.###.','..##.##..','.........');
+const LUNG_L = bm('....#....','....#....','..#####..','.###.###.','####.####','####.####','####.####','.###.###.','..##.##..');
+const SIGMA = bm('######...','.#.......','..#......','...#.....','....#....','...#.....','..#......','.#.......','######...');
+const EQ = [[8,3],[8,5]];
+function dna(phase) {
+  const g = EMPTY.map(r => r.split(''));
+  for (let r = 0; r < 9; r++) { const th = r * Math.PI / 4 + phase, a = 4 + Math.round(3 * Math.sin(th)), b = 4 - Math.round(3 * Math.sin(th)); g[r][a] = '#'; g[r][b] = '#'; if (Math.abs(a - b) >= 4 && r % 2 === 0) for (let c = Math.min(a, b) + 1; c < Math.max(a, b); c++) g[r][c] = '#'; }
+  return g.map(r => r.join(''));
+}
+function bars(t) {
+  const cols = [1, 3, 5, 7], fin = [3, 5, 4, 7], g = EMPTY.map(r => r.split(''));
+  cols.forEach((c, i) => { const h = Math.max(0, Math.min(fin[i], (t - i) * 2)); for (let k = 0; k < h; k++) g[8 - k][c] = '#'; });
+  return g.map(r => r.join(''));
+}
+const SPRITES = {
+  done: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(colsUpTo(TICK, k), 55)), F(hot(TICK), 110), F(TICK, 1500), F(EMPTY, 260)),
+  building: seq(F(HAM_UP, 340), F(HAM_45, 70), F(put(HAM_DN, [[6,1],[6,7],[5,0],[5,8]]), 190), F(HAM_45, 70)),
+  syncing: seq(F(RING, 170), F(rot90(RING), 170), F(rot90(rot90(RING)), 170), F(rot90(rot90(rot90(RING))), 170)),
+  searching: seq(...[[0,0],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1]].map(([dx, dy], i) => F(shift(i % 2 ? LENS_G : LENS, dx, dy), 120))),
+  analyzing: seq(...[0,1,2,3,4,5,6].map(t => F(bars(t), 90)), ...[[1,5],[3,3],[5,4],[7,1]].map(c => F(put(bars(9), [c]), 100)), F(bars(9), 700), F(EMPTY, 200)),
+  thinking: seq(F(BULB, 700), F(put(BULB, FIL), 260), F(put(hot(BULB), [[0,0],[8,0]]), 110), F(put(BULB, FIL), 160)),
+  reading: seq(F(PAGE, 300), ...[3,4,5].map(c => F(put(PAGE, [[c,4]]), 80)), F(put(PAGE, LINE(4), '#'), 240), ...[3,4,5].map(c => F(put(put(PAGE, LINE(4), '#'), [[c,6]]), 80)), F(put(PAGE, [...LINE(4), ...LINE(6)], '#'), 800), F(EMPTY, 200)),
+  generating: seq(F(STAR_S, 160), F(STAR_M, 110), F(put(STAR_L, [[1,1],[7,7]]), 420), F(STAR_M, 110), F(put(STAR_S, [[7,1],[1,7]]), 220)),
+  writing: seq(...[0,1,2,3,4,5,6].map(k => F(put(shift(QUILL, 0, k % 2 ? -1 : 0), Array.from({ length: k }, (_, i) => [2 + i, 8]), '#'), 120)), F(put(QUILL, [[2,8],[3,8],[4,8],[5,8],[6,8],[7,8]], '#'), 420), F(EMPTY, 160)),
+  connecting: seq(F(over(SOCKET, PLUG), 320), F(over(SOCKET, shift(PLUG, 0, -1)), 120), F(put(over(SOCKET, shift(PLUG, 0, -2)), [[2,1],[6,1],[2,0],[6,0]]), 200), F(over(SOCKET, shift(PLUG, 0, -2)), 650), F(over(SOCKET, shift(PLUG, 0, -1)), 110)),
+  uploading: seq(...[2,1,0,-1,-2,-3].map(dy => F(over(TRAY, shift(ARR_UP, 0, dy)), 100)), F(TRAY, 160)),
+  downloading: seq(...[-3,-2,-1,0,1,2].map(dy => F(over(TRAY, shift(ARR_DN, 0, dy)), 100)), F(hot(TRAY), 90), F(TRAY, 160)),
+  error: seq(F(put(TRI, BANG, '#'), 620), F(TRI, 180), F(put(TRI, BANG, '#'), 620), F(shift(put(TRI, BANG, '#'), 1, 0), 55), F(shift(put(TRI, BANG, '#'), -1, 0), 55), F(shift(put(TRI, BANG, '#'), 1, 0), 55)),
+  debugging: seq(F(BUG_A, 170), F(BUG_B, 170)),
+  heartbeat: seq(F(HEART_S, 520), F(HEART_L, 90), F(HEART_M, 90), F(HEART_S, 140), F(HEART_L, 70), F(HEART_M, 80), F(HEART_S, 610)),
+  scanning: seq(...[0,1,2,3,4,5,6,7].map(k => F(dna(k * Math.PI / 4), 110))),
+  breathing: seq(F(LUNG_S, 900), F(LUNG_M, 320), F(LUNG_L, 1600), F(LUNG_M, 320)),
+  calculating: seq(...[1,2,3,4,5,6,7,8,9].map(k => F(rowsUpTo(SIGMA, k), 55)), F(put(SIGMA, EQ, '#'), 420), F(SIGMA, 180), F(put(SIGMA, EQ, '#'), 420), F(SIGMA, 180), F(EMPTY, 200)),
+};
+for (const st of STATES) st.sprite = SPRITES[st.id];
+function restTime(sp) { let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (f.ms > best && f.b.some(r => r.includes('#'))) { best = f.ms; at = acc + f.ms / 2; } acc += f.ms; } return at / 1000; }
+function spriteScene(st, t, c, o) {
+  const sp = st.sprite, off = (c.N - ART) / 2; let ms = (t * 1000) % (sp.period * 1000), fr = sp.frames[sp.frames.length - 1];
+  for (const f of sp.frames) { if (ms < f.ms) { fr = f; break; } ms -= f.ms; }
+  for (let r = 0; r < 9; r++) for (let col = 0; col < 9; col++) { const ch = fr.b[r][col]; if (ch === '.') continue; o.points.push({ x: col + off - c.R, y: r + off - c.R, i: ch === 'W' ? 1.3 : 0.65 }); }
+}
 for (const st of STATES) { st.still = st.period * (FORM + 0.02); st.draw = function (t, c, o) { assemble(this, t, c, o); }; }
 const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
 
@@ -488,7 +572,7 @@ class Matrix {
     const n = N * N; this.buf = new Float32Array(n); this.tg = new Float32Array(n); this.lastIdx = new Int16Array(n).fill(-1); this.lastA = new Float32Array(n).fill(-1);
     this.last = 0; this.rampRef = null; this.lastLight = null;
     this.applyHue();
-    if (!this.static) this.snapshot(this.state.still);
+    if (!this.static) this.snapshot(this.variant === 'pixels' && this.state.sprite ? restTime(this.state.sprite) : this.state.still);
   }
   destroy() { io.unobserve(this.el); const i = live.indexOf(this); if (i >= 0) live.splice(i, 1); this.el.innerHTML = ''; }
   applyHue() {
@@ -496,8 +580,11 @@ class Matrix {
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
   }
   set(stateId, N) { this.stateId = stateId; this.N = N; this.build(); }
+  get period() { return (this.variant === 'pixels' && this.state.sprite) ? this.state.sprite.period : this.state.period; }
   scene(t) {
-    const o = { points: [], lines: [] }; this.state.draw(t, this.ctx, o); return o;
+    const o = { points: [], lines: [] };
+    if (this.variant === 'pixels' && this.state.sprite) spriteScene(this.state, t, this.ctx, o); else this.state.draw(t, this.ctx, o);
+    return o;
   }
   raster(o) {
     const N = this.N, R = this.ctx.R, tg = this.tg; tg.fill(0);
@@ -530,13 +617,13 @@ class Matrix {
   tick(now) {
     if (!this.visible) return;
     const dt = this.last ? Math.min(50, now - this.last) : 16; this.last = now;
-    let t = (now / 1000) % this.state.period; if (S.step > 0) t = Math.floor(t / (S.step / 1000)) * (S.step / 1000);
+    let t = (now / 1000) % this.period; if (S.step > 0) t = Math.floor(t / (S.step / 1000)) * (S.step / 1000);
     const o = this.scene(t); this.raster(o); this.temporal(dt); this.paint(o);
   }
   /* render the state as it looks at time t, with its trail history simulated */
   snapshot(t) {
     this.buf.fill(0); const back = 0.45, steps = 18; let o;
-    for (let k = 0; k <= steps; k++) { const tt = ((t - back + back * k / steps) % this.state.period + this.state.period) % this.state.period; o = this.scene(tt); this.raster(o); this.temporal(back * 1000 / steps); }
+    for (let k = 0; k <= steps; k++) { const P = this.period, tt = ((t - back + back * k / steps) % P + P) % P; o = this.scene(tt); this.raster(o); this.temporal(back * 1000 / steps); }
     this.paint(o);
   }
 }
@@ -550,7 +637,7 @@ const heroLoaderB = new Matrix($('heroLoaderB'), selected, S.grid, { variant: 'p
 const stateEls = {};
 const stripMats = [];
 
-function captionFor(id) { const st = byId[id]; return `<i>${st.hueName} ${st.hue}</i><span>${st.period.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
+function captionFor(id) { const st = byId[id], per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period); return `<i>${st.hueName} ${st.hue}</i><span>${per.toFixed(1)} s loop${st.oneShot ? ' · one-shot' : ''}</span>`; }
 function buildStates() {
   const root = $('states');
   for (const id in stateEls) for (const m of stateEls[id].ms) m.destroy();
@@ -599,21 +686,22 @@ function renderHero() {
   $('heroLabel').textContent = st.label; $('heroLabelB').textContent = st.label;
   $('heroIdea').textContent = st.idea;
   $('heroPill').style.setProperty('--h', heroLoader.hue); $('heroPillB').style.setProperty('--h', heroLoaderB.hue);
-  $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${st.period.toFixed(1)} s</b></span><span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
+  const per = S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period);
+  $('heroMeta').innerHTML = `<span>concept <b>${st.id}</b></span><span>hue <b>${st.hueName} ${st.hue}°</b></span><span>grid <b>${S.grid}×${S.grid}</b></span><span>loop <b>${per.toFixed(1)} s</b></span>${st.sprite && S.variant !== 'strings' ? `<span>frames <b>${st.sprite.frames.length}</b></span>` : ''}<span>trail <b>${Math.round(S.decay * (st.decayMul || 1))} ms</b></span>${st.oneShot ? '<span><b>one-shot, holds last frame</b></span>' : ''}`;
   const strip = $('strip'); strip.innerHTML = ''; stripMats.length = 0;
   const K = 14;
   for (let k = 0; k < K; k++) {
     const d = document.createElement('div'); d.className = 'f';
     const box = document.createElement('span'); box.className = 'loader'; d.appendChild(box);
-    const n = document.createElement('span'); n.textContent = (st.period * k / K).toFixed(1) + 's'; d.appendChild(n);
+    const n = document.createElement('span'); n.textContent = ((S.variant === 'strings' ? st.period : (st.sprite ? st.sprite.period : st.period)) * k / K).toFixed(1) + 's'; d.appendChild(n);
     strip.appendChild(d);
-    const m = new Matrix(box, selected, S.grid, { static: true, variant: 'strings' }); m.snapshot(st.period * k / K); stripMats.push(m);
+    const m = new Matrix(box, selected, S.grid, { static: true, variant: S.variant === 'strings' ? 'strings' : 'pixels' }); m.snapshot(m.period * k / K); stripMats.push(m);
   }
 }
 function select(id) { selected = id; heroLoader.set(id, S.grid); heroLoaderB.set(id, S.grid); renderHero(); markSelected(); }
 
 const ctxMats = [];
-for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid, { variant: 'strings' }));
+for (const el of document.querySelectorAll('.ctx .loader')) ctxMats.push(new Matrix(el, el.dataset.state, +el.dataset.grid, { variant: 'pixels' }));
 
 function applyAll() {
   if (S.theme === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = S.theme;
@@ -622,7 +710,7 @@ function applyAll() {
   rampCache.clear();
   for (const m of live) m.applyHue();
   const reduced = S.motion === 'reduced';
-  for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.state.still); }
+  for (const m of live) { m.el.classList.toggle('still', reduced); if (reduced) m.snapshot(m.variant === 'pixels' && m.state.sprite ? restTime(m.state.sprite) : m.state.still); }
   for (const id in stateEls) { const { b, ms, pills, small } = stateEls[id]; pills.forEach((pill, i) => { pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.style.setProperty('--h', ms[i].hue); }); b.style.setProperty('--h', ms[0].hue); small.innerHTML = captionFor(id); }
   for (const id of ['heroPill', 'heroPillB']) $(id).classList.toggle('fixed', S.width === 'fixed');
   $('rulingTable').innerHTML = rulingHtml();
