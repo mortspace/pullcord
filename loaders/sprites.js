@@ -1446,58 +1446,97 @@ const OPTS_SP3 = {
   spinner_flip: Object.assign(seq(...shpFLIP), { still: shpTile(shpR9(9)) }),
 };
 
-/* ---------- glow: chunky spinners in soft colour, after the tiny status glyphs of a desktop agent. A 3x3 grid of big
-   cells with a hairline seam, each flat pastel with a faint gradient and a tight, faint halo.
-   The colour drifts slowly round the colour wheel through a palette of neighbouring pastels, and cells crossfade between patterns instead of popping: the
-   renderer does not step the tones of these sprites, and they rise and cool slowly. '#' lit, ':' half, 'W' brightened. ---------- */
-const GL_PASTEL = { peach: '#FFC394', apricot: '#FFAA78', salmon: '#F7818F', pink: '#F59AC4', lilac: '#C6B2FF', sky: '#8DD0FF', aqua: '#7EDFD8', mint: '#97E9BC', butter: '#FFDC82' };
-const glG3 = s => [s.slice(0, 3), s.slice(3, 6), s.slice(6, 9)];
-const glGlow = (frames, colors, opts = {}) => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? glG3(b) : b, ms))), { N: 3, colors: colors.map(c => GL_PASTEL[c]), trail: 0.85, rise: 2.2, glow: 2.1, scale: 0.82, cycle: 7.5 }, opts);
-const glCellsTo3 = cells => { const g = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']]; for (const [x, y, c] of cells) if (x >= 0 && x < 3 && y >= 0 && y < 3 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
-const GL_RING8 = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1]];
+/* ---------- micro: every state again as a 5x5 glyph, for places too small for 13x13: a browser tab, a menu bar, a
+   status chip. Five cells cannot carry detail, so each keeps only its gesture: the dots of a reply, a check that forms
+   from them, a heart that beats, a bug that crawls. They draw in soft light: big cells with a hairline seam, a faint
+   halo, colours that drift a little either side of the state's own hue, and patterns that crossfade instead of
+   stepping. Bitmaps are five rows of five; the same tones as the 13x13 sprites. ---------- */
+const m5 = s => [s.slice(0, 5), s.slice(5, 10), s.slice(10, 15), s.slice(15, 20), s.slice(20, 25)];
+const c5 = cells => { const g = Array.from({ length: 5 }, () => Array(5).fill('.')); for (const [x, y, c] of cells) if (x >= 0 && x < 5 && y >= 0 && y < 5 && RANK[c] > RANK[g[y][x]]) g[y][x] = c; return g.map(r => r.join('')); };
+const shift5 = (cells, dx, dy) => cells.map(([x, y, c]) => [x + dx, y + dy, c]);
+const micro = frames => Object.assign(seq(...frames.map(([b, ms]) => F(typeof b === 'string' ? m5(b) : b, ms))), { N: 5, micro: true, trail: 0.9, rise: 2, glow: 2.1, scale: 0.84, cycle: 6 });
 
-/* halo: a five-cell arc runs round the ring, a bright head and a fading tail */
-const glHaloAt = k => glCellsTo3([':', '#', '#', '#', 'W'].map((c, j) => [...GL_RING8[(k + j) % 8], c]));
-/* bloom: one pattern opens into the next from the centre: a dot, a plus, the full square, a ring, an x, and back */
-const GL_BLOOM = [['....W....', 300], ['.#.###.#.', 190], ['####W####', 230], ['####.####', 210], ['#.#.#.#.#', 230], ['....#....', 170]];
-/* flicker: a diamond and an x take turns, each passing through the whole square, half lit */
-const GL_FLICKER = [['.#.#.#.#.', 330], [':::::::::', 140], ['#.#.W.#.#', 330], [':::::::::', 140]];
-/* twist: an S tumbles round an eighth of a turn at a time */
-const GL_TWIST = ['.##.#.##.', '#..###..#', '##..#..##', '..####W..'].map(b => [b, 230]);
-/* stairs: three columns trade heights like steps rolling forward */
-const glStairsAt = hs => glCellsTo3(hs.flatMap((hgt, x) => Array.from({ length: hgt }, (_, k) => [x, 2 - k, hgt === 3 && k === 2 ? 'W' : '#'])));
-/* pulse: the square breathes in from its centre and out again */
-const GL_PULSE = [['.........', 260], ['....#....', 140], ['.:.:#:.:.', 140], ['#########', 240], ['####W####', 280], [':::::::::', 220], ['....:....', 160]];
-/* bounce: a drop in the middle column springs up, stretching as it rises and falls, and squashes on landing */
-const glBounceAt = cells => glCellsTo3(cells.map(([y, c]) => [1, y, c || '#']));
-/* beads: a light passes along a row of three, the others resting half lit */
-const glBeadsAt = k => glCellsTo3([0, 1, 2].map(x => [x, 1, x === k ? 'W' : x === k - 1 ? '#' : ':']));
-/* worm: a three-cell worm wanders the grid row by row and turns back at the end */
-const GL_WORM_PATH = [[0,0],[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[1,2],[2,2]];
-const glWormAt = k => glCellsTo3([0, 1, 2].map(j => { const i = k - j; return i >= 0 && i < 9 ? [...GL_WORM_PATH[i], j === 0 ? 'W' : j === 1 ? '#' : ':'] : null; }).filter(Boolean));
-/* rain: drops fall down the three columns out of step, each with a short dim trail */
-const GL_RAIN_OFF = [0, 3, 1];
-const glRainAt = t => glCellsTo3(GL_RAIN_OFF.flatMap((o, x) => { const y = (t + o) % 5; return [[x, y, '#'], [x, y - 1, ':']]; }));
-/* spiral: the grid fills cell by cell, round and into the middle, holds, and empties the same way */
-const GL_SPIRAL = [[0,0],[1,0],[2,0],[2,1],[2,2],[1,2],[0,2],[0,1],[1,1]];
-const glSpiralAt = (from, to) => glCellsTo3(GL_SPIRAL.slice(from, to).map(([x, y], i) => [x, y, from === 0 && i === to - 1 && to < 9 ? 'W' : '#']));
-/* tumble: a two-by-two block rolls round the grid corner to corner */
-const GL_TUMBLE = [[0,0],[1,0],[1,1],[0,1]];
-const glTumbleAt = ([x0, y0], tone = '#') => glCellsTo3([[x0, y0], [x0 + 1, y0], [x0, y0 + 1], [x0 + 1, y0 + 1]].map(([x, y]) => [x, y, tone]));
+/* thinking: the three dots of a reply ride a wave, each lifting while the next starts */
+const mcThink = k => c5([0, 2, 4].map((x, i) => { const p = k - i; return p === 1 ? [x, 1, '#'] : p === 0 || p === 2 ? [x, 2, '#'] : [x, 2, ':']; }));
+/* reading: a teleprompter. The middle line is read word by word, then the page scrolls up a line: the read line moves
+   to the top and a fresh one comes in at the bottom, so the loop is the same page every time */
+const MC_LINE = [0, 1, 2, 4];
+const mcRead = (j, dy = 0) => c5([...MC_LINE.map(x => [x, 0 + dy, '#']), ...MC_LINE.map((x, i) => [x, 2 + dy, i < j ? '#' : i === j ? 'W' : ':']), ...MC_LINE.map(x => [x, 4 + dy, ':']), ...MC_LINE.map(x => [x, 6 + dy, ':'])]);
+/* analyzing: three bars of live data, stepping to new values a cell at a time; the one that moved most catches the light */
+const MC_SETS = [[2, 4, 3], [4, 2, 5], [3, 5, 2], [5, 3, 4]];
+const mcBars = (hs, hot = -1) => c5(hs.flatMap((h, i) => Array.from({ length: h }, (_, k) => [i * 2, 4 - k, i === hot && k === h - 1 ? 'W' : '#'])));
+const mcBarFrames = () => MC_SETS.flatMap((from, s) => {
+  const to = MC_SETS[(s + 1) % MC_SETS.length], out = [], cur = [...from], big = to.map((v, i) => Math.abs(v - from[i])).reduce((bi, d, i, a) => d > a[bi] ? i : bi, 0);
+  while (cur.some((v, i) => v !== to[i])) { for (let i = 0; i < 3; i++) cur[i] += Math.sign(to[i] - cur[i]); out.push([mcBars([...cur]), 70]); }
+  return [...out, [mcBars(to, big), 110], [mcBars(to), 260]];
+});
+/* searching: a small lens with its handle circles, lingering at the top, the glass catching the light there */
+const mcLens = (cx, cy, glint) => c5([[cx - 1, cy - 1, glint ? 'W' : ':'], [cx, cy - 1, '#'], [cx + 1, cy - 1, ':'], [cx - 1, cy, '#'], [cx + 1, cy, '#'], [cx - 1, cy + 1, ':'], [cx, cy + 1, '#'], [cx + 1, cy + 1, '#'], [cx + 2, cy + 2, '#']]);
+/* generating: a sparkle grows out of a point and flicks a quarter turn while a small one twinkles in the corner */
+const mcStar = (r, corner, hot) => c5([[2, 2, hot ? 'W' : '#'], ...Array.from({ length: r }, (_, k) => [[2, 1 - k, '#'], [2, 3 + k, '#'], [1 - k, 2, '#'], [3 + k, 2, '#']]).flat(), ...(corner ? [[4, 0, corner]] : [])]);
+const mcStarX = () => c5([[2, 2, '#'], [1, 1, '#'], [3, 1, '#'], [1, 3, '#'], [3, 3, '#']]);
+/* writing: a caret types a line in words, then the line scrolls up and dims and the caret starts the next */
+const MC_WORDS = [0, 1, 3];
+const mcType = c => c5([...[0, 1, 2, 4].map(x => [x, 0, ':']), ...MC_WORDS.filter(x => x < c).map(x => [x, 2, '#']), [c, 1, '#'], [c, 2, 'W'], [c, 3, '#']]);
+const mcTypeScroll = dy => c5([...[0, 1, 2, 4].map(x => [x, 0 - dy, ':']), ...MC_WORDS.map(x => [x, 2 - dy, dy ? ':' : '#'])]);
+/* syncing: two lights chase each other round the edge, surging and coasting, each a white head with a tail */
+const MC_EDGE = [[0,0],[1,0],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4],[3,4],[2,4],[1,4],[0,4],[0,3],[0,2],[0,1]];
+const mcChase = p => c5([p, p + 8].flatMap(q => [[...MC_EDGE[q % 16], 'W'], [...MC_EDGE[(q + 15) % 16], '#'], [...MC_EDGE[(q + 14) % 16], ':']]));
+/* connecting: two ends reach for each other, the link closes in the middle with a flash, holds, and lets go */
+const mcLink = (cells, ends = '#') => c5([[0, 2, ends], [4, 2, ends], ...cells.map(([x, c]) => [x, 2, c])]);
+/* uploading / downloading: a stream of small arrows through a tray, the tray walls giving as each one lands */
+const MC_TRAY = (squash) => [...Array.from({ length: 5 }, (_, x) => [x, 4, '#']), ...(squash ? [] : [[0, 3, '#'], [4, 3, '#']])];
+const mcArrow = (y, up) => (up ? [[2, y], [1, y + 1], [2, y + 1], [3, y + 1], [2, y + 2]] : [[2, y + 2], [1, y + 1], [2, y + 1], [3, y + 1], [2, y]]).map(([x, yy]) => [x, yy, '#']).filter(([, yy]) => yy < 4);
+const mcStream = (t, up) => c5([...MC_TRAY(!up && t === 0), ...[-1, 0, 1].flatMap(k => mcArrow(up ? 3 - t + 5 * k : t - 3 + 5 * k, up))]);
+/* done: three dots wait, dip, fly to the three points of a check, the arms join them and a light runs along it */
+const MC_CHECK = [[0, 2], [1, 3], [2, 2], [3, 1], [4, 0]];
+const mcDots = (tone, dy = 0) => c5([0, 2, 4].map(x => [x, 2 + dy, tone]));
+const mcCheck = (cells, hot = -1) => c5(cells.map(([x, y], i) => [x, y, i === hot ? 'W' : '#']));
+/* error: the mark jolts left and right like a refused password and settles, its dot blinking */
+const mcBang = (dx, hot, dot = '#') => c5([[2 + dx, 0, hot ? 'W' : '#'], [2 + dx, 1, '#'], [2 + dx, 2, '#'], [2 + dx, 4, dot]]);
+/* building: bricks drop with weight and land in a running bond, then the course slides off and the next begins */
+const MC_SLOTS = [[0, 4], [2, 4], [1, 3]];
+const mcBrick = ([x, y], c = '#') => [[x, y, c], [x + 1, y, c]];
+const mcWall = (n, dx = 0, extra = []) => c5([...MC_SLOTS.slice(0, n).flatMap(s => mcBrick(s)).map(([x, y, c]) => [x + dx, y, c]), ...extra]);
+const mcBuild = () => [0, 1, 2].flatMap(n => { const [x, y] = MC_SLOTS[n]; return [...Array.from({ length: y + 1 }, (_, k) => [mcWall(n, 0, mcBrick([x, k])), [130, 90, 70, 55, 50][k]]), [mcWall(n, 0, mcBrick([x, y], 'W')), 90], [mcWall(n + 1), 170]]; })
+  .concat([1, 2, 3, 4, 5].map(dx => [mcWall(3, dx), 75]));
+/* debugging: a little bug crawls up the glyph legs stepping in turn; mid-way it stops, twitches its feelers, and
+   carries on as the next one comes in from below */
+const mcBug = (y, pose, twitch) => [[2, y, 'W'], [2, y + 1, '#'], [2, y + 2, '#'], ...(pose ? [[1, y + 1, ':'], [3, y + 2, ':']] : [[3, y + 1, ':'], [1, y + 2, ':']]), ...(twitch ? [[1, y - 1, ':'], [3, y - 1, ':']] : [[1, y - 1, ':'], [3, y - 1, '.']])];
+const mcCrawl = (y, twitch) => c5([y, y + 6].flatMap((yy, k) => mcBug(yy, (y + 6) % 2, twitch && k === 0)));
+/* heartbeat: a small heart beats big, medium, small on a lub-dub */
+const MC_HEART = { s: '......#.#..###...#.......', m: '.....##.#######.###...#..', l: '.#.#.##########.###...#..' };
+/* scanning: brackets frame the target and a scan line glides between them and back */
+const MC_BRACKETS = [[0,0],[1,0],[0,1],[4,0],[3,0],[4,1],[0,4],[1,4],[0,3],[4,4],[3,4],[4,3]].map(([x, y]) => [x, y, '#']);
+const mcScan = r => c5([...MC_BRACKETS, [1, r, '#'], [2, r, 'W'], [3, r, '#']]);
+/* breathing: the glyph breathes in from a point to a soft square and out again, slowly */
+const MC_BREATH = ['............#............', '.......#...###...#.......', '......###..###..###......', '.###.###############.###.', '.###.#####' + '##W##' + '#####' + '.###.'];
+/* calculating: the operators turn into one another: plus, times, minus, divide, equals */
+const mcRow = (y, c = '#') => Array.from({ length: 5 }, (_, x) => [x, y, c]);
+const MC_OPS = { plus: c5([...mcRow(2), [2, 0, '#'], [2, 1, '#'], [2, 3, '#'], [2, 4, '#']]), plus1: c5([[1, 2, '#'], [2, 2, '#'], [3, 2, '#'], [2, 1, '#'], [2, 3, '#']]),
+  times1: c5([[1, 1, '#'], [3, 1, '#'], [2, 2, '#'], [1, 3, '#'], [3, 3, '#']]), times: c5([0, 1, 2, 3, 4].flatMap(k => [[k, k, '#'], [4 - k, k, '#']])),
+  minus: c5(mcRow(2)), divide1: c5([...mcRow(2), [2, 1, '#'], [2, 3, '#']]), divide: c5([...mcRow(2), [2, 0, '#'], [2, 4, '#']]), equals: c5([...mcRow(1), ...mcRow(3)]) };
 
-const GLOW_SPRITES = {
-  glow_halo: glGlow(Array.from({ length: 8 }, (_, k) => [glHaloAt(k), 125]), ['pink', 'peach', 'lilac']),
-  glow_bloom: glGlow(GL_BLOOM, ['salmon', 'pink', 'lilac']),
-  glow_flicker: glGlow(GL_FLICKER, ['peach', 'apricot', 'salmon']),
-  glow_twist: glGlow(GL_TWIST, ['sky', 'aqua', 'lilac']),
-  glow_stairs: glGlow([[1, 2, 3], [2, 3, 1], [3, 1, 2]].map(hs => [glStairsAt(hs), 310]), ['mint', 'aqua', 'sky']),
-  glow_pulse: glGlow(GL_PULSE, ['lilac', 'pink', 'peach'], { trail: 1.6, rise: 4 }),
-  glow_bounce: glGlow([[glBounceAt([[2]]), 150], [glBounceAt([[1], [2, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[0, 'W']]), 200], [glBounceAt([[0], [1, ':']]), 70], [glBounceAt([[1]]), 80], [glBounceAt([[2], [1, ':']]), 70], [glCellsTo3([[0, 2, ':'], [1, 2, '#'], [2, 2, ':']]), 130]], ['peach', 'butter', 'apricot'], { trail: 0.9, rise: 1.5 }),
-  glow_beads: glGlow([0, 1, 2, 3].map(k => [glBeadsAt(k), 210]), ['sky', 'lilac', 'pink']),
-  glow_worm: glGlow([...Array.from({ length: 11 }, (_, k) => [glWormAt(k), 95])], ['aqua', 'mint', 'sky'], { trail: 0.8 }),
-  glow_rain: glGlow(Array.from({ length: 5 }, (_, t) => [glRainAt(t), 170]), ['sky', 'aqua', 'mint'], { trail: 0.8 }),
-  glow_spiral: glGlow([...Array.from({ length: 9 }, (_, k) => [glSpiralAt(0, k + 1), 85]), [glSpiralAt(0, 9), 260], ...Array.from({ length: 8 }, (_, k) => [glSpiralAt(k + 1, 9), 85]), ['.........', 200]], ['pink', 'lilac', 'sky']),
-  glow_tumble: glGlow(GL_TUMBLE.map(c => [glTumbleAt(c), 250]), ['apricot', 'salmon', 'pink'], { trail: 1.0 }),
+const MICRO_SPRITES = {
+  thinking_micro: micro([...[0, 1, 2, 3, 4].map(k => [mcThink(k), 130]), [mcThink(5), 300]]),
+  reading_micro: micro([...[0, 1, 2, 3].map(j => [mcRead(j), [180, 110, 110, 140][j]]), [mcRead(4), 160], [mcRead(4, -1), 90], [mcRead(0, -2), 90]].map(([b, ms], i, a) => i === a.length - 1 ? [mcRead(0), ms] : [b, ms])),
+  analyzing_micro: micro(mcBarFrames()),
+  searching_micro: micro([[mcLens(1, 1, true), 190], [mcLens(2, 1), 120], [mcLens(2, 2), 170], [mcLens(1, 2), 120]]),
+  generating_micro: micro([[mcStar(0, '#'), 150], [mcStar(1, ':'), 110], [mcStar(2, null, true), 210], [mcStar(1), 120], [mcStarX(), 110], [mcStar(0, 'W'), 140]]),
+  writing_micro: micro([...[0, 1, 2, 3, 4].map(c => [mcType(c), [170, 110, 120, 110, 160][c]]), [mcTypeScroll(0), 120], [mcTypeScroll(1), 90], [mcTypeScroll(2), 90]]),
+  syncing_micro: micro(Array.from({ length: 8 }, (_, p) => [mcChase(p), [110, 80, 60, 50, 50, 60, 80, 110][p]])),
+  connecting_micro: micro([[mcLink([], ':'), 220], [mcLink([], '#'), 120], [mcLink([[1, '#'], [3, '#']]), 90], [mcLink([[1, '#'], [2, 'W'], [3, '#']], 'W'), 120], [mcLink([[1, '#'], [2, '#'], [3, '#']]), 420], [mcLink([[1, ':'], [2, ':'], [3, ':']]), 110], [mcLink([[1, ':'], [3, ':']]), 90]]),
+  uploading_micro: micro(Array.from({ length: 5 }, (_, t) => [mcStream(t, true), 120])),
+  downloading_micro: micro(Array.from({ length: 5 }, (_, t) => [mcStream(t, false), 120])),
+  done_micro: micro([[mcDots(':'), 200], [mcDots('#'), 110], [mcDots('#', 1), 90], [c5([[0, 2, '#'], [1, 3, '#'], [4, 1, '#']]), 70], [mcCheck([MC_CHECK[0], MC_CHECK[1], MC_CHECK[4]], 1), 90],
+    [mcCheck(MC_CHECK), 90], ...[0, 1, 2, 3, 4].map(i => [mcCheck(MC_CHECK, i), 55]), [mcCheck(MC_CHECK), 420], [mcCheck([MC_CHECK[0], MC_CHECK[1], MC_CHECK[4]]), 70], [c5([[0, 2, '#'], [1, 3, '#'], [4, 1, '#']]), 70], [mcDots('#'), 90]]),
+  error_micro: micro([[mcBang(0), 380], [mcBang(-1, true), 60], [mcBang(1, true), 60], [mcBang(-1, true), 70], [mcBang(0, true), 110], [mcBang(0), 200], [mcBang(0, false, ':'), 110], [mcBang(0), 160]]),
+  building_micro: micro(mcBuild()),
+  debugging_micro: micro([...[3, 2].map(y => [mcCrawl(y), 120]), [mcCrawl(1), 140], [mcCrawl(1, true), 110], [mcCrawl(1), 110], [mcCrawl(1, true), 110], ...[0, -1, -2].map(y => [mcCrawl(y), 95])]),
+  heartbeat_micro: micro([[m5(MC_HEART.s), 420], [m5(MC_HEART.l), 80], [m5(MC_HEART.m), 80], [m5(MC_HEART.s), 120], [m5(MC_HEART.l), 70], [m5(MC_HEART.m), 80], [m5(MC_HEART.s), 380]]),
+  scanning_micro: micro([[mcScan(1), 170], [mcScan(2), 110], [mcScan(3), 170], [mcScan(2), 110]]),
+  breathing_micro: micro([[m5(MC_BREATH[0]), 520], [m5(MC_BREATH[1]), 260], [m5(MC_BREATH[2]), 280], [m5(MC_BREATH[3]), 320], [m5(MC_BREATH[4]), 700], [m5(MC_BREATH[3]), 320], [m5(MC_BREATH[2]), 300], [m5(MC_BREATH[1]), 300]]),
+  calculating_micro: micro([[MC_OPS.plus, 320], [MC_OPS.plus1, 60], [MC_OPS.times1, 60], [MC_OPS.times, 300], [MC_OPS.times1, 60], [MC_OPS.minus, 280], [MC_OPS.divide1, 60], [MC_OPS.divide, 300], [MC_OPS.divide1, 60], [MC_OPS.equals, 300], [MC_OPS.minus, 60], [MC_OPS.plus1, 60]]),
 };
 
 const SPRITES = {
@@ -1538,12 +1577,12 @@ const SPRITES = {
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D, OPTS_SP1, OPTS_SP2, OPTS_SP3);
-Object.assign(SPRITES, GLOW_SPRITES);
+Object.assign(SPRITES, MICRO_SPRITES);
 
 /* ---------- loops never stop. Every loader runs as one continuous loop: no pose holds longer than HOLD_MAX (a calm state
    such as breathing gets HOLD_CALM), a blank frame lasts at most BLANK_MAX, and a pose held for SHEEN_MIN or more carries
    a shine, a white line that sweeps diagonally across its lit cells while it rests, so a pause reads as a breath and
-   never as the animation stopping and starting again. Glow sprites crossfade and need none of this. ---------- */
+   never as the animation stopping and starting again. Micro sprites crossfade and need none of this. ---------- */
 const HOLD_MAX = 620, HOLD_CALM = 1000, BLANK_MAX = 90, SHEEN_MIN = 400;
 const sameBitmap = (a, b) => a.length === b.length && a.every((r, i) => r === b[i]);
 function polishLoop(id, sp) {
@@ -1560,5 +1599,5 @@ function polishLoop(id, sp) {
   }
   sp.period = fr.reduce((a, f) => a + f.ms, 0) / 1000;
 }
-for (const [id, sp] of Object.entries(SPRITES)) if (!sp.colors) polishLoop(id, sp);
+for (const [id, sp] of Object.entries(SPRITES)) if (!sp.micro) polishLoop(id, sp);
 if (typeof module !== 'undefined') module.exports = { SPRITES, EMPTY };
