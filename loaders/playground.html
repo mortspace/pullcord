@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;680&display=swap">
 <style>
-/* FeralUI docs register: one 640px column, quiet, typographic. Tokens and spacing follow LAYOUT-RULES.md. */
+/* FeralUI docs register: a sidebar of loaders and one centred column, quiet and typographic. Tokens and spacing follow LAYOUT-RULES.md. */
 :root {
   --bg: #101012;
   --ink: #e8e8ea;
@@ -19,6 +19,10 @@
   --surface-hover: color-mix(in srgb, var(--ink) 10%, transparent);
   --pill: #000000;
   --pill-line: rgba(255, 255, 255, 0.06);
+  --side: #0c0c0e;
+  --card: color-mix(in srgb, var(--ink) 3.5%, var(--bg));
+  --card-hover: color-mix(in srgb, var(--ink) 6%, var(--bg));
+  --accent-h: 18;
   color-scheme: dark;
 }
 html[data-theme='light'] {
@@ -31,6 +35,9 @@ html[data-theme='light'] {
   --surface-hover: rgba(0, 0, 0, 0.07);
   --pill: #ffffff;
   --pill-line: rgba(0, 0, 0, 0.1);
+  --side: #fbfbfa;
+  --card: #fbfbfa;
+  --card-hover: #ffffff;
   color-scheme: light;
 }
 * { box-sizing: border-box; scrollbar-width: thin; }
@@ -43,27 +50,120 @@ body {
   transition: background 0.25s ease, color 0.25s ease;
 }
 #root { overflow-x: clip; }
+/* docs shell: the loaders on the left, one centred reading column in the middle */
+.shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
+.side {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 1.25rem 0.9rem 1rem; background: var(--side); border-right: 1px solid var(--hairline); z-index: 60;
+}
+.brand { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.15rem 0.35rem 0.9rem; text-decoration: none; color: var(--ink); }
+.brand .loader { --s: 22px; }
+.brand b { font-size: 0.98rem; font-weight: 680; letter-spacing: -0.014em; }
+.brand .version { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.68rem; color: var(--muted); }
+.search { position: relative; display: flex; align-items: center; margin: 0 0 0.75rem; }
+.search svg { position: absolute; left: 0.7rem; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
+.search input {
+  width: 100%; height: 34px; padding: 0 3.2rem 0 2rem; border-radius: 10px; border: 1px solid var(--hairline); background: var(--surface);
+  color: var(--ink); font: inherit; font-size: 0.85rem; outline: none; -webkit-appearance: none; appearance: none;
+}
+.search input::placeholder { color: var(--muted); }
+.search input:focus { border-color: color-mix(in srgb, var(--ink) 30%, transparent); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search kbd { position: absolute; right: 0.5rem; display: flex; gap: 2px; pointer-events: none; }
+.search kbd span { min-width: 18px; height: 18px; padding: 0 4px; border-radius: 5px; display: grid; place-items: center; font: 500 0.66rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); background: var(--surface-hover); }
+.nav { display: flex; flex-direction: column; gap: 1px; }
+.nav-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.42rem 0.75rem; border-radius: 9px; color: var(--muted); text-decoration: none; font-size: 0.86rem; line-height: 1.25; transition: background .15s ease, color .15s ease; }
+.nav-item:hover { color: var(--ink); }
+.nav-item[aria-current='page'] { background: var(--surface-hover); color: var(--ink); font-weight: 500; }
+.nav-item:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.nav-item .sw { width: 6px; height: 6px; border-radius: 50%; flex: none; background: hsl(var(--h) 90% 60%); opacity: .9; }
+html[data-theme='light'] .nav-item .sw { background: hsl(var(--h) 85% 46%); }
+.nav-group { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 1.1rem 0.75rem 0.35rem; }
+.nav-empty { font-size: 0.82rem; color: var(--muted); padding: 0.4rem 0.75rem; }
+.side-foot { margin-top: auto; padding: 1rem 0.35rem 0; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-top: 1px solid var(--hairline); }
+.side-foot a { color: var(--muted); text-decoration: none; font-size: 0.84rem; }
+.side-foot a:hover { color: var(--ink); }
+.topbar { display: none; }
+.scrim { display: none; }
+.main { min-width: 0; }
 .page {
-  display: flex; flex-direction: column; min-height: 100vh;
-  width: min(100vw, 640px); max-width: 640px; margin: 0 auto;
-  padding-block: 4.5rem 2.5rem;
+  width: min(100%, 680px); margin: 0 auto;
+  padding-block: 4.5rem 3rem;
   padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
   padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
   overflow-x: clip;
 }
-.masthead {
-  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between;
-  margin: -4.5rem -1.5rem 2.5rem; padding: 1.5rem 1.5rem 1rem;
-  background: color-mix(in srgb, var(--bg) 76%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; left: 0; top: 0; bottom: 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform .3s cubic-bezier(.32,.72,0,1); box-shadow: 0 0 40px rgba(0,0,0,.35); }
+  .shell.nav-open .side { transform: none; }
+  .shell.nav-open .scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.35); }
+  .topbar {
+    display: flex; position: sticky; top: 0; z-index: 50; align-items: center; justify-content: space-between;
+    padding: 0.85rem max(1.25rem, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  }
+  .topbar .brand { padding: 0; }
+  .menu-btn { width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+  .menu-btn:focus-visible { outline: 2px solid var(--ink); }
+  .page { padding-block: 1.5rem 2.5rem; }
 }
-.brand { display: inline-flex; align-items: baseline; gap: 0.5rem; text-decoration: none; color: var(--ink); }
-.brand h1 { margin: 0; font-size: 1.05rem; font-weight: 680; letter-spacing: -0.014em; }
-.brand .version { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; color: var(--muted); }
-.tagline { font-size: 1.05rem; line-height: 1.55; color: var(--ink); margin: 0 0 1rem; }
-.repo-link { margin: -0.6rem 0 1.2rem; font-size: 0.85rem; }
-.repo-link a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--hairline); }
-.repo-link a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+
+/* headings in the register of the reference: a two-tone title, then one line of description */
+.hero { font-size: clamp(1.9rem, 5vw, 2.4rem); line-height: 1.08; font-weight: 640; letter-spacing: -0.032em; margin: 0 0 1rem; color: var(--ink); }
+.hero span { display: block; color: var(--muted); }
+.lede { font-size: 1rem; line-height: 1.6; color: var(--muted); margin: 0 0 1.5rem; max-width: 34rem; }
+.install { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 48px; padding: 0 0.6rem 0 1.1rem; margin-bottom: 1.5rem; border-radius: 16px; border: 1px solid var(--hairline); background: var(--card); }
+.install code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.82rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.install code b { font-weight: 400; color: var(--muted); margin-right: 0.5rem; }
+.install code i { font-style: normal; color: hsl(var(--accent-h) 90% 62%); }
+html[data-theme='light'] .install code i { color: hsl(var(--accent-h) 80% 42%); }
+.copy { flex: none; width: 32px; height: 32px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.copy:hover { color: var(--ink); background: var(--surface); }
+.copy[data-done='true'] { color: var(--ink); }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 0.75rem; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 2rem; }
+.card {
+  position: relative; display: flex; align-items: center; justify-content: center; height: 12.5rem; border-radius: 24px;
+  border: 1px solid var(--hairline); background: var(--card); color: inherit; text-decoration: none; transition: background .2s ease, border-color .2s ease;
+}
+.card:hover { background: var(--card-hover); }
+.card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.card .loader { --s: 44px; margin-top: -1rem; }
+.card-name { position: absolute; left: 0.5rem; right: 0.5rem; bottom: 0.9rem; text-align: center; font-size: 0.84rem; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-n { position: absolute; top: 0.75rem; right: 0.9rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.64rem; color: var(--muted); opacity: .7; }
+@media (max-width: 560px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .card { height: 10rem; border-radius: 20px; } .card .loader { --s: 40px; } }
+
+/* a loader's own page: a stage with its controls, the code, and every take */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 232px; border: 1px solid var(--hairline); border-radius: 24px; background: var(--card); overflow: hidden; margin-bottom: 0.5rem; }
+.stage-view { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2rem; min-height: 23rem; padding: 2rem 1rem; min-width: 0; }
+.stage-view .big { --s: 112px; }
+.stage-panel { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem; background: var(--surface); min-width: 0; }
+.stage-panel .seg { display: flex; }
+.stage-panel .seg-item { flex: 1; padding: 7px 6px; }
+.panel-k { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0.5rem 0.3rem 0.1rem; }
+.take-list { display: flex; flex-direction: column; gap: 2px; }
+.take-btn { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.65rem; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-size: 0.84rem; text-align: left; cursor: pointer; }
+.take-btn:hover { color: var(--ink); }
+.take-btn[aria-pressed='true'] { background: var(--surface-hover); color: var(--ink); }
+.take-btn small { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.66rem; color: var(--muted); }
+.code-block { position: relative; margin-bottom: 2.5rem; }
+.code-block .copy { position: absolute; top: 0.55rem; right: 0.55rem; }
+.code-block .code { margin: 0; }
+.takes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 2.5rem; }
+.take-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.9rem; align-items: center; padding: 1rem 1.1rem; border-radius: 20px; border: 1px solid var(--hairline); background: var(--card); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .2s ease, border-color .2s ease; }
+.take-card:hover { background: var(--card-hover); }
+.take-card[aria-pressed='true'] { border-color: color-mix(in srgb, var(--ink) 40%, transparent); }
+.take-card .loader { --s: 40px; }
+.take-card b { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.15rem; }
+.take-card span.cap { display: block; font-size: 0.8rem; line-height: 1.45; color: var(--muted); }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem; }
+.pager a { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.9rem 1.1rem; border-radius: 16px; border: 1px solid var(--hairline); text-decoration: none; color: var(--ink); font-size: 0.92rem; font-weight: 500; }
+.pager a small { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+.pager a.next { text-align: right; }
+.pager a:hover { background: var(--card); }
+@media (max-width: 680px) { .stage { grid-template-columns: minmax(0, 1fr); } .stage-view { min-height: 17rem; } .stage-view .big { --s: 88px; } .takes { grid-template-columns: minmax(0, 1fr); } }
 section { margin-bottom: 3rem; }
 h2 { font-size: 1.1rem; font-weight: 680; line-height: 1.3; letter-spacing: -0.014em; color: var(--ink); margin: 0 0 1rem; }
 p { margin: 0 0 1rem; color: var(--ink); }
@@ -92,7 +192,6 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 @media (prefers-reduced-motion: reduce) { .seg-thumb, .ui-switch-knob { transition: none; } }
 
 /* demo */
-.pl-variants { display: flex; justify-content: center; margin: 0.25rem 0 1.5rem; }
 .pl-group { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.5rem; }
 .pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 272px), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .pl-grid:last-child { margin-bottom: 0; }
@@ -222,21 +321,39 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 </style>
 </head>
 <body>
-<div id="root"><div class="page">
-  <header class="masthead">
-    <a class="brand" href="https://feralui.vercel.app/"><h1>FeralUI</h1><span class="version">v0.1.1</span></a>
-    <button type="button" class="ui-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Light theme"><span>Light</span><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button>
-  </header>
+<div id="root" class="shell">
+  <aside class="side" id="side" aria-label="Loaders">
+    <a class="brand" href="#/"><span class="loader" id="brandGlyph"></span><b>PixelLoader</b><span class="version">v0.1.1</span></a>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search loaders"><kbd><span>⌘</span><span>K</span></kbd></label>
+    <nav class="nav" id="nav">
+      <a class="nav-item" href="#/" data-route="overview">Overview</a>
+      <a class="nav-item" href="#/use" data-route="use">In use</a>
+      <a class="nav-item" href="#/guide" data-route="guide">Guide</a>
+      <div id="navList"></div>
+    </nav>
+    <div class="side-foot">
+      <a href="https://github.com/mortspace/pullcord" target="_blank" rel="noreferrer">GitHub</a>
+      <button type="button" class="ui-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Light theme"><span>Light</span><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <main class="main" id="content">
+  <header class="topbar"><a class="brand" href="#/"><span class="loader" id="brandGlyphTop"></span><b>PixelLoader</b></a><button type="button" class="menu-btn" id="menuBtn" aria-label="Open the loader list" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg></button></header>
+  <div class="page">
 
-  <p class="tagline">Loading states that say what is happening. Each one is a hand-drawn 13×13 pixel sprite on a ruled black button: a heart that beats, a hammer that strikes, a page that fills. Every loop is continuous.</p>
-  <div class="pl-variants"><div class="seg" data-set="top" role="group" aria-label="View"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button><button type="button" class="seg-item" data-v="use">In use</button></div></div>
-  <p class="repo-link"><a href="https://github.com/mortspace/pullcord" target="_blank" rel="noreferrer">GitHub</a></p>
+  <div id="overviewView">
+    <h1 class="hero">Loading states,<span>drawn in pixels.</span></h1>
+    <p class="lede">Loaders that say what is happening, each a hand-drawn 13×13 pixel sprite: a heart that beats, a hammer that strikes, a page that turns. Every loop is continuous, and every state comes in several takes.</p>
+    <div class="install"><code><b>$</b>npm install <i>pixel-loader</i></code><button type="button" class="copy" data-copy="npm install pixel-loader" aria-label="Copy the install command"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+    <div class="toolbar"><div class="seg" data-set="palette" role="group" aria-label="Palette"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button></div><div class="seg" data-set="motion" role="group" aria-label="Motion"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="on">Animated</button><button type="button" class="seg-item" data-v="reduced">Still</button></div></div>
+    <div id="states"></div>
+  </div>
 
-  <div class="code"><pre>npm install pixel-loader</pre></div>
+  <div id="detailView" hidden></div>
 
   <section id="useSection" hidden>
-    <h2>In use</h2>
-    <p>Where these go in a product. Every example runs on the same component, and the palette you picked above applies.</p>
+    <h1 class="hero">In use,<span>in real products.</span></h1>
+    <p class="lede">Where these go in a product. Every example runs on the same component, and the palette you picked applies.</p>
 
     <div class="uc">
       <p class="uc-k">AI agent run</p>
@@ -299,17 +416,9 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
     </div>
   </section>
 
-  <section id="statesSection">
-    <h2>States</h2>
-    <p>Eighteen states in four families. Hover one to read its color and loop time.</p>
-    <div id="states"></div>
-  </section>
-
-  <section id="optionsSection">
-    <h2>Options</h2>
-    <p>Every state comes in several takes, side by side. The first in each group is the one the product uses; pass any other by its name as <code>variant</code>.</p>
-    <div id="options"></div>
-  </section>
+  <div id="guideView" hidden>
+    <h1 class="hero">Guide,<span>how they are built.</span></h1>
+    <p class="lede">How to tune them, how a button is ruled, the rules that keep every glyph legible, and the component's API.</p>
 
   <section>
     <h2>Make it yours</h2>
@@ -318,7 +427,6 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
       <div class="row"><span class="name">Color</span><div class="seg" data-set="hueMode" role="group" aria-label="Color"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="state">Per state</button><button type="button" class="seg-item" data-v="brand">One tint</button></div></div>
       <div class="row"><span class="name">Size</span><div class="seg" data-set="size" role="group" aria-label="Size"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="24">S 24</button><button type="button" class="seg-item" data-v="32">M 32</button><button type="button" class="seg-item" data-v="48">L 48</button><button type="button" class="seg-item" data-v="64">XL 64</button></div></div>
       <div class="row"><span class="name">Width</span><div class="seg" data-set="width" role="group" aria-label="Width"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="fixed">Fixed 8.5G</button><button type="button" class="seg-item" data-v="fit">Fit</button></div></div>
-      <div class="row"><span class="name">Motion</span><div class="seg" data-set="motion" role="group" aria-label="Motion"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="on">Animated</button><button type="button" class="seg-item" data-v="reduced">Still</button></div></div>
       <div class="row"><span class="name">White-hot</span><button type="button" class="ui-switch" id="hotSwitch" role="switch" aria-checked="true" aria-label="White-hot pixels"><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button></div>
     </div>
     <div class="knobs">
@@ -351,7 +459,7 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 
   <section>
     <h2>Usage</h2>
-    <p>One component, one prop that names the state, and an optional <code>variant</code> that picks one of its takes from the Options above. Color follows the state unless you pass a tint. <code>done</code> and <code>error</code> stop on their final frame.</p>
+    <p>One component, one prop that names the state, and an optional <code>variant</code> that picks one of its takes, listed on each loader's page. Color follows the state unless you pass a tint. <code>done</code> and <code>error</code> stop on their final frame.</p>
     <div class="code"><pre>import { PixelLoader } from 'pixel-loader'
 import 'pixel-loader/pixel-loader.css'
 
@@ -377,7 +485,11 @@ import 'pixel-loader/pixel-loader.css'
       </tbody>
     </table>
   </section>
-</div></div>
+  </div>
+
+  </div>
+  </main>
+</div>
 
 <script>
 (() => {
@@ -1663,6 +1775,9 @@ const SPRITES = {
   calculating_sigma: restAtLongest(seq(...SIGMA_PATH.map((_, k) => F(sigmaAt(0, k + 1), DRAW_MS[k])), F(sigmaAt(0, 23, 'W'), 110), F(sigmaAt(0, 23, '#'), 1000), ...[4, 8, 12, 16, 20, 23].map(k => F(sigmaAt(k, 23, '#'), 55)), F(sigmaAt(0, 0, ':'), 120), F(sigmaAt(0, 0), 260))),
 };
 Object.assign(SPRITES, OPTS_A, OPTS_B, OPTS_C, OPTS_D);
+/* spinners: loaders with no meaning, for any wait. They take a warm neutral, the way a system spinner takes the text colour */
+const SPINNERS = [];
+for (const [id, label, idea] of SPINNERS) if (SPRITES[id]) STATES.push({ id, label, idea, group: 'Spinners', hue: 30, hueName: 'neutral', neutral: true, pillLabel: 'Loading', period: SPRITES[id].period });
 for (const st of STATES) st.sprite = SPRITES[st.id];
 /* the frozen pose: late in the rest frame, once the previous frame's trail has faded */
 function restTime(sp) { if (sp.rest != null) { let acc = 0; for (let i = 0; i < sp.rest; i++) acc += sp.frames[i].ms; return (acc + sp.frames[sp.rest].ms * 0.85) / 1000; } const cnt = f => f.b.join('').replace(/[^#W]/g, '').length, mx = Math.max(...sp.frames.map(cnt)); let best = 0, acc = 0, at = 0; for (const f of sp.frames) { if (cnt(f) === mx && f.ms > best) { best = f.ms; at = acc + f.ms * 0.85; } acc += f.ms; } return at / 1000; }
@@ -1682,24 +1797,24 @@ const byId = Object.fromEntries(STATES.map(s => [s.id, s]));
 
 /* ---------- color ramp: bed -> vivid lit -> white-hot, in sRGB hsl so the hue stays saturated ---------- */
 const RAMP_N = 40, rampCache = new Map();
-function ramp(hue, light, bed = S.bed) {
-  const key = hue + ':' + (light ? 'l' : 'd') + ':' + bed;
+function ramp(hue, light, bed = S.bed, neutral = false) {
+  const key = hue + ':' + (light ? 'l' : 'd') + ':' + bed + (neutral ? ':n' : '');
   if (rampCache.has(key)) return rampCache.get(key);
   const fills = [], alphas = [];
-  const litL = light ? 46 : 56, hotL = light ? 22 : 97, bedL = light ? 55 : 42;
+  const litL = neutral ? (light ? 34 : 80) : light ? 46 : 56, hotL = neutral ? (light ? 8 : 99) : light ? 22 : 97, bedL = neutral ? (light ? 62 : 46) : light ? 55 : 42, satK = neutral ? 0.16 : 1;
   for (let i = 0; i < RAMP_N; i++) {
     const v = i / (RAMP_N - 1); let L, Sat, A;
     if (v < 0.5) { const u = v / 0.5; L = lerp(bedL, litL, u); Sat = lerp(85, 100, u); A = lerp(bed, 1, u); }
     else { const u = (v - 0.5) / 0.5; L = lerp(litL, hotL, u * u); Sat = 100; A = 1; }
-    fills.push(`hsl(${hue} ${Sat.toFixed(0)}% ${L.toFixed(1)}%)`); alphas.push(+A.toFixed(3));
+    fills.push(`hsl(${hue} ${(Sat * satK).toFixed(0)}% ${L.toFixed(1)}%)`); alphas.push(+A.toFixed(3));
   }
   const r = { fills, alphas, edge: fills[Math.round(0.5 * (RAMP_N - 1))], bed: fills[0] };
   rampCache.set(key, r); return r;
 }
 /* iOS system colors (dark surface values) and how each state maps onto them */
-const IOS = { blue: ['#0A84FF', '#007AFF'], green: ['#30D158', '#34C759'], red: ['#FF453A', '#FF3B30'], orange: ['#FF9F0A', '#FF9500'], yellow: ['#FFD60A', '#FFCC00'], pink: ['#FF375F', '#FF2D55'], purple: ['#BF5AF2', '#AF52DE'], teal: ['#40C8E0', '#30B0C7'], indigo: ['#5E5CE6', '#5856D6'], mint: ['#63E6E2', '#00C7BE'] };
+const IOS = { blue: ['#0A84FF', '#007AFF'], green: ['#30D158', '#34C759'], red: ['#FF453A', '#FF3B30'], orange: ['#FF9F0A', '#FF9500'], yellow: ['#FFD60A', '#FFCC00'], pink: ['#FF375F', '#FF2D55'], purple: ['#BF5AF2', '#AF52DE'], teal: ['#40C8E0', '#30B0C7'], indigo: ['#5E5CE6', '#5856D6'], mint: ['#63E6E2', '#00C7BE'], gray: ['#AEAEB2', '#8E8E93'] };
 const IOS_MAP = { thinking: 'purple', reading: 'blue', analyzing: 'blue', searching: 'blue', generating: 'purple', writing: 'blue', syncing: 'teal', connecting: 'teal', uploading: 'indigo', downloading: 'indigo', done: 'green', error: 'red', building: 'orange', debugging: 'yellow', heartbeat: 'pink', scanning: 'purple', breathing: 'mint', calculating: 'blue' };
-const iosName = id => (S.hueMode === 'brand' && !['done', 'error'].includes(TAKE_BASE[id] || id)) ? 'blue' : IOS_MAP[id];
+const iosName = id => (S.hueMode === 'brand' && !['done', 'error'].includes(TAKE_BASE[id] || id)) ? 'blue' : IOS_MAP[id] || (byId[id] && byId[id].neutral ? 'gray' : 'blue');
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 function rampHex(hex, bed = S.bed) {
   const key = 'hex:' + hex + ':' + bed;
@@ -1769,7 +1884,7 @@ class Matrix {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
     this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][(isLight() && !this.forceDark) ? 1 : 0] : null;
-    this.accentCss = this.accent || `hsl(${hue} 100% 56%)`;
+    this.accentCss = this.accent || (this.state.neutral && S.hueMode !== 'brand' ? 'hsl(30 12% 80%)' : `hsl(${hue} 100% 56%)`);
     if (this.ink) this.inkColor = getComputedStyle(this.el).color;
   }
   get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
@@ -1790,7 +1905,7 @@ class Matrix {
     for (let i = 0; i < buf.length; i++) { let v = buf[i] * kd; const t = tg[i]; if (t > v) v += (t - v) * kr; buf[i] = v; }
   }
   paint(o) {
-    const light = isLight() && !this.forceDark, bed = this.quiet ? 0 : S.bed, rp = this.ink ? rampInk(this.inkColor) : this.accent ? rampHex(this.accent, bed) : ramp(this.hue, light, bed);
+    const light = isLight() && !this.forceDark, bed = this.quiet ? 0 : S.bed, rp = this.ink ? rampInk(this.inkColor) : this.accent ? rampHex(this.accent, bed) : ramp(this.hue, light, bed, !!this.state.neutral && S.hueMode !== 'brand');
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
     const lv = S.levels, buf = this.buf, glow = this.ink ? 0 : S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1) * ((this.variant === 'pixels' && this.state.sprite && this.state.sprite.glow) || 1);
     for (let i = 0; i < buf.length; i++) {
@@ -1902,41 +2017,120 @@ const OPTIONS = {
 const TAKE_BASE = {};
 for (const [base, takes] of Object.entries(OPTIONS)) for (const [id] of takes.slice(1)) { TAKE_BASE[id] = base; byId[id] = { ...byId[base], id, sprite: SPRITES[id] }; IOS_MAP[id] = IOS_MAP[base]; }
 const $ = id => document.getElementById(id);
+const COPY_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const stateEls = {};
+/* the logo is itself a loader */
+const BRAND_GLYPH = 'generating';
 const GROUPS = [...new Set(STATES.map(s => s.group))];
-function buildStates() {
-  const root = $('states');
-  for (const id in stateEls) stateEls[id].m.destroy();
-  for (const k in stateEls) delete stateEls[k];
-  root.innerHTML = '';
+/* every loader in sidebar order; a take is reached through its state's page */
+const ORDERED = GROUPS.flatMap(g => STATES.filter(s => s.group === g));
+const takesOf = id => OPTIONS[id] || [[id, 'Default', byId[id].idea]];
+const variantName = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const mkEl = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const pillOf = (st, id, extra = '') => {
+  const pill = mkEl('div', 'pill' + (S.width === 'fixed' ? ' fixed' : '') + extra); pill.style.setProperty('--g', S.size + 'px');
+  const l = mkEl('span', 'loader'), lbl = mkEl('span', 'lbl'); lbl.textContent = st.pillLabel || st.label; pill.append(l, lbl);
+  return { pill, m: new Matrix(l, id, S.grid, { variant: 'pixels' }) };
+};
+/* the sidebar: one link per loader under its family, filtered by the search box */
+function buildNav() {
+  const root = $('navList'); root.innerHTML = '';
   for (const g of GROUPS) {
-    const h = document.createElement('p'); h.className = 'pl-group'; h.textContent = g; root.appendChild(h);
-    const grid = document.createElement('div'); grid.className = 'pl-grid'; root.appendChild(grid);
+    root.appendChild(mkEl('p', 'nav-group', esc(g)));
     for (const st of STATES.filter(s => s.group === g)) {
-      const pill = document.createElement('div'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
-      const l = document.createElement('span'); l.className = 'loader';
-      const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = st.label;
-      pill.append(l, lbl); grid.appendChild(pill);
-      const m = new Matrix(l, st.id, S.grid, { variant: 'pixels' });
-      stateEls[st.id] = { pill, m };
+      const a = mkEl('a', 'nav-item', `<span class="sw" style="--h:${st.hue}"></span>${esc(st.label)}`); if (st.neutral) a.dataset.neutral = ''; a.href = '#/l/' + st.id; a.dataset.id = st.id;
+      a.dataset.find = [st.label, st.id, g, ...takesOf(st.id).map(t => t[1])].join(' ').toLowerCase();
+      root.appendChild(a);
     }
   }
-  const opts = $('options'); opts.innerHTML = '';
-  for (const [base, takes] of Object.entries(OPTIONS)) {
-    const h = document.createElement('p'); h.className = 'pl-group'; h.textContent = `${byId[base].label}, ${takes.length} options`; opts.appendChild(h);
-    const grid = document.createElement('div'); grid.className = 'pl-grid'; opts.appendChild(grid);
-    takes.forEach(([id, name, cap], i) => {
-      const wrap = document.createElement('div'); wrap.className = 'take';
-      const pill = document.createElement('div'); pill.className = 'pill' + (S.width === 'fixed' ? ' fixed' : ''); pill.style.setProperty('--g', S.size + 'px');
-      const l = document.createElement('span'); l.className = 'loader';
-      const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = byId[base].label;
-      pill.append(l, lbl);
-      const t = document.createElement('div'); t.innerHTML = `<b>${name}${i === 0 ? ' <span class="cap">(in use)</span>' : ''}</b> <span class="cap">${cap}</span>`;
-      wrap.append(pill, t); grid.appendChild(wrap);
-      stateEls['take:' + id] = { pill, m: new Matrix(l, id, S.grid, { variant: 'pixels' }) };
-    });
+  root.appendChild(mkEl('p', 'nav-empty', 'No loader matches.')).hidden = true;
+}
+function filterNav() {
+  const q = $('search').value.trim().toLowerCase(); let any = false, group = null, groupAny = false;
+  const close = () => { if (group) group.hidden = !groupAny; };
+  for (const el of $('navList').children) {
+    if (el.classList.contains('nav-group')) { close(); group = el; groupAny = false; continue; }
+    if (!el.classList.contains('nav-item')) continue;
+    const show = !q || el.dataset.find.includes(q); el.hidden = !show; if (show) { any = true; groupAny = true; }
+  }
+  close(); $('navList').querySelector('.nav-empty').hidden = any;
+}
+/* the overview: one card per loader, its glyph large and its name under it, the way a gallery reads */
+function buildStates() {
+  const root = $('states');
+  for (const id in stateEls) if (!id.includes(':')) { stateEls[id].m.destroy(); delete stateEls[id]; }
+  root.innerHTML = '';
+  for (const g of GROUPS) {
+    const list = STATES.filter(s => s.group === g);
+    root.appendChild(mkEl('p', 'pl-group', esc(g)));
+    const grid = mkEl('div', 'cards'); root.appendChild(grid);
+    for (const st of list) {
+      const card = mkEl('a', 'card'); card.href = '#/l/' + st.id;
+      const l = mkEl('span', 'loader'), name = mkEl('span', 'card-name'); name.textContent = st.label;
+      const n = takesOf(st.id).length; card.append(l, name); if (n > 1) card.appendChild(mkEl('span', 'card-n', n + ' takes'));
+      grid.appendChild(card);
+      stateEls[st.id] = { pill: card, m: new Matrix(l, st.id, S.grid, { variant: 'pixels' }) };
+    }
   }
 }
+/* a loader's own page */
+let detail = null;
+function clearDetail() {
+  for (const k of Object.keys(stateEls)) if (k.startsWith('take:') || k.startsWith('detail:')) { stateEls[k].m.destroy(); delete stateEls[k]; }
+  if (detail) { detail.big.destroy(); detail = null; }
+  $('detailView').innerHTML = '';
+}
+function codeFor(id, take) {
+  const st = byId[id], t = takesOf(id), i = t.findIndex(x => x[0] === take), v = i > 0 ? ` variant="${variantName(t[i][1])}"` : '';
+  const what = st.group === 'Spinners' ? `spinner="${variantName(st.label)}"` : `state="${id}"`;
+  return `import { PixelLoader } from 'pixel-loader'\n\n<PixelLoader ${what}${v} size={${S.size}} label="${st.pillLabel || st.label}" />`;
+}
+function pickTake(take) {
+  if (!detail) return; detail.take = take;
+  detail.big.set(take, S.grid); detail.pill.m.set(take, S.grid);
+  for (const b of $('detailView').querySelectorAll('[data-take]')) b.setAttribute('aria-pressed', b.dataset.take === take);
+  $('detailCode').textContent = codeFor(detail.id, take);
+  applyAll();
+}
+function buildDetail(id) {
+  const st = byId[id], takes = takesOf(id), root = $('detailView'), at = ORDERED.indexOf(st);
+  const prev = ORDERED[(at - 1 + ORDERED.length) % ORDERED.length], next = ORDERED[(at + 1) % ORDERED.length];
+  root.innerHTML = `<h1 class="hero"><span>${esc(st.group)}/</span>${esc(st.label)}</h1>
+    <p class="lede">${esc(st.idea)}</p>
+    <div class="stage"><div class="stage-view" id="stageView"><span class="loader big" id="bigGlyph"></span></div>
+      <div class="stage-panel">
+        <p class="panel-k">Size</p><div class="seg" data-set="size" role="group" aria-label="Size"><span class="seg-thumb" aria-hidden="true"></span>${[24, 32, 48, 64].map(v => `<button type="button" class="seg-item" data-v="${v}">${v}</button>`).join('')}</div>
+        <p class="panel-k">Palette</p><div class="seg" data-set="palette" role="group" aria-label="Palette"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button></div>
+        ${takes.length > 1 ? `<p class="panel-k">Take</p><div class="take-list">${takes.map(([t, name], i) => `<button type="button" class="take-btn" data-take="${t}" aria-pressed="false">${esc(name)}${i === 0 ? '<small>default</small>' : ''}</button>`).join('')}</div>` : ''}
+      </div></div>
+    <div class="code-block"><div class="code"><pre id="detailCode"></pre></div><button type="button" class="copy" data-copy-from="detailCode" aria-label="Copy the code">${COPY_ICON}</button></div>
+    ${takes.length > 1 ? `<h2>Takes</h2><p>${takes.length} ways to draw ${esc(st.label.toLowerCase())}. The first is the default; pass any other as <code>variant</code>.</p><div class="takes" id="takeCards"></div>` : ''}
+    <nav class="pager" aria-label="More loaders"><a href="#/l/${prev.id}"><small>Previous</small>${esc(prev.label)}</a><a class="next" href="#/l/${next.id}"><small>Next</small>${esc(next.label)}</a></nav>`;
+  const big = new Matrix($('bigGlyph'), id, S.grid, { variant: 'pixels' });
+  const pill = pillOf(st, id); $('stageView').appendChild(pill.pill); stateEls['detail:pill'] = pill;
+  detail = { id, take: id, big, pill };
+  if (takes.length > 1) for (const [t, name, cap] of takes) {
+    const card = mkEl('button', 'take-card'); card.type = 'button'; card.dataset.take = t; card.setAttribute('aria-pressed', 'false');
+    const l = mkEl('span', 'loader'), txt = mkEl('div', '', `<b>${esc(name)}</b><span class="cap">${esc(cap)}</span>`); card.append(l, txt);
+    $('takeCards').appendChild(card);
+    stateEls['take:' + t] = { pill: card, m: new Matrix(l, t, S.grid, { variant: 'pixels' }) };
+  }
+  root.querySelectorAll('[data-take]').forEach(b => b.addEventListener('click', () => pickTake(b.dataset.take)));
+  pickTake(id);
+}
+/* hash routes: #/ overview, #/use, #/guide, #/l/<state> */
+function route() {
+  const [kind, arg] = location.hash.replace(/^#\/?/, '').split('/');
+  const view = kind === 'use' ? 'use' : kind === 'guide' ? 'guide' : kind === 'l' && byId[arg] && !TAKE_BASE[arg] ? 'detail' : 'overview';
+  S.view = view === 'use' ? 'use' : 'catalogue';
+  $('overviewView').hidden = view !== 'overview'; $('useSection').hidden = view !== 'use'; $('guideView').hidden = view !== 'guide'; $('detailView').hidden = view !== 'detail';
+  clearDetail(); if (view === 'detail') buildDetail(arg);
+  for (const a of document.querySelectorAll('.nav-item')) { const on = view === 'detail' ? a.dataset.id === arg : a.dataset.route === view; if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+  document.title = view === 'detail' ? `${byId[arg].label} · PixelLoader` : view === 'use' ? 'In use · PixelLoader' : view === 'guide' ? 'Guide · PixelLoader' : 'PixelLoader';
+  setNav(false); scrollTo(0, 0); applyAll();
+}
+const setNav = open => { $('root').classList.toggle('nav-open', open); $('menuBtn').setAttribute('aria-expanded', open); };
 /* ---------- use cases: small product mocks sequenced on the page clock ---------- */
 const UC = [];
 const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -2110,21 +2304,43 @@ function applyAll() {
   rampCache.clear();
   for (const m of live) { m.applyHue(); m.el.classList.toggle('still', S.motion === 'reduced'); if (S.motion === 'reduced' || m.frozen) m.rest(); }
   for (const id in stateEls) { const { pill, m } = stateEls[id]; pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.title = `${m.swatch} · ${m.period.toFixed(1)} s loop${m.state.oneShot ? ' · stops on the last frame' : ''}`; }
-  $('useSection').hidden = S.view !== 'use'; $('statesSection').hidden = S.view === 'use';
-  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = seg.dataset.set === 'top' ? (S.view === 'use' ? b.dataset.v === 'use' : b.dataset.v === S.palette) : String(S[seg.dataset.set]) === b.dataset.v;
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = String(S[seg.dataset.set]) === b.dataset.v;
   $('brandHue').disabled = S.palette === 'ios'; $('brandHueOut').textContent = S.palette === 'ios' ? 'systemBlue' : S.brandHue;
   $('rulingTable').innerHTML = rulingHtml();
+  for (const a of document.querySelectorAll('.nav-item[data-id]')) { const sw = a.querySelector('.sw'); sw.style.background = S.palette === 'ios' ? IOS[iosName(a.dataset.id)][isLight() ? 1 : 0] : 'neutral' in a.dataset ? (isLight() ? 'hsl(30 8% 40%)' : 'hsl(30 12% 78%)') : ''; }
+  if (detail && $('detailCode')) $('detailCode').textContent = codeFor(detail.id, detail.take);
   placeThumbs();
 }
-for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => { const b = e.target.closest('.seg-item'); if (!b) return; const v = b.dataset.v; if (seg.dataset.set === 'top') { if (v === 'use') S.view = 'use'; else { S.view = 'catalogue'; S.palette = v; } } else S[seg.dataset.set] = isNaN(+v) ? v : +v; applyAll(); });
+document.addEventListener('click', e => { const b = e.target.closest('.seg-item'); if (!b) return; const seg = b.closest('.seg'); if (!seg || !seg.dataset.set) return; const v = b.dataset.v; S[seg.dataset.set] = isNaN(+v) ? v : +v; applyAll(); });
+/* copy buttons: a fixed string, or the text of a code block */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('.copy'); if (!b) return;
+  const text = b.dataset.copy || ($(b.dataset.copyFrom) || {}).textContent || '';
+  try { await navigator.clipboard.writeText(text); } catch (err) { const t = mkEl('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e2) {} t.remove(); }
+  b.dataset.done = 'true'; setTimeout(() => { b.dataset.done = 'false'; }, 1200);
+});
+$('search').addEventListener('input', filterNav);
+$('search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const first = [...$('navList').querySelectorAll('.nav-item')].find(a => !a.hidden); if (first) { location.hash = first.getAttribute('href'); $('search').blur(); } }
+  if (e.key === 'Escape') { $('search').value = ''; filterNav(); $('search').blur(); }
+});
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (matchMedia('(max-width: 900px)').matches) setNav(true); $('search').focus(); $('search').select(); }
+  if (e.key === 'Escape') setNav(false);
+});
+$('menuBtn').addEventListener('click', () => setNav(!$('root').classList.contains('nav-open')));
+$('scrim').addEventListener('click', () => setNav(false));
+addEventListener('hashchange', route);
 $('themeSwitch').addEventListener('click', () => { S.theme = S.theme === 'light' ? 'dark' : 'light'; applyAll(); });
 $('hotSwitch').addEventListener('click', () => { S.hot = S.hot === 'on' ? 'off' : 'on'; applyAll(); });
 const ranges = { decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)], brandHue: ['brandHueOut', v => v] };
 for (const id in ranges) $(id).addEventListener('input', e => { S[id] = +e.target.value; $(ranges[id][0]).textContent = ranges[id][1](e.target.value); applyAll(); });
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) S.motion = 'reduced';
 if (matchMedia('(prefers-color-scheme: light)').matches) S.theme = 'light';
+buildNav();
 buildStates();
-applyAll();
+for (const id of ['brandGlyph', 'brandGlyphTop']) new Matrix($(id), BRAND_GLYPH, S.grid, { variant: 'pixels', quiet: true });
+route();
 addEventListener('resize', placeThumbs);
 function loop(now) { if (S.view === 'use') for (const u of UC) u.tick(now); if (S.motion !== 'reduced') for (const m of live) m.tick(now); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
