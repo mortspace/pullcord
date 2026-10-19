@@ -34,6 +34,7 @@ html[data-theme='light'] {
   color-scheme: light;
 }
 * { box-sizing: border-box; scrollbar-width: thin; }
+[hidden] { display: none !important; }
 html { background: var(--bg); }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
@@ -114,6 +115,51 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 @keyframes breathe { 0%,100% { opacity: .75 } 50% { opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { .loader.still svg { animation: none; } }
 
+/* use cases */
+.uc { background: var(--surface); border-radius: 16px; padding: 1.1rem 1.2rem 1.2rem; margin-bottom: 1rem; min-width: 0; }
+.uc-k { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.75rem; }
+.uc .cap { font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0; }
+.agent { display: grid; gap: 0.5rem; }
+.step { display: flex; align-items: center; gap: 0.6rem; font-size: 0.92rem; min-height: 24px; transition: opacity .3s ease, color .3s ease; }
+.step .loader { --s: 20px; }
+.step.done { color: var(--muted); }
+.step.pending { display: none; }
+.answer { margin-top: 0.5rem; padding: 0.75rem 1rem; background: var(--bg); border-radius: 12px; font-size: 0.92rem; line-height: 1.5; min-height: 3.6em; }
+.answer:empty { display: none; }
+.phone { background: var(--bg); border-radius: 22px; padding: 10px 18px; position: relative; height: 96px; overflow: hidden; }
+.status { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: var(--ink); padding: 2px 6px 0; }
+.island { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); height: 37px; min-width: 124px; background: #000; color: #fff; border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0 14px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; transition: min-width .45s cubic-bezier(.32,.72,0,1); }
+.island .loader { --s: 20px; }
+.island .sub { color: #8e8e93; font-weight: 500; }
+.island:empty { padding: 0; }
+.inline-l { --s: 1.2em; margin: 0 0.3em; vertical-align: -0.25em; }
+.uc .sentence { font-size: 1rem; line-height: 1.7; margin: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-width: 160px; background: var(--ink); color: var(--bg); border: 0; border-radius: 12px; padding: 0.62rem 1rem; font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: transform .12s ease; }
+.btn:active { transform: scale(.97); }
+.btn .loader { --s: 18px; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.canvas { background: var(--bg); border-radius: 14px; height: 120px; position: relative; overflow: hidden; }
+.toast { position: absolute; right: 14px; bottom: 14px; display: flex; align-items: center; gap: 0.6rem; background: var(--pill); color: var(--ink); border: 1px solid var(--pill-line); border-radius: 12px; padding: 0.6rem 0.9rem; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transform: translateY(24px); opacity: 0; transition: transform .35s cubic-bezier(.32,.72,0,1), opacity .25s ease; }
+.toast.on { transform: none; opacity: 1; }
+.toast .loader { --s: 20px; }
+.rows { display: grid; }
+.row-d { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--hairline); font-size: 0.88rem; }
+.row-d:last-child { border-bottom: 0; }
+.row-d code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.82rem; }
+.row-d .when { color: var(--muted); font-size: 0.78rem; margin-left: 0.6rem; }
+.st { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--muted); min-width: 8.5em; }
+.st .loader { --s: 18px; }
+.term { background: #0b0b0d; color: #d6d6da; border-radius: 12px; padding: 0.9rem 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; line-height: 1.8; min-height: 6.4em; white-space: pre-wrap; }
+.term .loader { --s: 16px; vertical-align: -3px; margin-right: 0.45rem; }
+.term .dim { color: #8a8a93; }
+.term .cur { display: inline-block; width: 0.55em; height: 1em; background: #d6d6da; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.health { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.health .pill { --g: 28px; }
+.bpm { font-size: 2rem; font-weight: 680; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.bpm small { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: 0.3rem; letter-spacing: 0; }
+@media (prefers-reduced-motion: reduce) { .island, .toast, .btn { transition: none; } .term .cur { animation: none; } }
+
 /* knobs */
 .controls { display: grid; gap: 1rem; margin-top: 1.2rem; }
 .row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
@@ -133,12 +179,66 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
   </header>
 
   <p class="tagline">Loading states that say what is happening. Each one is a hand-drawn 9×9 pixel sprite on a ruled black button: a heart that beats, a hammer that strikes, a page that fills. Every loop is continuous.</p>
-  <div class="pl-variants"><div class="seg" data-set="palette" role="group" aria-label="Palette"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button></div></div>
+  <div class="pl-variants"><div class="seg" data-set="top" role="group" aria-label="View"><span class="seg-thumb" aria-hidden="true"></span><button type="button" class="seg-item" data-v="vivid">Vivid</button><button type="button" class="seg-item" data-v="ios">iOS</button><button type="button" class="seg-item" data-v="use">In use</button></div></div>
   <p class="repo-link"><a href="https://github.com/mortspace/pullcord" target="_blank" rel="noreferrer">GitHub</a></p>
 
   <div class="code"><pre>npm install pixel-loader</pre></div>
 
-  <section>
+  <section id="useSection" hidden>
+    <h2>In use</h2>
+    <p>Where these go in a product. Every example runs on the same component, and the palette you picked above applies.</p>
+
+    <div class="uc">
+      <p class="uc-k">AI agent run</p>
+      <div class="agent" id="agent"></div>
+      <div class="answer" id="answer"></div>
+      <p class="cap">Each step shows its own state while it runs and settles on the check when it finishes. The answer streams in once the last step is done.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Dynamic Island</p>
+      <div class="phone"><div class="status"><span>9:41</span><span>●●●●</span></div><div class="island" id="island"></div></div>
+      <p class="cap">The island widens for the activity, shows progress beside the glyph, and collapses after the check.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Inline in a sentence</p>
+      <p class="sentence">Your report is on its way. We are<span class="loader inline-l" data-uc="analyzing"></span>analyzing the last seven days and<span class="loader inline-l" data-uc="reading"></span>reading the attached files.</p>
+      <p class="cap">At 1.2 em the glyph sits on the baseline like a word. The sentence keeps reading while the work happens.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Button with a state</p>
+      <button type="button" class="btn" id="saveBtn"><span class="loader" id="saveGlyph" hidden></span><span id="saveLbl">Save changes</span></button>
+      <p class="cap">Click it. The label gives way to the glyph while it saves, lands on the check, then returns. It also runs itself every few seconds.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Toast</p>
+      <div class="canvas"><div class="toast" id="toast"><span class="loader" id="toastGlyph"></span><span id="toastLbl"></span></div></div>
+      <p class="cap">One toast for the whole job. The glyph changes state in place instead of a second toast stacking on the first.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Deploy list</p>
+      <div class="rows" id="deploys"></div>
+      <p class="cap">A status column that does not need words to be read from across the room. The failed row keeps blinking until someone looks.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Terminal</p>
+      <div class="term" id="term"></div>
+      <p class="cap">A spinner replacement for a CLI. The glyph says what the process is doing, the line says how far along it is.</p>
+    </div>
+
+    <div class="uc">
+      <p class="uc-k">Health card</p>
+      <div class="health"><div class="pill fixed"><span class="loader" data-uc="heartbeat"></span><span class="lbl">Reading your heartbeat</span></div><div class="bpm"><span id="bpm">72</span><small>bpm</small></div></div>
+      <p class="cap">The heart beats while the number settles. A sensor reading with a loader that means the same thing.</p>
+    </div>
+  </section>
+
+  <section id="statesSection">
     <h2>States</h2>
     <p>Eighteen states in four families. Hover one to read its color and loop time.</p>
     <div id="states"></div>
@@ -203,7 +303,7 @@ import 'pixel-loader/pixel-loader.css'
 
 /* ---------- settings ---------- */
 const S = {
-  theme: 'dark', palette: 'vivid', hueMode: 'state', brandHue: 250,
+  theme: 'dark', palette: 'vivid', view: 'catalogue', hueMode: 'state', brandHue: 250,
   grid: 9, size: 32, levels: 2, step: 0, rise: 30, decay: 140, glow: 0.75, bed: 0.16,
   variant: 'pixels', hot: 'on', width: 'fixed', motion: 'on',
 };
@@ -643,7 +743,7 @@ const io = new IntersectionObserver(es => { for (const e of es) { const m = live
 
 class Matrix {
   constructor(el, stateId, N, opts = {}) {
-    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings';
+    this.el = el; this.stateId = stateId; this.N = N; this.visible = true; this.static = !!opts.static; this.variant = opts.variant || 'strings'; this.forceDark = !!opts.forceDark; this.frozen = false;
     this.hue = null; this.build();
     if (!this.static) { io.observe(el); live.push(this); }
   }
@@ -671,11 +771,11 @@ class Matrix {
   applyHue() {
     const hue = S.hueMode === 'brand' ? S.brandHue : this.state.hue;
     this.hue = hue; this.el.style.setProperty('--h', hue); this.lastIdx.fill(-1);
-    this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][isLight() ? 1 : 0] : null;
+    this.accent = S.palette === 'ios' ? IOS[iosName(this.stateId)][(isLight() && !this.forceDark) ? 1 : 0] : null;
     this.accentCss = this.accent || `hsl(${hue} 100% 56%)`;
   }
   get swatch() { return S.palette === 'ios' ? 'system' + iosName(this.stateId)[0].toUpperCase() + iosName(this.stateId).slice(1) : `${byId[this.stateId].hueName} ${this.hue}`; }
-  set(stateId, N) { this.stateId = stateId; this.N = N; this.build(); }
+  set(stateId, N) { this.stateId = stateId; this.N = N; this.frozen = false; this.build(); }
   get period() { return (this.variant === 'pixels' && this.state.sprite) ? this.state.sprite.period : this.state.period; }
   scene(t) {
     const o = { points: [], lines: [] };
@@ -692,7 +792,7 @@ class Matrix {
     for (let i = 0; i < buf.length; i++) { let v = buf[i] * kd; const t = tg[i]; if (t > v) v += (t - v) * kr; buf[i] = v; }
   }
   paint(o) {
-    const light = isLight(), rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
+    const light = isLight() && !this.forceDark, rp = this.accent ? rampHex(this.accent) : ramp(this.hue, light);
     if (this.rampRef !== rp) { this.rampRef = rp; this.lastIdx.fill(-1); }
     const lv = S.levels, buf = this.buf, glow = S.glow * (light ? 0.5 : 1) * (S.palette === 'ios' ? 0.45 : 1);
     for (let i = 0; i < buf.length; i++) {
@@ -710,8 +810,13 @@ class Matrix {
       l.setAttribute('opacity', a); g.setAttribute('opacity', (L.i * glow * 0.9).toFixed(3));
     }
   }
+  show(stateId, frozen = false) {
+    if (this.stateId !== stateId) { this.set(stateId, this.N); this.el.hidden = false; }
+    if (frozen && !this.frozen) { this.frozen = true; this.snapshot(restTime(this.state.sprite)); }
+    if (!frozen) this.frozen = false;
+  }
   tick(now) {
-    if (!this.visible) return;
+    if (!this.visible || this.frozen) return;
     const dt = this.last ? Math.min(50, now - this.last) : 16; this.last = now;
     let t = (now / 1000) % this.period; if (S.step > 0) t = Math.floor(t / (S.step / 1000)) * (S.step / 1000);
     const o = this.scene(t); this.raster(o); this.temporal(dt); this.paint(o);
@@ -747,6 +852,102 @@ function buildStates() {
     }
   }
 }
+/* ---------- use cases: small product mocks sequenced on the page clock ---------- */
+const UC = [];
+const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const glyph = (parent, id, opts = {}) => { const l = mk('span', 'loader'); parent.appendChild(l); return new Matrix(l, id, 9, { variant: 'pixels', ...opts }); };
+const T0 = performance.now();
+const phase = (now, period) => ((now - T0) / 1000) % period;
+
+/* agent run */
+(() => {
+  const steps = [['reading', 'Reading docs', 3], ['thinking', 'Thinking', 2.4], ['searching', 'Searching the web', 2.6], ['writing', 'Writing the answer', 3]];
+  const root = $('agent'), rows = steps.map(([id, label]) => { const r = mk('div', 'step pending'); const m = glyph(r, id); r.appendChild(mk('span', '', label)); root.appendChild(r); return { r, m, id }; });
+  const words = 'Your last seven days show a steady rise in deep sleep, and the attached report agrees. Two late nights explain the dip on Thursday.'.split(' ');
+  const total = steps.reduce((a, s) => a + s[2], 0), period = total + 2.6 + 3;
+  UC.push({ tick(now) {
+    let t = phase(now, period), acc = 0, answer = '';
+    rows.forEach((row, i) => {
+      const d = steps[i][2], start = acc; acc += d;
+      const st = t < start ? 'pending' : t < start + d ? 'active' : 'done';
+      row.r.className = 'step ' + st;
+      if (st === 'active') row.m.show(row.id); else if (st === 'done') row.m.show('done', true);
+    });
+    if (t >= total) { const n = Math.min(words.length, Math.floor((t - total) / 2.6 * words.length)); answer = words.slice(0, n).join(' '); }
+    if ($('answer').textContent !== answer) $('answer').textContent = answer;
+  } });
+})();
+
+/* dynamic island */
+(() => {
+  const island = $('island'); let shown = '';
+  const m = glyph(island, 'uploading', { forceDark: true }); const lbl = mk('span'), sub = mk('span', 'sub'); island.append(lbl, sub);
+  UC.push({ tick(now) {
+    const t = phase(now, 6.5); let mode;
+    if (t < 1.4) mode = 'idle'; else if (t < 4.6) mode = t < 3.2 ? 'up3' : 'up4'; else mode = 'done';
+    if (mode === shown) return; shown = mode;
+    if (mode === 'idle') { m.el.hidden = true; lbl.textContent = ''; sub.textContent = ''; island.style.minWidth = '124px'; }
+    else if (mode.startsWith('up')) { m.show('uploading'); m.el.hidden = false; lbl.textContent = 'Uploading'; sub.textContent = mode === 'up3' ? '3 of 5' : '4 of 5'; island.style.minWidth = '210px'; }
+    else { m.show('done', true); lbl.textContent = 'Uploaded'; sub.textContent = ''; island.style.minWidth = '170px'; }
+  } });
+})();
+
+/* inline sentence + health glyphs */
+for (const el of document.querySelectorAll('.loader[data-uc]')) new Matrix(el, el.dataset.uc, 9, { variant: 'pixels' });
+
+/* button */
+(() => {
+  const btn = $('saveBtn'), g = $('saveGlyph'), lbl = $('saveLbl'); const m = new Matrix(g, 'uploading', 9, { variant: 'pixels', forceDark: !isLight() }); g.hidden = true;
+  let mode = 'idle', at = 0, lastAuto = performance.now();
+  const go = (now) => { mode = 'saving'; at = now; };
+  btn.addEventListener('click', () => { if (mode === 'idle') go(performance.now()); });
+  UC.push({ tick(now) {
+    if (mode === 'idle' && now - lastAuto > 7000) { go(now); }
+    if (mode === 'saving') { g.hidden = false; m.forceDark = !isLight(); m.show('uploading'); lbl.textContent = 'Saving'; if (now - at > 1900) { mode = 'saved'; at = now; } }
+    else if (mode === 'saved') { m.show('done', true); lbl.textContent = 'Saved'; if (now - at > 1500) { mode = 'idle'; lastAuto = now; g.hidden = true; lbl.textContent = 'Save changes'; } }
+  } });
+})();
+
+/* toast */
+(() => {
+  const toast = $('toast'), lbl = $('toastLbl'); const m = new Matrix($('toastGlyph'), 'syncing', 9, { variant: 'pixels' });
+  UC.push({ tick(now) {
+    const t = phase(now, 7.5);
+    if (t < 0.6) toast.classList.remove('on');
+    else if (t < 3.8) { toast.classList.add('on'); m.show('syncing'); lbl.textContent = 'Syncing 3 files'; }
+    else if (t < 5.6) { toast.classList.add('on'); m.show('done', true); lbl.textContent = 'All files synced'; }
+    else toast.classList.remove('on');
+  } });
+})();
+
+/* deploy list */
+(() => {
+  const root = $('deploys'), rows = [['main', '2 min ago', 'building', 'Building'], ['staging', '1 h ago', 'done', 'Deployed'], ['feat/pixels', '3 h ago', 'error', 'Failed']].map(([br, when, st, label]) => {
+    const r = mk('div', 'row-d'); r.innerHTML = `<div><code>${br}</code><span class="when">${when}</span></div>`; const s = mk('span', 'st'); const m = glyph(s, st); const l = mk('span', '', label); s.appendChild(l); r.appendChild(s); root.appendChild(r); return { m, l, st };
+  });
+  rows[1].m.show('done', true);
+  UC.push({ tick(now) { const t = phase(now, 7.5); if (t < 4.6) { rows[0].m.show('building'); rows[0].l.textContent = 'Building'; } else { rows[0].m.show('done', true); rows[0].l.textContent = 'Deployed'; } } });
+})();
+
+/* terminal */
+(() => {
+  const term = $('term'); const cmd = '$ pnpm build'; let last = '';
+  const l1 = mk('div'), l2 = mk('div'), l3 = mk('div'); term.append(l1, l2, l3);
+  const m2 = glyph(l2, 'building', { forceDark: true }); const t2 = mk('span'); l2.appendChild(t2); l2.hidden = true;
+  const m3 = glyph(l3, 'done', { forceDark: true }); const t3 = mk('span'); l3.appendChild(t3); l3.hidden = true; m3.show('done', true);
+  UC.push({ tick(now) {
+    const t = phase(now, 9.5); let key;
+    if (t < 1.3) { const n = Math.floor(t / 1.2 * cmd.length); key = 'type' + n; if (key !== last) { l1.innerHTML = cmd.slice(0, n) + '<span class="cur"></span>'; l2.hidden = true; l3.hidden = true; } }
+    else if (t < 4.8) { const mods = Math.min(128, Math.floor((t - 1.3) / 3.2 * 128)); key = 'build' + mods; if (key !== last) { l1.textContent = cmd; l2.hidden = false; m2.show('building'); t2.innerHTML = `Compiling <span class="dim">${mods} / 128 modules</span>`; } }
+    else if (t < 8.6) { key = 'done'; if (key !== last) { l2.hidden = false; m2.show('done', true); t2.innerHTML = 'Compiled <span class="dim">128 modules</span>'; l3.hidden = false; t3.innerHTML = 'Built in <span class="dim">3.2 s</span>'; } }
+    else { key = 'clear'; if (key !== last) { l1.innerHTML = '$ <span class="cur"></span>'; l2.hidden = true; l3.hidden = true; } }
+    last = key;
+  } });
+})();
+
+/* health */
+(() => { let bpm = 72, at = 0; UC.push({ tick(now) { if (now - at > 1100) { at = now; bpm = Math.max(66, Math.min(78, bpm + Math.round((Math.random() - 0.5) * 3))); $('bpm').textContent = bpm; } } }); })();
+
 function rulingHtml() {
   const tiers = [['S', 24], ['M', 32], ['L', 48], ['XL', 64]], r = v => Math.round(v * 10) / 10;
   const rows = [['Glyph G', g => g + ' px'], ['Cell pitch', g => r(g / 9) + ' px'], ['Label size', g => r(g * .52) + ' px'], ['Button height', g => r(g * 1.6) + ' px'], ['Pad left', g => r(g * .45) + ' px'], ['Glyph to label', g => r(g * .4) + ' px'], ['Pad right', g => r(g * .6) + ' px'], ['Radius', g => r(g * .5) + ' px'], ['Width', g => r(g * 8.5) + ' px'], ['Use', g => ({ 24: 'inline, lists', 32: 'cards, toasts', 48: 'panels', 64: 'hero' })[g]]];
@@ -763,14 +964,15 @@ function applyAll() {
   $('themeSwitch').setAttribute('aria-checked', S.theme === 'light');
   $('hotSwitch').setAttribute('aria-checked', S.hot === 'on');
   rampCache.clear();
-  for (const m of live) { m.applyHue(); m.el.classList.toggle('still', S.motion === 'reduced'); if (S.motion === 'reduced') m.snapshot(restTime(m.state.sprite)); }
+  for (const m of live) { m.applyHue(); m.el.classList.toggle('still', S.motion === 'reduced'); if (S.motion === 'reduced' || m.frozen) m.snapshot(restTime(m.state.sprite)); }
   for (const id in stateEls) { const { pill, m } = stateEls[id]; pill.style.setProperty('--g', S.size + 'px'); pill.classList.toggle('fixed', S.width === 'fixed'); pill.title = `${m.swatch} · ${m.period.toFixed(1)} s loop${m.state.oneShot ? ' · stops on the last frame' : ''}`; }
-  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = String(S[seg.dataset.set]) === b.dataset.v;
+  $('useSection').hidden = S.view !== 'use'; $('statesSection').hidden = S.view === 'use';
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('.seg-item')) b.dataset.active = seg.dataset.set === 'top' ? (S.view === 'use' ? b.dataset.v === 'use' : b.dataset.v === S.palette) : String(S[seg.dataset.set]) === b.dataset.v;
   $('brandHue').disabled = S.palette === 'ios'; $('brandHueOut').textContent = S.palette === 'ios' ? 'systemBlue' : S.brandHue;
   $('rulingTable').innerHTML = rulingHtml();
   placeThumbs();
 }
-for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => { const b = e.target.closest('.seg-item'); if (!b) return; const v = b.dataset.v; S[seg.dataset.set] = isNaN(+v) ? v : +v; applyAll(); });
+for (const seg of document.querySelectorAll('.seg')) seg.addEventListener('click', e => { const b = e.target.closest('.seg-item'); if (!b) return; const v = b.dataset.v; if (seg.dataset.set === 'top') { if (v === 'use') S.view = 'use'; else { S.view = 'catalogue'; S.palette = v; } } else S[seg.dataset.set] = isNaN(+v) ? v : +v; applyAll(); });
 $('themeSwitch').addEventListener('click', () => { S.theme = S.theme === 'light' ? 'dark' : 'light'; applyAll(); });
 $('hotSwitch').addEventListener('click', () => { S.hot = S.hot === 'on' ? 'off' : 'on'; applyAll(); });
 const ranges = { decay: ['decayOut', v => v + ' ms'], glow: ['glowOut', v => (+v).toFixed(2)], bed: ['bedOut', v => (+v).toFixed(2)], brandHue: ['brandHueOut', v => v] };
@@ -780,7 +982,7 @@ if (matchMedia('(prefers-color-scheme: light)').matches) S.theme = 'light';
 buildStates();
 applyAll();
 addEventListener('resize', placeThumbs);
-function loop(now) { if (S.motion !== 'reduced') for (const m of live) m.tick(now); requestAnimationFrame(loop); }
+function loop(now) { if (S.view === 'use') for (const u of UC) u.tick(now); if (S.motion !== 'reduced') for (const m of live) m.tick(now); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 })();
 </script>
