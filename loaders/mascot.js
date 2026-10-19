@@ -439,21 +439,26 @@ const mbBody = (x, y, sq = 0) => { const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0)
 const mbAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic()));
 
 /* ---------- Detective (state: searching) ----------
-   A deerstalker on its head, it holds a magnifying glass right up to its right eye, and we see that eye through the
+   A deerstalker on its head (the tied-up ear flaps on top, the brim peaked front and back), it holds a magnifying
+   glass right up to its right eye, and we see that eye through the
    glass: big, round, with a catchlight, the way a magnifier blows up whatever is behind it. The other eye squints. It
    searches by leaning one way and the other while the big eye darts ahead of it, then ducks to peer at the floor. Then
    it finds it: the big eye pops taller, the squint springs open under a raised brow, it jumps a little and a glint
    flares off the rim. It holds the look, settles, and goes back to searching. The glass and the eye behind it are the
    whole idea, so they move with the face every frame. */
+/* the deerstalker: a crown rising in steps to two little ear flaps tied up on top, lit down its right side, a dark
+   band, and a brim whose front and back peaks dip at either end. Its last row is only those peak tips, which hang
+   beside the head */
 const mbHat = [
-  '.....BnBnB.....',
-  '....BbbbbbB....',
-  '..BBbnbbbnbBB..',
-  '.BbbbbnbnbbbnB.',
-  '.BbnbbbbbbbnbB.',
-  'BBBBBBBBBBBBBBB',
-  '.BbbbbbbbbbbbB.'];
-const mbHatAt = (x, y, sq = 0) => mArt(mbHat, x - 1, mbBody(x, y, sq).by - mbHat.length);
+  '.....BB.BB.....',
+  '....BbbBbnB....',
+  '...BbbbbbnnB...',
+  '..BbbbbbbbnnB..',
+  '..BbbbbbbbbnB..',
+  '.BBBBBBBBBBBBB.',
+  'BbbbbbbbbbbnnbB',
+  'BB...........BB'];
+const mbHatAt = (x, y, sq = 0) => mArt(mbHat, mbBody(x, y, sq).bx - 1 + (sq > 0 ? 1 : sq < 0 ? -1 : 0), mbBody(x, y, sq).by - mbHat.length + 1);
 /* the glass over the right eye: a round charcoal rim, lit at the top right and dark at the bottom left, a pale lens
    that shows the clay behind it lighter, a two-cell glint, and a short wooden handle leaving the bottom right where the
    hand holds it. (cx, cy) is the centre of the lens */
