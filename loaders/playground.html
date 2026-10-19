@@ -132,27 +132,33 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 /* a slice of an iPhone 15 Pro screen at 1:1 points: the status bar and a Live Activity in the Dynamic Island */
 .phone-wrap { position: relative; width: 100%; overflow: hidden; }
 .phone13 { --spring: cubic-bezier(.32,.72,0,1); position: relative; width: 393px; height: 150px; border-radius: 55px 55px 0 0; overflow: hidden; color: #fff; transform-origin: top left; background: radial-gradient(130% 150% at 15% 0%, #4a5aa8 0%, #232a5a 42%, #140f2a 100%); font-family: -apple-system, 'SF Pro Text', 'Inter', system-ui, sans-serif; }
-/* like iOS, the time is centred in the space left of the island and the indicators in the space to its right; both move as the island grows */
-.phone13 { --ear: 133.5px; }
-.phone13[data-mode="compact"], .phone13[data-mode="done"] { --ear: 91.5px; }
+/* the island grows from the camera by --il on the left and --ir on the right. Like iOS, the time is centred in the space left
+   of the island and the indicators in the space to its right (--el, --er), and both move as it grows. Minimal is the two-activity
+   presentation: the island grows on the left for one activity and a detached bubble on the right carries the other */
+.phone13 { --il: 0px; --ir: 0px; --el: 133.5px; --er: 133.5px; }
+.phone13[data-mode="compact"] { --il: 42px; --ir: 42px; --el: 91.5px; --er: 91.5px; }
+.phone13[data-mode="expanded"] { --il: 122.5px; --ir: 122.5px; }
+.phone13[data-mode="minimal"] { --il: 34px; --el: 99.5px; --er: 88.5px; }
 .sb-time, .sb-icons { transition: width .5s var(--spring), opacity .2s ease; }
 .phone13[data-mode="expanded"] .sb-time, .phone13[data-mode="expanded"] .sb-icons { opacity: 0; }
-.sb-time { position: absolute; top: 11px; left: 0; width: var(--ear); height: 37px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.sb-icons { position: absolute; top: 11px; right: 0; width: var(--ear); height: 37px; display: flex; align-items: center; justify-content: center; }
+.sb-time { position: absolute; top: 11px; left: 0; width: var(--el); height: 37px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sb-icons { position: absolute; top: 11px; right: 0; width: var(--er); height: 37px; display: flex; align-items: center; justify-content: center; }
 .sb-icons svg { display: block; fill: #fff; }
 .sb-sig { display: inline-flex; width: 17px; margin-right: 6px; overflow: hidden; transition: width .3s var(--spring), margin .3s var(--spring), opacity .2s ease; }
 .sb-wifi { margin-right: 6px; }
-.phone13[data-mode="compact"] .sb-sig, .phone13[data-mode="done"] .sb-sig { width: 0; margin-right: 0; opacity: 0; }
-.di { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 126px; height: 37px; border-radius: 18.5px; background: #000; overflow: hidden; transition: width .5s var(--spring), height .5s var(--spring), border-radius .5s var(--spring); }
-.phone13[data-mode="compact"] .di, .phone13[data-mode="done"] .di { width: 210px; }
-.phone13[data-mode="expanded"] .di { width: 371px; height: 116px; border-radius: 44px; }
+.phone13[data-mode="compact"] .sb-sig, .phone13[data-mode="minimal"] .sb-sig { width: 0; margin-right: 0; opacity: 0; }
+.di { position: absolute; top: 11px; left: calc(133.5px - var(--il)); width: calc(126px + var(--il) + var(--ir)); height: 37px; border-radius: 18.5px; background: #000; overflow: hidden; transition: left .5s var(--spring), width .5s var(--spring), height .5s var(--spring), border-radius .5s var(--spring); }
+.phone13[data-mode="expanded"] .di { height: 116px; border-radius: 44px; }
+.di-bubble { position: absolute; top: 11px; left: 267.5px; width: 37px; height: 37px; border-radius: 50%; background: #000; display: flex; align-items: center; justify-content: center; line-height: 0; opacity: 0; transform: scale(.4); transition: opacity .2s ease, transform .45s var(--spring); }
+.phone13[data-mode="minimal"] .di-bubble { opacity: 1; transform: none; transition-delay: .15s; }
 .di-c, .di-x { position: absolute; inset: 0; opacity: 0; transition: opacity .18s ease; }
-.phone13[data-mode="compact"] .di-c, .phone13[data-mode="done"] .di-c { opacity: 1; transition-delay: .2s; }
+.phone13[data-mode="compact"] .di-c, .phone13[data-mode="minimal"] .di-c { opacity: 1; transition-delay: .2s; }
+.phone13[data-mode="minimal"] .di-trail { opacity: 0; }
 .phone13[data-mode="expanded"] .di-x { opacity: 1; transition-delay: .24s; }
 /* every glyph in the island is centred on the centre of a rounded end and sized so its blurred outline fits a circle inset from
    the edge: 12.5 px in the 37 px capsule, 17 px in the expanded island's 44 px corner. That keeps it concentric with the shape */
 .di-lead { position: absolute; left: 0; top: 0; width: 37px; height: 37px; display: flex; align-items: center; justify-content: center; line-height: 0; }
-.di-trail { position: absolute; right: 10px; top: 0; height: 37px; display: flex; align-items: center; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.di-trail { position: absolute; right: 10px; top: 0; height: 37px; display: flex; align-items: center; transition: opacity .15s ease; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .di-xlead { position: absolute; left: 0; top: 0; width: 72.4px; height: 72.4px; display: flex; align-items: center; justify-content: center; line-height: 0; }
 .di-xtrail { position: absolute; right: 20px; top: 19.2px; height: 34px; display: flex; align-items: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .di-xcenter { position: absolute; left: 70px; right: 70px; top: 46px; text-align: center; white-space: nowrap; }
@@ -161,7 +167,13 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
 .di-guide { position: absolute; border-radius: 50%; border: 1px dashed rgba(255,255,255,.6); pointer-events: none; opacity: 0; transition: opacity .2s ease; }
 .di-guide.c { left: 6px; top: 6px; width: 25px; height: 25px; }
 .di-guide.x { left: 19.2px; top: 19.2px; width: 34px; height: 34px; }
-.phone13.guides[data-mode="compact"] .di-guide.c, .phone13.guides[data-mode="done"] .di-guide.c, .phone13.guides[data-mode="expanded"] .di-guide.x { opacity: 1; }
+.di-guide.b { left: 6px; top: 6px; width: 25px; height: 25px; }
+.phone13.guides[data-mode="compact"] .di-guide.c, .phone13.guides[data-mode="minimal"] .di-guide.c, .phone13.guides[data-mode="minimal"] .di-guide.b, .phone13.guides[data-mode="expanded"] .di-guide.x { opacity: 1; }
+.di-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 0.9rem; }
+.di-chip { border: 1px solid var(--hairline); background: transparent; color: var(--muted); font: inherit; font-size: 0.78rem; padding: 0.28rem 0.7rem; border-radius: 999px; cursor: pointer; }
+.di-chip.now { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.di-chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.di-chip:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .fit-row { margin-top: 0.8rem; }
 .di-bar { position: absolute; left: 20px; right: 20px; bottom: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.16); overflow: hidden; }
 .di-bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: currentColor; transition: width .6s var(--spring); }
@@ -241,11 +253,13 @@ p code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mo
         <div class="di" id="island">
           <div class="di-c"><div class="di-lead" id="diLead"></div><div class="di-trail" id="diTrail"></div></div>
           <div class="di-guide c" aria-hidden="true"></div><div class="di-guide x" aria-hidden="true"></div>
-          <div class="di-x"><div class="di-xlead" id="diXLead"></div><div class="di-xtrail" id="diXTrail"></div><div class="di-xcenter"><b>Uploading photos</b><span id="diXSub"></span></div><div class="di-bar"><i id="diBar"></i></div></div>
+          <div class="di-x"><div class="di-xlead" id="diXLead"></div><div class="di-xtrail" id="diXTrail"></div><div class="di-xcenter"><b id="diXTitle"></b><span id="diXSub"></span></div><div class="di-bar"><i id="diBar"></i></div></div>
         </div>
+        <div class="di-bubble" id="diBubble"><div class="di-guide b" aria-hidden="true"></div></div>
       </div></div>
+      <div class="di-picker" id="diPicker" role="group" aria-label="Live Activity"></div>
       <div class="fit-row"><button type="button" class="ui-switch" id="fitSwitch" role="switch" aria-checked="false"><span>Show fit circles</span><span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-knob"></span></span></button></div>
-      <p class="cap">A Live Activity, laid out the way the Dynamic Island asks. Compact: the glyph on the leading side and a short count on the trailing side, both hugging the camera and inset to stay concentric with the island. Expanded: the glyph, the count, a title and progress arranged around the camera. Each glyph is centred on a rounded end and sized so its blurred outline, across every frame, fits a circle inset from the edge, so it sits concentric with the island. It collapses after the check.</p>
+      <p class="cap">Live Activities, laid out the way the Dynamic Island asks. Compact: the glyph on the leading side and a short value on the trailing side, both hugging the camera. Expanded: the value, a title, detail and progress around the camera. Minimal: two activities at once, one attached to the island and one in a bubble. Each ends on a check, or on the warning when it fails. Every glyph is centred on a rounded end and sized so its blurred outline fits a circle inset from the edge. Pick one, or let them all play.</p>
     </div>
 
     <div class="uc">
@@ -1021,28 +1035,61 @@ function opticalRadius(id) {
   return (OPTICAL[id] = R);
 }
 const fitCircle = (m, r) => m.el.style.setProperty('--s', (S.grid * r / opticalRadius(m.stateId)).toFixed(2) + 'px');
-/* dynamic island: a Live Activity in its presentations. Idle is the bare island. Compact puts the glyph on the leading side
-   and a short count on the trailing side, both against the camera. Expanded adds the count in words, a title and progress */
+/* dynamic island: Live Activities in their presentations. Idle is the bare island. Compact puts the glyph on the leading side and a
+   short value on the trailing side, both against the camera. Expanded adds a title, detail and progress. Minimal is what iOS shows
+   when two activities run at once: one attached to the island and one in a detached bubble */
+const ACTIVITIES = [
+  { name: 'Upload', glyph: 'uploading', title: 'Uploading photos', end: ['done', 'Done'],
+    steps: [['compact', { v: '2/5' }], ['compact', { v: '3/5' }], ['expanded', { v: '3 of 5', sub: 'About 1 min left', bar: 60 }], ['expanded', { v: '4 of 5', sub: 'About 30 s left', bar: 80 }], ['compact', { v: '4/5' }], ['compact', { v: '5/5' }]] },
+  { name: 'AI reply', glyph: 'thinking', title: 'Writing your reply', end: ['done', 'Ready'],
+    steps: [['compact', { v: '0:03' }], ['compact', { v: '0:05' }], ['expanded', { glyph: 'writing', v: '0:07', sub: 'Day one starts at Fushimi Inari' }], ['expanded', { glyph: 'writing', v: '0:09', sub: 'Then lunch in Gion and the river' }], ['compact', { glyph: 'writing', v: '0:11' }]] },
+  { name: 'Workout', glyph: 'heartbeat', title: 'Outdoor run', end: ['done', '19:20'],
+    steps: [['compact', { v: '128' }], ['compact', { v: '131' }], ['expanded', { v: '132 BPM', sub: '3.2 km · 18:42', bar: 46 }], ['expanded', { v: '134 BPM', sub: '3.3 km · 19:05', bar: 48 }], ['compact', { v: '133' }]] },
+  { name: 'Deploy', glyph: 'building', title: 'Deploying pullcord', end: ['error', 'Failed'],
+    steps: [['compact', { v: '24%' }], ['compact', { v: '41%' }], ['expanded', { v: '58%', sub: 'Compiling · step 3 of 5', bar: 58 }], ['expanded', { v: '76%', sub: 'Running tests · step 4 of 5', bar: 76 }], ['compact', { v: '82%' }]] },
+  { name: 'Download', glyph: 'downloading', title: 'Downloading Final Cut Pro', end: ['done', 'Done'],
+    steps: [['compact', { v: '12%' }], ['compact', { v: '31%' }], ['expanded', { v: '32%', sub: '1.4 of 4.4 GB', bar: 32 }], ['expanded', { v: '52%', sub: '2.3 of 4.4 GB', bar: 52 }], ['compact', { v: '79%' }]] },
+  { name: 'Search', glyph: 'searching', title: 'Finding flights', end: ['done', 'Found'],
+    steps: [['compact', { v: '6' }], ['compact', { v: '14' }], ['expanded', { v: '14', sub: 'SFO to JFK · 14 so far' }], ['expanded', { v: '23', sub: 'SFO to JFK · 23 so far' }], ['compact', { v: '23' }]] },
+  { name: 'Sync', glyph: 'syncing', title: 'Syncing notes', end: ['done', 'Synced'],
+    steps: [['compact', { v: '19' }], ['compact', { v: '12' }], ['expanded', { v: '12 left', sub: '7 of 19 synced', bar: 37 }], ['expanded', { v: '5 left', sub: '14 of 19 synced', bar: 74 }], ['compact', { v: '2' }]] },
+  { name: 'VPN', glyph: 'connecting', title: 'Connecting to VPN', end: ['done', 'On'],
+    steps: [['compact', { v: 'VPN' }], ['expanded', { v: '', sub: 'Checking your identity' }], ['expanded', { v: '', sub: 'Securing the tunnel' }], ['compact', { v: 'VPN' }]] },
+  { name: 'Two at once', two: ['uploading', 'heartbeat'] },
+];
 (() => {
   const phone = $('phone'), wrap = $('phoneWrap');
-  const lead = glyph($('diLead'), 'uploading', { forceDark: true }), leadX = glyph($('diXLead'), 'uploading', { forceDark: true });
-  const trail = $('diTrail'), xtrail = $('diXTrail'), bar = $('diBar'), xsub = $('diXSub');
+  const lead = glyph($('diLead'), 'uploading', { forceDark: true }), leadX = glyph($('diXLead'), 'uploading', { forceDark: true }), bub = glyph($('diBubble'), 'heartbeat', { forceDark: true });
+  const trail = $('diTrail'), xtrail = $('diXTrail'), title = $('diXTitle'), sub = $('diXSub'), bar = $('diBar');
   const fit = () => { const w = wrap.clientWidth, k = Math.min(1, w / 393); phone.style.transform = `scale(${k})`; phone.style.marginLeft = Math.max(0, (w - 393 * k) / 2) + 'px'; wrap.style.height = 150 * k + 'px'; };
   new ResizeObserver(fit).observe(wrap); fit();
   $('fitSwitch').addEventListener('click', e => { const on = phone.classList.toggle('guides'); e.currentTarget.setAttribute('aria-checked', on); });
-  const STEPS = [[0, 'idle'], [1.2, 'compact', 2], [2.6, 'compact', 3], [3.9, 'expanded', 3], [5.2, 'expanded', 4], [6.5, 'compact', 4], [7.5, 'compact', 5], [8.3, 'done'], [9.8, 'idle']];
-  let shown = '';
+  /* text on the black island takes a lighter tint than its glyph, the way system tints brighten on dark */
+  const tintOf = m => m.accent || `hsl(${m.hue} 100% 68%)`;
+  const plan = act => { const T = [[0, 'idle', {}]]; let t = 0.7;
+    if (act.two) { T.push([t, 'minimal', {}]); t += 4.2; }
+    else { for (const [mode, p] of act.steps) { T.push([t, mode, p]); t += mode === 'expanded' ? 1.5 : 1.2; } T.push([t, 'end', {}]); t += 1.7; }
+    T.push([t, 'idle', {}]); return { T, len: t + 0.5 }; };
+  const PLANS = ACTIVITIES.map(plan);
+  let pick = -1, cur = 0, start = performance.now(), shown = '';
+  const picker = $('diPicker'), chips = ['All', ...ACTIVITIES.map(a => a.name)].map((name, i) => { const b = mk('button', 'di-chip', name); b.type = 'button'; b.addEventListener('click', () => { pick = i - 1; cur = Math.max(0, pick); start = performance.now(); shown = ''; mark(); }); picker.appendChild(b); return b; });
+  const mark = () => chips.forEach((b, i) => { b.setAttribute('aria-pressed', i - 1 === pick); b.classList.toggle('now', pick < 0 && i - 1 === cur); });
+  mark();
   UC.push({ tick(now) {
-    const t = phase(now, 10.8); let cur = STEPS[0]; for (const s of STEPS) if (t >= s[0]) cur = s;
-    const [, mode, n] = cur, key = mode + (n || '');
-    if (key !== shown) {
-      shown = key; phone.dataset.mode = mode;
-      if (mode === 'done') { lead.show('done', true); fitCircle(lead, 12.5); trail.textContent = 'Done'; }
-      else if (mode !== 'idle') { lead.show('uploading'); leadX.show('uploading'); fitCircle(lead, 12.5); fitCircle(leadX, 17); trail.textContent = n + '/5'; xtrail.textContent = n + ' of 5'; bar.style.width = n * 20 + '%'; xsub.textContent = n >= 4 ? 'About 30 s left' : 'About 1 min left'; }
+    let t = (now - start) / 1000;
+    if (t >= PLANS[cur].len) { if (pick < 0) cur = (cur + 1) % ACTIVITIES.length; start = now; t = 0; mark(); }
+    const P = PLANS[cur]; let k = 0; for (let i = 0; i < P.T.length; i++) if (t >= P.T[i][0]) k = i;
+    const key = cur + ':' + k; if (key === shown) return; shown = key;
+    const act = ACTIVITIES[cur], [, mode, p] = P.T[k];
+    phone.dataset.mode = mode === 'end' ? 'compact' : mode;
+    if (mode === 'minimal') { lead.show(act.two[0]); fitCircle(lead, 12.5); bub.show(act.two[1]); fitCircle(bub, 12.5); }
+    else if (mode === 'end') { const [g, v] = act.end; lead.show(g, g === 'done'); fitCircle(lead, 12.5); trail.textContent = v; trail.style.color = tintOf(lead); }
+    else if (mode === 'compact') { lead.show(p.glyph || act.glyph); fitCircle(lead, 12.5); trail.textContent = p.v; trail.style.color = tintOf(lead); }
+    else if (mode === 'expanded') {
+      leadX.show(p.glyph || act.glyph); fitCircle(leadX, 17); const tint = tintOf(leadX);
+      xtrail.textContent = p.v; xtrail.style.color = tint; title.textContent = act.title; sub.textContent = p.sub || '';
+      bar.parentElement.hidden = p.bar == null; bar.parentElement.style.color = tint; if (p.bar != null) bar.style.width = p.bar + '%';
     }
-    /* text on the black island takes a lighter tint than the glyph, the way system tints brighten on dark */
-    const src = mode === 'done' ? lead : leadX, tint = src.accent || `hsl(${src.hue} 100% 68%)`;
-    if (trail.style.color !== tint) { trail.style.color = tint; xtrail.style.color = tint; bar.parentElement.style.color = tint; }
   } });
 })();
 
