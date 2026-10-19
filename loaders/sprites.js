@@ -15,18 +15,11 @@ const F = (b, ms) => ({ b, ms });
 const seq = (...frames) => ({ frames, period: frames.reduce((a, f) => a + f.ms, 0) / 1000 });
 
 /* done: a two-cell check. Both arms are exact 45 degree diagonals, the short arm three steps, the long arm five.
-   Three takes share the same check: Stroke (the default), Seal and Spring. */
+   Two takes share the same check: Stroke (the default) and Spring. */
 const CHECK_PAIRS = [[[0,5],[1,5]],[[1,6],[2,6]],[[2,7],[3,7]],[[3,6],[4,6]],[[4,5],[5,5]],[[5,4],[6,4]],[[6,3],[7,3]],[[7,2],[8,2]]];
 const strokeTo = (from, to, tip) => put(put(EMPTY, CHECK_PAIRS.slice(from, to).flat(), '#'), tip ? CHECK_PAIRS[to - 1] : [], 'W');
 const CHECK = strokeTo(0, 8, false);
 const glint = c => put(CHECK, CHECK_PAIRS.flat().filter(([x]) => x === c || x === c + 1), 'W');
-const DISC_1 = put(EMPTY, [[4,4]], '#');
-const DISC_3 = bm('.........','.........','.........','...###...','...###...','...###...','.........','.........','.........');
-const DISC_5 = bm('.........','.........','...###...','..#####..','..#####..','..#####..','...###...','.........','.........');
-const DISC_7 = bm('.........','..#####..','.#######.','.#######.','.#######.','.#######.','.#######.','..#####..','.........');
-const DISC = bm('..#####..','.#######.','#########','#########','#########','#########','#########','.#######.','..#####..');
-const KO_PAIRS = [[[1,4],[2,4]],[[2,5],[3,5]],[[3,6],[4,6]],[[4,5],[5,5]],[[5,4],[6,4]],[[6,3],[7,3]]];
-const knock = (b, k) => put(b, KO_PAIRS.slice(0, k).flat(), '.');
 const restAtLongest = sp => (sp.rest = sp.frames.reduce((bi, f, i, a) => f.ms > a[bi].ms ? i : bi, 0), sp);
 /* building: a hammer, head top-left, handle entering the middle of the head and running to the grip bottom-right */
 const HAM_RAISED = bm(
@@ -183,7 +176,6 @@ function bars(t) {
 }
 const SPRITES = {
   done: restAtLongest(seq(...[90,70,55,50,50,55,65,85].map((ms, k) => F(strokeTo(0, k + 1, true), ms)), F(CHECK, 520), ...[-1,0,1,2,3,4,5,6,7,8].map(c => F(glint(c), 40)), F(CHECK, 900), ...[1,2,3,4,5,6,7].map(k => F(strokeTo(k, 8, false), 45)), F(EMPTY, 280))),
-  done_seal: Object.assign(restAtLongest(seq(F(DISC_1, 70), F(DISC_3, 70), F(DISC_5, 70), F(DISC_7, 70), F(DISC, 110), ...KO_PAIRS.map((_, k) => F(knock(DISC, k + 1), 70)), F(hot(knock(DISC, 6)), 110), F(knock(DISC, 6), 1500), F(knock(DISC_7, 6), 70), F(knock(DISC_5, 6), 70), F(DISC_3, 70), F(DISC_1, 70), F(EMPTY, 280))), { glow: 0.45 }),
   done_spring: restAtLongest(seq(F(shift(CHECK, 0, -5), 60), F(shift(CHECK, 0, -3), 60), F(shift(CHECK, 0, -1), 60), F(shift(CHECK, 0, 1), 90), F(hot(CHECK), 100), F(CHECK, 1500), F(shift(CHECK, 0, 2), 60), F(shift(CHECK, 0, 5), 60), F(EMPTY, 320))),
   building: seq(F(HAM_RAISED, 620), F(HAM_MID, 90), F(put(HAM_STRIKE, [[3,4],[0,1]]), 100), F(HAM_STRIKE, 220), F(HAM_MID, 110)),
   syncing: seq(...[0,1,2,3,4,5,6,7,8].map(k => F(over(wrapX(ARROW_R, k), wrapX(ARROW_L, -k)), 130))),
