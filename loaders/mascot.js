@@ -6,16 +6,18 @@ const MN = 32;
 
 /* the palette. Every colour has a job; a scene may only use these letters. Light comes from the top right, so each
    material has a base and a shade for its left and lower edges, and props get a darker contour where they meet
-   something else. The body never gets an outline or a highlight: it is a flat clay orange with one shade */
+   something else; the ramps that dress the big props carry a fourth, deepest tone for that contour. The body never
+   gets an outline or a highlight: it is a flat clay orange with one shade */
 const MPAL = {
   o: '#EC8560', O: '#C4603E', d: '#9A4A31',             // body: base, shade (left and lower edges), deep (under arms, hidden legs)
   k: '#1E1A1D',                                           // ink: eyes and brows
   p: '#F4A98E',                                           // blush
-  w: '#FFFDF8', c: '#EEE6DA', C: '#CDBFAE',              // cream: chef hat, paper, pages, steam
+  w: '#FFFDF8', c: '#EEE6DA', C: '#CDBFAE', T: '#A8927A',  // cream: chef hat, paper, pages, steam; T the page edges and gutter
   g: '#3A3538', G: '#232022', h: '#5C5559',              // charcoal: pan, laptop, lens rim
-  b: '#7E5C49', B: '#513C31', n: '#A27D64',              // brown: wood, leather, the deerstalker
-  u: '#3563B5', U: '#1F3C78', l: '#5C8BDE',              // blue: wizard hat, headphones
-  y: '#F6C553', Y: '#D99A2B', z: '#FFE7A0',              // gold: sparkles, notes, food, stars
+  b: '#7E5C49', B: '#513C31', n: '#A27D64', D: '#33241C',  // brown: wood, leather, the deerstalker; D its contour
+  u: '#3563B5', U: '#1F3C78', l: '#5C8BDE',              // blue: headphones, the book cover
+  y: '#F6C553', Y: '#D99A2B', z: '#FFE7A0', Z: '#A8641A',  // gold: sparkles, notes, food, stars, the hard hat; Z its contour
+  i: '#8F86EA', v: '#5D5DBB', V: '#5A3A93', q: '#2D1F57',  // violet: the wizard hat, light, base, shade, contour
   e: '#71C66C', E: '#3F8F4A',                             // green: the bug, good news
   r: '#E5534B', R: '#A8332F',                             // red: warnings, hearts
   m: '#BDB6B0', M: '#8E8782',                             // smoke and steel
@@ -182,8 +184,9 @@ const maBody = (o = {}) => {
   const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0), by = y + (sq > 0 ? 1 : sq < 0 ? -1 : 0), W = 13 + (sq > 0 ? 2 : sq < 0 ? -2 : 0);
   return { bx, by, W, sx: bx + W - 1, sy: by + 5 - (sq > 0 ? 1 : 0), cx: bx + (W >> 1) };
 };
-/* a hat sits with its lowest row on body top minus 1, centred on the body (off moves it sideways) */
-const maHat = (rows, o, off = 0) => { const b = maBody(o); return mArt(rows, b.cx - (rows[0].length >> 1) + off, b.by - rows.length); };
+/* a hat sits with its lowest row on body top minus 1, centred on the body (off moves it sideways); a hat whose
+   last row is its contour sinks one row, so that row rests on the top of the head */
+const maHat = (rows, o, off = 0, sink = 0) => { const b = maBody(o); return mArt(rows, b.cx - (rows[0].length >> 1) + off, b.by - rows.length + sink); };
 /* a right arm as cells from the shoulder, and the hand: the last top cell of the arm */
 const maHand = (o, arm) => { const b = maBody(o), top = arm.filter(c => c[2] === 'o'), h = top[top.length - 1]; return [b.sx + h[0], b.sy + h[1]]; };
 /* keep a layer inside the safe area x 1..30, y 2..29 */
@@ -280,22 +283,27 @@ function maCook(t) {
    throws off three specks. The reaction is happy eyes and a blush while the star twinkles and fades. The mascot
    stands 2 cells left so the wand and the star have room on the right. */
 const MA_MX = 7;
-/* the hat in two parts so its tip can swing: the cone with a gold star on its front, lit down its right side, a gold
-   band, and a wide brim; then the bent tip on top, which lags, droops and lifts with the flick */
+/* the hat in two parts so its tip can swing. The cone is violet, lit down its right side with a fold down its front,
+   and leans a little to the left; a red band curves round its foot; the brim is wide and seen a little from above,
+   dark on its left, lit along its right rim, with a deep contour all round. Its last row sits on the top of the head.
+   Then the bent tip, which hooks over to the left: it lags, droops and lifts with the flick */
 const MA_WIZ = [
-  '......UlU......',
-  '.....UuulU.....',
-  '....UuuzulU....',
-  '...UuzwzuulU...',
-  '...UuuuzuulU...',
-  '..YYyyyyyyyzY..',
-  'UUuuuuuuuuuuulU',
-  '.UUUUUUUUUUUUU.'];
+  '....qVvviq.......',
+  '....qVVvviq......',
+  '....qVVvvviq.....',
+  '...qVVVvvvviq....',
+  '..qVVRRRrrrrqq...',
+  '.qVVvVVRRRrrvviq.',
+  'qVVVvvvvvvvvvviiq',
+  'qVVvvvvvvvvvvvviq',
+  '.qqqVvvvvvvvviqq.',
+  '....qqqqqqqqqq...'];
 const MA_WIZ_TIP = {
-  rest: ['..UUU..........', '.UuulUU........', '.UU..UulU......'],
-  droop: ['...............', '.UUUU..........', 'UuulUUUulU.....'],
-  lift: ['.UUU...........', '.UulUUU........', '.....UulU......'] };
-const maWizHat = (o, tip) => { const b = maBody(o); return [...mArt(MA_WIZ, b.cx - 7, b.by - 8), ...mArt(MA_WIZ_TIP[tip], b.cx - 7, b.by - 11)]; };
+  rest: ['..qqqqq...', '.qVvvviq..', '.qVqqVviq.', '..q.......'],
+  droop: ['..........', '...qqqqq..', '..qVvvViq.', '.qVq......', '.qq.......'],
+  lift: ['..qq......', '..qViq....', '...qVviq..'] };
+const maWizHat = (o, tip) => { const b = maBody(o), x = b.cx - 8, y = b.by - 12;
+  return [...mArt(MA_WIZ, x, y + 3), ...mArt(MA_WIZ_TIP[tip], x, y)]; };
 /* arm poses for the wand: held up, raised high, snapped straight out, and pointing at the star */
 const MA_ARM_WAND = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
 const MA_ARM_BACK = M_ARMS.up;
@@ -362,15 +370,21 @@ function maMagic(t) {
    to the next nail and the board slides one nail along, so the loop ends where it began with one more nail done.
    The mascot stands 3 cells left to leave the board room. */
 const MA_BX = 6, MA_NAIL = 24, MA_GAP = 5;
-/* the hard hat: a gold dome with a raised ridge down its middle, lit on its right with a bright specular near the top,
-   and a brim that runs all the way round, lit on top and dark underneath */
+/* the hard hat: a gold dome with a raised ridge down its middle (dark on its left, lit on its right, with a bright
+   specular near the top), lit on its right, a band where the dome meets the brim, and a deep brim that runs all the
+   way round, lit along its top and right and dark underneath. A deep amber contour holds it together on any page.
+   Its last row sits on the top of the head */
 const MA_HARD = [
-  '.....YYYYY.....',
-  '...YYyyzwzzYY..',
-  '..YyyyyzyzzzzY.',
-  '..YyyyyzyyzzzY.',
-  'YyyyyyyzyyyyyzY',
-  '.YYYYYYYYYYYYY.'];
+  '......ZZZ......',
+  '....ZZYzZZZ....',
+  '...ZyyYzwzzZ...',
+  '..ZYyyYzyzzzZ..',
+  '.ZYyyyYzyyyzzZ.',
+  '.ZYyyyYzyyyyzZ.',
+  'ZZZZZZZZZZZZZZZ',
+  'ZyyyyyyyyyzzzwZ',
+  '.ZYYYYYYYYYYYZ.',
+  '..ZZZZZZZZZZZ..'];
 /* a right arm from the shoulder to a hand cell, as a staircase one cell per column: clay on top, shade underneath.
    The hand may rise or drop at most one row per column, like the kit's own arms */
 const maArmTo = (o, hx, hy) => { const b = maBody(o), dx = hx - b.sx, dy = hy - b.sy, c = [];
@@ -384,7 +398,7 @@ const maArmTo = (o, hx, hy) => { const b = maBody(o), dx = hx - b.sx, dy = hy - 
 const maHammer = (hx, hy, k) => {
   const fist = [[hx, hy, 'o'], [hx - 1, hy, 'o'], [hx, hy + 1, 'O'], [hx - 1, hy + 1, 'O']];
   if (k === 'strike') return [[hx + 1, hy, 'R'], [hx + 2, hy, 'b'], [hx + 3, hy, 'b'], [hx + 4, hy, 'n'], ...mArt(['G.', 'Gh', 'gw', 'gh', 'GG'], hx + 5, hy - 3), ...fist];
-  if (k === 'up') return [[hx, hy - 1, 'R'], [hx, hy - 2, 'b'], [hx, hy - 3, 'b'], [hx, hy - 4, 'n'], ...mArt(['GGghw', '.GggG'], hx - 3, hy - 6), ...fist];
+  if (k === 'up') return [[hx, hy - 1, 'R'], [hx, hy - 2, 'b'], [hx, hy - 3, 'b'], [hx, hy - 4, 'n'], ...mArt(['GGghw', '.GggG'], hx - 2, hy - 6), ...fist];
   return [[hx + 1, hy - 1, 'R'], [hx + 2, hy - 2, 'b'], [hx + 3, hy - 3, 'b'], [hx + 4, hy - 4, 'n'], ...mArt(['.Gw', 'Ggh', '.gG'], hx + 4, hy - 7), ...fist];
 };
 /* a nail with its shank at x and its head on row r; it sinks as r grows, flush at row 22 */
@@ -417,16 +431,16 @@ function maBuild(t) {
   /* hand positions: aim puts the hammer face on the nail head; up raises it; swing is half way down */
   /* once the board has slid, the nail under the hammer is the next one, still standing */
   const aimAt = t >= MA_SLIDE + 380 ? 20 : head;
-  /* the fist: striking, the head's face sits on the nail head (or on it as it lands); raised, the hammer is up over the
-     shoulder; swinging, half way between */
+  /* the fist: striking, the head's face sits on the nail head (or on it as it lands); raised, the hammer is up beside
+     the brim of the hat, clear of it; swinging, half way between */
   const b = maBody(o), hand = pose === 'aim' ? [MA_NAIL - 5, aimAt - 3 + (dent != null ? 1 : 0)] : pose === 'recoil' ? [MA_NAIL - 5, head - 4]
-    : pose === 'up' || pose === 'proud' ? [b.sx + 3, b.sy - 2] : [b.sx + 3, b.sy - 1];
+    : pose === 'up' || pose === 'proud' ? [b.sx + 4, b.sy - 2] : [b.sx + 3, b.sy - 1];
   const arm = maArmTo(o, hand[0] - 1, hand[1]);
   o.arms = ['rest', arm];
   const hk = pose === 'aim' || pose === 'recoil' ? 'strike' : pose === 'up' || pose === 'proud' ? 'up' : 'swing';
   L.push(maPlank(s, dent));
   for (let k = -1; k <= 2; k++) { const nx = MA_NAIL + k * MA_GAP - s, r = k < 0 ? 22 : k === 0 ? head : 20; if (nx >= 18 && nx <= 29) L.push(maNail(nx, r)); }
-  L.push(mShadow(0, x), mascot(o), maHat(MA_HARD, o), maHammer(hand[0], hand[1], hk));
+  L.push(mShadow(0, x), mascot(o), maHat(MA_HARD, o, 0, 1), maHammer(hand[0], hand[1], hk));
   /* effects: a spark at each blow, sawdust on the second, a glint on the finished nail */
   const sp = (t0, xx, yy) => { const a = t - t0; return a >= 0 && a < 200 ? fxSparkle(xx, yy, a < 110 ? 1 : 0) : []; };
   L.push(sp(MA_HIT1, 27, 19), sp(MA_HIT2, 27, 20));
@@ -455,26 +469,29 @@ const mbBody = (x, y, sq = 0) => { const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0)
 const mbAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic()));
 
 /* ---------- Detective (state: searching) ----------
-   A deerstalker on its head (the tied-up ear flaps on top, the brim peaked front and back), it holds a magnifying
+   A deerstalker on its head (an ear flap tied up with a bow, peaks front and back), it holds a magnifying
    glass right up to its right eye, and we see that eye through the
    glass: big, round, with a catchlight, the way a magnifier blows up whatever is behind it. The other eye squints. It
    searches by leaning one way and the other while the big eye darts ahead of it, then ducks to peer at the floor. Then
    it finds it: the big eye pops taller, the squint springs open under a raised brow, it jumps a little and a glint
    flares off the rim. It holds the look, settles, and goes back to searching. The glass and the eye behind it are the
    whole idea, so they move with the face every frame. */
-/* the deerstalker: a crown rising in steps to two little ear flaps tied up on top, lit down its right side, a dark
-   band, and a brim whose front and back peaks dip at either end. Its last row is only those peak tips, which hang
-   beside the head */
+/* the deerstalker, turned a little to its right: a round tweed crown with a soft highlight on its right, the ear
+   flap folded up against its left side (darker, with its edge drawn) and tied with a little bow on top, the front
+   peak jutting out to the right, lit on top, and the back peak under the flap on the left. A deep brown contour runs
+   round it. Its last row is the underside of the front peak, which hangs beside the head */
 const mbHat = [
-  '.....BB.BB.....',
-  '....BbbBbnB....',
-  '...BbbbbbnnB...',
-  '..BbbbbbbbnnB..',
-  '..BbbbbbbbbnB..',
-  '.BBBBBBBBBBBBB.',
-  'BbbbbbbbbbbnnbB',
-  'BB...........BB'];
-const mbHatAt = (x, y, sq = 0) => mArt(mbHat, mbBody(x, y, sq).bx - 1 + (sq > 0 ? 1 : sq < 0 ? -1 : 0), mbBody(x, y, sq).by - mbHat.length + 1);
+  '.......DD.......',
+  '......DbnD......',
+  '....DDBDDDDD....',
+  '...DBBDbnnnnD...',
+  '..DBBBDbbnnnnD..',
+  '..DBBBDbbbbnbD..',
+  '.DBBBBDbbbbbbbD.',
+  '.DBBBDbbbbbbbnnD',
+  'DDDDDDDDDDDnnnnD',
+  '...........DDDD.'];
+const mbHatAt = (x, y, sq = 0) => mArt(mbHat, mbBody(x, y, sq).bx - 2 + (sq > 0 ? 1 : sq < 0 ? -1 : 0), mbBody(x, y, sq).by - mbHat.length + 1);
 /* the glass over the right eye: a round charcoal rim, lit at the top right and dark at the bottom left, a pale lens
    that shows the clay behind it lighter, a two-cell glint, a steel collar, and a wooden handle leaving the bottom
    right where the hand holds it. (cx, cy) is the centre of the lens */
@@ -490,7 +507,7 @@ const mbGlass = (cx, cy, glint = 0) => {
   const c = mArt(MB_RIM, cx - 3, cy - 3);
   for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (Math.abs(x) + Math.abs(y) < 4) c.unshift([cx + x, cy + y, 'p']);
   c.push([cx + 1, cy - 2, 'w'], [cx + 2, cy - 1, 'w']);
-  if (glint) c.push(...fxSparkle(cx + 4, cy - 4, glint));
+  if (glint) c.push(...fxSparkle(cx + 5, cy - 2, glint));
   c.push([cx + 3, cy + 3, 'm'], [cx + 4, cy + 4, 'n'], [cx + 5, cy + 5, 'b'], [cx + 6, cy + 6, 'B']);
   return c;
 };
@@ -576,29 +593,30 @@ const mbHunt = t => {
    end of the spread its hand flicks, the right page peels at the corner, lifts with its shaded underside showing,
    stands on the spine, falls over to the left and lands with a puff of air. A happy nod follows: curved eyes, a blush
    and a sparkle. It is the wait while something is read, and the turned page is the progress. */
-/* the open book, 15 x 7, held up in both hands so only the eyes show over it: two pages with a dip at the spine, two
-   lines of text a page, the blue cover below, lit at its right corner, and a red ribbon bookmark hanging from the
-   spine. The hands grip its outer edges */
+/* the open book, 17 x 8, held up in both hands so only the eyes show over it: two pages that rise from the spine
+   and fall away to their outer corners, the left page in cream and the right one lit, a crease down the gutter, two
+   lines of text a page, the edges of the page block at the corners, and the blue cover underneath, lit at its right
+   corner. A navy contour runs round it, and the spine dips at the bottom. The hands grip its upper corners */
 const mbBookArt = [
-  '.CCCCCC.CCCCCC.',
-  'CwwwwwwCwwwwwwC',
-  'CwMMMMwCwMMMMwC',
-  'CwwwwwwCwwwwwwC',
-  'CwMMMwwCwMMMwwC',
-  'UuuuuuuUuuuuulU',
-  '.UUUUUUrUUUUUU.',
-  '.......R.......'];
+  '....UUUU.UUUU....',
+  '..UUccccUwwwwUU..',
+  '.UcCCCccTwCCCwwU.',
+  'UcccccccTwwwwwwwU',
+  'UTcCCCccTwCCCwcTU',
+  'UuuTTTTTUTTTTTulU',
+  '.UUuuuuuUuuuuuUU.',
+  '...UUUUUUUUUUU...'];
 /* the lines in reading order, as [row, first column, length] in the book */
-const MB_LINES = [[2, 2, 4], [4, 2, 3], [2, 9, 4], [4, 9, 3]];
+const MB_LINES = [[2, 3, 3], [4, 3, 3], [2, 10, 3], [4, 10, 3]];
 /* the turning page, by stage: 1 its top corner peels up, 2 it lifts off the right page, curling, its shaded underside
    toward us, 3 it stands on the spine, 4 it falls over to the left, 5 it lands with the corner still curled. Cells are
    relative to the book's top left */
 const mbPage = st => ({
-  1: mArt(['.............Cw', '............Cww'], 0, -1),
-  2: mArt(['..........wwC', '........wwwC.', '.......CwC...'], 0, -3),
-  3: mArt(['.......w', '......Cw', '......Cw', '......Cw'], 0, -4),
-  4: mArt(['..Cww', '...Cwww', '.....Cww'], 0, -3),
-  5: mArt(['wC', 'wwC'], 0, -1),
+  1: mArt(['.............Cw', '............Cww'], 1, -1),
+  2: mArt(['..........wwC', '........wwwC.', '.......CwC...'], 1, -3),
+  3: mArt(['.......w', '......Cw', '......Cw', '......Cw'], 1, -4),
+  4: mArt(['..Cww', '...Cwww', '.....Cww'], 1, -3),
+  5: mArt(['wC', 'wwC'], 2, 0),
 }[st] || []);
 const MB_READ_END = 1400;
 const mbRead = t => {
@@ -615,7 +633,7 @@ const mbRead = t => {
   if ((t >= 2060 && t < 2160) || (t >= 2280 && t < 2380)) y = 16;
   if (t >= 2560) look = [-1, 1];
   if (t >= 2760 && t < 2850) eyes = 'blink';
-  const bx = 9, bk = [bx - 1, y + 5];
+  const bx = 9, bk = [bx - 2, y + 5];
   const book = mArt(mbBookArt, bk[0], bk[1]);
   if (cursor) book.push([bk[0] + cursor[0], bk[1] + cursor[1], 'y']);
   const fx = [], sa = t - 2080;
@@ -624,7 +642,7 @@ const mbRead = t => {
   if (pa >= 0 && pa < 220) fx.push(...fxPuff(bk[0] - 2 - Math.round(2 * mEase.out(pa / 220)), bk[1] - 1, pa < 120 ? 2 : 1, true));
   const m = mascot({ x: bx, y, eyes, look, arms, blush });
   /* the hands: the outer cells of each arm stay in front of the book's edges */
-  const hands = m.filter(([x, yy]) => (x < bk[0] || x > bk[0] + 14) && yy >= bk[1]);
+  const hands = m.filter(([x, yy]) => (x < bk[0] + 2 || x > bk[0] + 14) && yy >= bk[1]);
   return [mShadow(0, bx), m, book, mbPage(st).map(([a, b, k]) => [a + bk[0], b + bk[1], k]), hands, fx];
 };
 
@@ -1047,13 +1065,13 @@ const MSC_D_META = {
 const MASCOT_PROPS = [
   ['Chef hat', 'Puffs lit at the top right, a crease, a pleated band', () => mArt(MA_CHEF, 0, 0)],
   ['Skillet', 'A lit rim with a glint, a rivet, a wooden handle', () => maPan(-1, 1)],
-  ['Wizard hat', 'A gold star and band, a curled tip that lags', () => [...mArt(MA_WIZ, 0, 3), ...mArt(MA_WIZ_TIP.rest, 0, 0)]],
+  ['Wizard hat', 'A violet cone with a fold, a red band, a wide brim, a hooked tip that lags', () => [...mArt(MA_WIZ, 0, 3), ...mArt(MA_WIZ_TIP.rest, 0, 0)]],
   ['Wand', 'A dark grip, a lit shaft, a glowing tip', () => maWand(0, 6, 'up', false)[0]],
-  ['Hard hat', 'A ridge, a specular, a brim lit on top', () => mArt(MA_HARD, 0, 0)],
+  ['Hard hat', 'A ridged dome with a glint, a band, a deep brim lit on top', () => mArt(MA_HARD, 0, 0)],
   ['Hammer', 'A steel head with a glint, wood, a red grip', () => maHammer(2, 6, 'up')],
-  ['Deerstalker', 'Tied ear flaps, a band, peaks front and back', () => mArt(mbHat, 0, 0)],
+  ['Deerstalker', 'A tweed crown, a flap tied up with a bow, peaks front and back', () => mArt(mbHat, 0, 0)],
   ['Magnifier', 'A rim lit and shaded, glass with a glint, a steel collar', () => mbGlass(3, 3, 0)],
-  ['Book', 'Ruled pages, a lit cover, a ribbon bookmark', () => mArt(mbBookArt, 0, 0)],
+  ['Book', 'Curved pages, a gutter crease, page edges, a blue cover', () => mArt(mbBookArt, 0, 0)],
   ['Laptop', 'A lid lit on top, a ring logo that glints, a thin deck', () => mArt(MT_LAPTOP, 0, 0)],
   ['Headphones', 'A padded band lit on top, dark cushions', () => jamPhones(2, 3)],
   ['Party hat', 'Stripes round the cone, a fluffy pom-pom', () => mArt(MD_HAT, 0, 0)],
