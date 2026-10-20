@@ -1108,7 +1108,7 @@ const meAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic
    giving a little flick as it throws. On the second round the red ball goes up too high: the eyes follow it up, it
    comes down on its head with a bonk (a squash, eyes squeezed shut, a star), bounces off and drops straight into the
    other hand right on the beat. It never misses a catch, and gives a wink. */
-const ME_B = 265, ME_F = 480, ME_JUG_T = 12 * ME_B;
+const ME_B = 350, ME_F = 640, ME_UP = 380, ME_JUG_T = 12 * ME_B;
 const ME_HR = [23, 18], ME_HL = [6, 18], ME_HEAD = [14, 13];
 /* each ball is thrown every third beat, the hands taking turns: [first throw beat, colours] */
 const ME_BALLS = [[0, ['rp', 'Rr']], [1, ['yz', 'Yy']], [2, ['ul', 'Uu']]];
@@ -1120,75 +1120,79 @@ const meBall = (t, i) => {
   const from = fromR ? ME_HR : ME_HL, to = fromR ? ME_HL : ME_HR;
   /* the red ball's throw on the second round goes high, bonks the head and bounces into the left hand on the beat */
   if (i === 0 && T === 6 * ME_B && t < T + ME_F)
-    return t < T + 300 ? meArc(t, T, T + 300, ME_HR, ME_HEAD, 13) : meArc(t, T + 300, T + ME_F, ME_HEAD, ME_HL, 4);
+    return t < T + ME_UP ? meArc(t, T, T + ME_UP, ME_HR, ME_HEAD, 13) : meArc(t, T + ME_UP, T + ME_F, ME_HEAD, ME_HL, 4);
   return t - T < ME_F ? meArc(t, T, T + ME_F, from, to, 11) : to;
 };
 const meJuggle = t => {
   const o = { x: 9, y: 15, eyes: 'open', look: [0, -1], arms: ['out', 'out'] };
-  const beat = Math.floor(t / ME_B), inThrow = t - beat * ME_B < 70;
+  const beat = Math.floor(t / ME_B), inThrow = t - beat * ME_B < 90;
   if (inThrow) o.arms = beat % 2 === 0 ? ['out', ME_FLICK] : [ME_FLICK, 'out'];
-  if (t >= 6 * ME_B && t < 6 * ME_B + 300) o.look = [t < 6 * ME_B + 160 ? 1 : 0, -1];       /* the eyes follow the high one */
-  const bonk = 6 * ME_B + 300;
-  if (t >= bonk && t < bonk + 80) { o.squash = 1; o.eyes = 'squeeze'; }
-  else if (t >= bonk + 80 && t < bonk + 200) { o.eyes = 'squeeze'; o.look = [0, 0]; }
-  else if (t >= bonk + 200 && t < bonk + 300) { o.eyes = 'dot'; o.look = [-1, 0]; }
-  else if (t >= bonk + 330 && t < bonk + 640) { o.eyes = ['open', 'closed']; o.look = [0, 0]; }   /* a wink: still got it */
-  if (t >= 900 && t < 990) o.eyes = 'blink';
+  if (t >= 6 * ME_B && t < 6 * ME_B + ME_UP) o.look = [t < 6 * ME_B + 200 ? 1 : 0, -1];     /* the eyes follow the high one */
+  const bonk = 6 * ME_B + ME_UP;
+  if (t >= bonk && t < bonk + 80) { o.squash = 1; o.eyes = 'squint'; }
+  else if (t >= bonk + 80 && t < bonk + 220) { o.eyes = 'squint'; o.look = [0, 0]; }
+  else if (t >= bonk + 220 && t < bonk + 360) { o.eyes = 'dot'; o.look = [-1, 0]; }
+  else if (t >= bonk + 400 && t < bonk + 800) { o.eyes = ['open', 'closed']; o.look = [0, 0]; }   /* a wink: still got it */
+  if (t >= 1200 && t < 1290) o.eyes = 'blink';
   const balls = ME_BALLS.map(([, art], i) => { let [x, y] = meBall(t, i); if (i === 0 && t >= bonk && t < bonk + 80) y += 1; return mArt(art, x, y); });
-  const fx = t >= bonk && t < bonk + 220 ? fxSparkle(18, 12, t < bonk + 110 ? 1 : 0) : [];
+  const fx = t >= bonk && t < bonk + 260 ? fxSparkle(18, 12, t < bonk + 130 ? 1 : 0) : [];
   return [mShadow(0, 9), mascot(o), ...balls, fx];
 };
 
 /* ---------- Bubbles ----------
-   A bubble wand and a little jar of soap. It holds the wand up beside its face, takes a breath (it rises a cell), and
-   blows with its eyes shut while a bubble swells on the ring in four steps. The bubble lets go and floats: up and over
-   its head and slowly down, the eyes following it all the way, until it drifts right in front of its face. The eyes
-   go wide, and it pops: droplets fly, it flinches with its eyes squeezed shut, blinks with tiny eyes, then laughs it
-   off with happy eyes and a hop, and dips the wand back in the jar for the next one. */
-const ME_X = 7;
-/* the soap jar on the floor at its right: a glass jar with a smoke contour, blue soap, a glint */
-const ME_JAR = ['.MM.', 'MwlM', 'MluM', 'MuuM', '.MM.'];
-/* bubbles by radius: a thin light-blue ring with a white glint at its top right */
+   A bubble wand and a little bottle of soap. Turned to its right, it holds the wand's ring right up to its mouth, takes
+   a breath (it rises a cell) and blows with its eyes shut while a bubble swells out of the ring in three steps. The
+   bubble lets go and floats: up, back over its head and slowly down, the eyes following it all the way, until it
+   drifts right onto its face. The eyes go wide, and it pops: droplets fly, it flinches with its eyes squeezed shut,
+   blinks with tiny eyes, then laughs it off with happy eyes and a hop, and brings the wand back up to its mouth for
+   the next one. */
+const ME_X = 4;
+/* the bottle of soap on the floor at its right: a violet screw cap lit on the left, clear plastic with the blue soap
+   inside, a white label with a bubble on it */
+const ME_JAR = ['.iiv.', '.VVV.', 'VlllV', 'VwwcV', 'VwlcV', 'VlluV', '.VVV.'];
+const ME_JAR_AT = [24, 19];
+/* bubbles by radius: a thin light-blue film, a white glint at its top right and a violet sheen at its lower left */
 const ME_BUB = {
   1: ['.l.', 'l.l', '.l.'],
-  2: ['.lll.', 'l..wl', 'l...l', 'l...l', '.lll.'],
-  3: ['..lll..', '.l...l.', 'l....wl', 'l.....l', 'l.....l', '.l...l.', '..lll..'],
-  4: ['...lll...', '.ll...ll.', '.l....wl.', 'l......wl', 'l.......l', 'l.......l', '.l.....l.', '.ll...ll.', '...lll...'] };
+  2: ['.lll.', 'l..wl', 'l...l', 'i...l', '.lll.'],
+  3: ['..lll..', '.l...l.', 'l....wl', 'l.....l', 'i.....l', '.i...l.', '..lll..'] };
 const meBubble = (cx, cy, r) => mArt(ME_BUB[r], cx - r, cy - r);
-/* the wand: a short wooden stick from the hand up to a gold ring; held up beside the face, or dipped in the jar */
-const ME_RING = [22, 13];
-const ME_ARM_UP = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
-const ME_ARM_DIP = [[1, 1, 'o'], [2, 2, 'o'], [1, 2, 'O'], [2, 3, 'O']];
-const meWand = up => up ? [[22, 18, 'B'], [22, 17, 'b'], [22, 16, 'n'], [22, 15, 'n'], ...mArt(['.y.', 'Y.y', '.Y.'], 21, 12)]
-  : [[22, 21, 'B'], [23, 21, 'b']];
-/* the bubble's centre while it floats, from where it leaves the ring to the pop in front of the face */
-const ME_FLOAT = [[1180, [26, 13]], [1450, [24, 8]], [1700, [19, 6]], [1900, [14, 8]], [2100, [13, 15]]];
+/* the wand: a violet ring on a short stick. At the mouth the ring sits just off the face at mouth height with the
+   stick down in the hand; lowered, it is held upright at its side */
+const ME_RING = ['.ii.', 'i..v', 'i..v', '.vv.'];
+const ME_ARM_MOUTH = [[1, 1, 'o'], [1, 2, 'O'], [2, 2, 'O']];
+const meWand = (pose, x, y) => pose === 'mouth' ? [...mArt(ME_RING, x + 13, y + 2), [x + 14, y + 6, 'v']]
+  : [...mArt(ME_RING, x + 14, y), [x + 15, y + 4, 'v']];
+/* the eyes stay in front of a bubble on the face, the film being clear */
+const meFront = (o, layer) => { const c = mascot(o); return [c.filter(e => e[2] !== 'k'), layer, c.filter(e => e[2] === 'k')]; };
+/* the bubble's centre while it floats, from where it leaves the ring to the pop on the face */
+const ME_FLOAT = [[1000, [24, 14]], [1300, [25, 8]], [1600, [18, 5]], [1850, [11, 8]], [2100, [10, 18]]];
 const meFloat = t => { for (let i = 0; i < ME_FLOAT.length - 1; i++) { const [t0, a] = ME_FLOAT[i], [t1, b] = ME_FLOAT[i + 1];
   if (t >= t0 && t <= t1) { const p = mEase.inOut((t - t0) / (t1 - t0)); return [Math.round(a[0] + (b[0] - a[0]) * p), Math.round(a[1] + (b[1] - a[1]) * p)]; } }
   return ME_FLOAT[ME_FLOAT.length - 1][1]; };
 const ME_POP = 2100, ME_BUB_T = 3200;
 const meBubbles = t => {
-  const o = { x: ME_X, y: 15, eyes: 'open', look: [1, 0], arms: ['rest', ME_ARM_UP] };
-  let up = true, bub = null;
-  if (t >= 250 && t < 400) o.y = 14;                                                     /* a breath in */
-  if (t >= 400 && t < 1100) { o.eyes = 'closed'; o.look = [0, 0];                         /* and blow */
-    const r = t < 600 ? 1 : t < 780 ? 2 : t < 960 ? 3 : 4; bub = [ME_RING[0] + r, ME_RING[1], r]; }
-  if (t >= 1100 && t < 1180) { bub = [26, 13, 4]; o.look = [1, -1]; }
-  if (t >= 1180 && t < ME_POP) { const [x, y] = meFloat(t); bub = [x, y, 4];
-    o.look = t < 1600 ? [1, -1] : t < 1850 ? [0, -1] : [0, 0]; if (t >= 1950) o.eyes = 'wide'; }
-  if (t >= ME_POP && t < ME_POP + 80) { o.squash = 1; o.eyes = 'squeeze'; o.look = [0, 0]; }   /* pop! */
-  else if (t >= ME_POP + 80 && t < ME_POP + 180) { o.eyes = 'squeeze'; o.look = [0, 0]; }
-  else if (t >= ME_POP + 180 && t < ME_POP + 320) { o.eyes = 'dot'; o.look = [0, 0]; }
-  else if (t >= ME_POP + 320 && t < ME_POP + 410) o.eyes = 'blink';
-  else if (t >= ME_POP + 410 && t < 2850) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0];
-    if (t >= 2580 && t < 2660) o.y = 14; else if (t >= 2510 && t < 2580) { o.squash = 1; o.legs = 'crouch'; } }
-  if (t >= 2850) o.look = [1, 1];                                                      /* to the jar for the next one */
-  if (t >= 2950 && t < 3100) { up = false; o.arms = ['rest', ME_ARM_DIP]; }
+  const o = { x: ME_X, y: 15, eyes: 'open', look: [1, 0], arms: ['rest', ME_ARM_MOUTH] };
+  let wand = 'mouth', bub = null;
+  if (t >= 180 && t < 330) o.y = 14;                                                     /* a breath in */
+  if (t >= 330 && t < 1000) { o.eyes = 'closed';                                          /* and blow */
+    bub = t < 470 ? [22, 18, 1] : t < 640 ? [23, 17, 2] : [24, 14, 3]; }
+  if (t >= 1000 && t < ME_POP) { const [x, y] = meFloat(t); bub = [x, y, 3];
+    o.look = t < 1350 ? [1, -1] : t < 1650 ? [0, -1] : t < 1900 ? [-1, -1] : [0, 0]; if (t >= 1900) o.eyes = 'wide'; }
+  if (t >= 1150 && t < 3000) { wand = 'low'; o.arms = ['rest', 'rest']; }
+  if (t >= ME_POP && t < ME_POP + 80) { o.squash = 1; o.eyes = 'squint'; o.look = [0, 0]; }  /* pop! */
+  else if (t >= ME_POP + 80 && t < ME_POP + 200) { o.eyes = 'squint'; o.look = [0, 0]; }
+  else if (t >= ME_POP + 200 && t < ME_POP + 340) { o.eyes = 'dot'; o.look = [0, 0]; }
+  else if (t >= ME_POP + 340 && t < ME_POP + 430) o.eyes = 'blink';
+  else if (t >= ME_POP + 430 && t < 2950) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0];
+    if (t >= 2640 && t < 2730) o.y = 14; else if (t >= 2570 && t < 2640) { o.squash = 1; o.legs = 'crouch'; } }
+  if (t >= 2950 && t < 3080) o.look = [1, -1];                                           /* ready for another */
   const fx = [], pa = t - ME_POP;
-  if (pa >= 0 && pa < 200) { const d = pa < 100 ? 4 : 5, [cx, cy] = [13, 15];
+  if (pa >= 0 && pa < 200) { const d = pa < 100 ? 4 : 5, [cx, cy] = [10, 18];
     for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [-1, 0], [1, 0], [0, 1]]) fx.push([cx + Math.round(dx * d * (dx && dy ? 0.75 : 1)), cy + Math.round(dy * d * (dx && dy ? 0.75 : 1)), pa < 100 ? 'l' : 'w']); }
-  const jar = mArt(ME_JAR, 23, 21);
-  return [mShadow(0, ME_X), up ? jar : [], mascot(o), meWand(up), up ? [] : jar, bub ? meBubble(...bub) : [], fx];
+  /* the wand rides with the hand: one cell out and none down when it squashes */
+  const sq = o.squash ? 1 : 0;
+  return [mShadow(0, ME_X), mArt(ME_JAR, ...ME_JAR_AT), ...meFront(o, [...meWand(wand, o.x + sq, o.y), ...(bub ? meBubble(...bub) : [])]), fx];
 };
 
 /* ---------- Watering ----------
@@ -1233,50 +1237,57 @@ const meWater = t => {
 };
 
 /* ---------- Painting ----------
-   A sketch pad on a little easel. It steps in, brush in hand, and paints a picture stroke by stroke: a sweep of blue
-   sky, a green hill, a gold sun. It steps back, squints at it, steps in again, draws the brush back and adds one last
-   touch, a tiny red flower on the hill. It steps back, proud: happy eyes, a blush, a sparkle. Then it flips the sheet
-   up over the top of the pad, and a fresh one waits. */
-const ME_PX = 6, ME_PAD = [22, 12];
-/* the easel: a spiral-bound pad (the binding in charcoal and steel) on a wooden A-frame with a ledge, lit on the
-   right, the paper cream with a shade down its left and along its foot */
+   A sketch pad on a little wooden easel. It steps in, brush in hand, and paints a picture stroke by stroke: a blue sky
+   around a white cloud, a gold sun, green hills. It steps back, squints at it, steps in again, draws the brush back and
+   adds one last touch, a tiny red flower on the hill. It steps back, proud: happy eyes, a blush, a sparkle. Then it
+   flips the sheet up over the top of the pad, and a fresh one waits. */
+const ME_PX = 4, ME_PAD = [21, 14];
+/* the easel, an A-frame in wood lit from the top: the mast rising behind the pad, the pad's steel spiral binding,
+   the paper cream with a shade down its left and along its foot, a tray for the pad to stand on, two front legs
+   splayed out and the back leg, darker, straight down the middle */
 const ME_EASEL = [
-  'GmGmGmG',
-  'Cwwwwww',
-  'Cwwwwww',
-  'Cwwwwww',
-  'Cwwwwww',
-  'Cwwwwww',
-  'CCCCCCC',
-  'BbbbbnB',
-  '.B...b.',
-  '.B...b.',
-  'B.....b',
-  'B.....b',
-  'B.....b',
-  'B.....b'];
-/* the picture, stroke by stroke, as [x, y, colour] in pad cells: the sky, the hill, the sun, and the last touch */
+  '....nb....',
+  '....nb....',
+  '.mMmMmMmM.',
+  '.Cwwwwwwc.',
+  '.Cwwwwwwc.',
+  '.Cwwwwwwc.',
+  '.Cwwwwwwc.',
+  '.Cwwwwwwc.',
+  '.CCCCCCCC.',
+  'BnnnnnnnnB',
+  '.BbbbbbbB.',
+  '..b.BB.b..',
+  '..b.B..b..',
+  '.b..B...b.',
+  'b...B....b'];
+const ME_EASEL_AT = [19, 11];
+/* the picture, stroke by stroke, as [x, y, colour] in paper cells: the sky painted around a cloud, the sun lit at its
+   top left, the hills lit on the left, and the last touch */
 const ME_STROKES = [
-  { t0: 250, t1: 600, cells: [1, 2, 3, 4, 5, 6].map(x => [x, 1, 'l']) },
-  { t0: 650, t1: 1000, cells: [...[1, 2, 3, 4, 5, 6].map(x => [x, 5, 'E']), ...[2, 3, 4, 5].map(x => [x, 4, 'e'])] },
-  { t0: 1050, t1: 1200, cells: [[5, 1, 'z'], [5, 2, 'y'], [6, 2, 'Y']] },
-  { t0: 1940, t1: 1990, cells: [[3, 3, 'r']] }];
-/* a short brush from the hand to its tip: a wooden handle, a steel ferrule, bristles wet with the colour */
+  { t0: 250, t1: 650, cells: [[0, 0, 'l'], [1, 0, 'l'], [3, 0, 'l'], [0, 1, 'l'], [3, 1, 'l']] },
+  { t0: 700, t1: 900, cells: [[4, 0, 'z'], [5, 0, 'y'], [4, 1, 'y'], [5, 1, 'Y']] },
+  { t0: 950, t1: 1250, cells: [[1, 3, 'e'], [2, 3, 'e'], [0, 4, 'e'], [1, 4, 'e'], [2, 4, 'e'], [3, 4, 'E'], [4, 4, 'E'], [5, 3, 'E'], [5, 4, 'E']] },
+  { t0: 1940, t1: 1990, cells: [[2, 2, 'r']] }];
+/* a brush from the hand to its tip: a black lacquered handle, a steel ferrule, bristles wet with the colour */
 const meBrush = ([x0, y0], [x1, y1], tip) => { const n = Math.max(1, Math.abs(x1 - x0), Math.abs(y1 - y0)), c = [];
-  for (let i = 1; i <= n; i++) c.push([Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), i === n ? tip : i === n - 1 ? 'm' : 'b']);
+  for (let i = 1; i <= n; i++) c.push([Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), i === n ? tip : i === n - 1 ? 'm' : 'g']);
   return c; };
 const ME_PAINT_T = 3200, ME_FLIP = 2660;
 const mePaint = t => {
   const [px, py] = ME_PAD, at = (a, b) => t >= a && t < b;
-  let x = ME_PX, legs = 'stand', eyes = 'open', look = [1, -1], blush = false, arm = 'rest', tipAt = null, tip = 'm', y = 15;
+  let x = ME_PX, legs = 'stand', eyes = 'open', look = [1, -1], blush = false, arm = 'rest', tipAt = null, y = 15;
   /* in to paint, back to look, in for the last touch, back to admire */
   if (at(120, 220) || at(1750, 1830)) { x = ME_PX + 1; legs = 'stepA'; } else if (at(220, 1250) || at(1830, 2000)) x = ME_PX + 2;
   else if (at(1250, 1350) || at(2000, 2080)) { x = ME_PX + 1; legs = 'stepB'; }
+  /* the brush keeps the colour of the last stroke it made */
+  const done = ME_STROKES.filter(s => t >= s.t0), last = done[done.length - 1];
+  let tip = last ? last.cells[last.cells.length - 1][2] : 'r';
   /* the brush on the cell being painted, a stroke at a time: high strokes with the arm raised, low ones with it out */
   const live = ME_STROKES.find(s => at(s.t0, s.t1));
   if (live) { const k = Math.min(live.cells.length - 1, Math.floor((t - live.t0) / (live.t1 - live.t0) * live.cells.length));
     const [cx, cy, c] = live.cells[k]; tipAt = [px + cx, py + cy]; tip = c; arm = cy <= 2 ? 'reach' : 'out'; look = [1, cy <= 2 ? -1 : 0]; }
-  if (at(1880, 1940)) { arm = 'out'; tipAt = [px + 2, py + 4]; tip = 'r'; look = [1, 0]; }      /* the brush draws back */
+  if (at(1880, 1940)) { arm = 'reach'; tipAt = [px + 1, py + 2]; tip = 'r'; look = [1, 0]; }    /* the brush draws back */
   if (at(1450, 1750)) { eyes = 'squint'; look = [1, 0]; }
   if (at(2150, ME_FLIP)) { eyes = 'happy'; blush = true; look = [0, 0]; if (at(2240, 2320)) y = 16; }
   if (at(ME_FLIP - 40, ME_FLIP + 120)) { arm = 'up'; look = [1, -1]; }                          /* flip it over */
@@ -1284,31 +1295,31 @@ const mePaint = t => {
   const o = { x, y, legs, eyes, look, blush, arms: ['rest', arm] };
   /* the hand is the last top cell of the arm */
   const top = (M_ARMS[arm] || []).filter(c => c[2] === 'o'), h = top[top.length - 1], hand = [x + 12 + h[0], y + 5 + h[1]];
-  const brush = tipAt ? meBrush(hand, tipAt, tip) : meBrush(hand, [hand[0] + 1, hand[1] - 3], 'm');
+  const brush = tipAt ? meBrush(hand, tipAt, tip) : meBrush(hand, [hand[0] + 1, hand[1] - 3], tip);
   /* the picture so far; once the sheet goes over, a fresh one */
   const fa = t - ME_FLIP;
   let pic = ME_STROKES.flatMap(s => t < s.t0 ? [] : s.cells.slice(0, t >= s.t1 ? s.cells.length : Math.floor((t - s.t0) / (s.t1 - s.t0) * s.cells.length) + 1));
   /* the flip: the sheet's foot comes up first, showing the fresh sheet under it and its own back as it curls, then it
      stands up over the binding, then it is gone behind */
   let flip = [];
-  if (fa >= 0) { pic = fa < 60 ? pic.filter(([, cy]) => cy <= 2) : [];
-    if (fa < 60) flip = mArt(['cccccc', 'CCCCCC'], px + 1, py + 3);
-    else if (fa < 120) flip = mArt(['cccccc', 'cccccc', 'CCCCCC'], px + 1, py - 3);
-    else if (fa < 180) flip = mArt(['CCCCCC'], px + 1, py - 1); }
-  const fx = at(2160, 2560) ? fxSparkle(px + 8, py - 1 - Math.round((t - 2160) / 200), t < 2420 ? 1 : 0) : [];
-  return [mShadow(0, x), mArt(ME_EASEL, px, py), pic.map(([cx, cy, c]) => [px + cx, py + cy, c]), flip, mascot(o), brush, fx];
+  if (fa >= 0) { pic = fa < 60 ? pic.filter(([, cy]) => cy <= 1) : [];
+    if (fa < 60) flip = mArt(['cccccc', 'CCCCCC'], px, py + 2);
+    else if (fa < 120) flip = mArt(['cccccc', 'cccccc', 'CCCCCC'], px, py - 4);
+    else if (fa < 180) flip = mArt(['CCCCCC'], px, py - 2); }
+  const fx = at(2160, 2560) ? fxSparkle(px + 8, py - 2 - Math.round((t - 2160) / 200), t < 2420 ? 1 : 0) : [];
+  return [mShadow(0, x), mArt(ME_EASEL, ...ME_EASEL_AT), pic.map(([cx, cy, c]) => [px + cx, py + cy, c]), flip, mascot(o), brush, fx];
 };
 
 const MSC_E = {
-  mascot_juggle: Object.assign(mFilm(meJuggle, ME_JUG_T), { still: meAt(meJuggle, 265) }),
-  mascot_bubbles: Object.assign(mFilm(meBubbles, ME_BUB_T), { still: meAt(meBubbles, 1000) }),
+  mascot_juggle: Object.assign(mFilm(meJuggle, ME_JUG_T), { still: meAt(meJuggle, 350) }),
+  mascot_bubbles: Object.assign(mFilm(meBubbles, ME_BUB_T), { still: meAt(meBubbles, 800) }),
   mascot_water: Object.assign(mFilm(meWater, ME_WAT_T), { still: meAt(meWater, 1900) }),
   mascot_paint: Object.assign(mFilm(mePaint, ME_PAINT_T), { still: meAt(mePaint, 2300) }),
 };
 const MSC_E_META = {
-  mascot_bubbles: ['Bubbles', 'It blows a bubble that swells on the wand, floats up and around, and pops right in its face; a flinch, a blink, a laugh, and it dips the wand for another.', 'Use it for: light waits, playful idle moments, a little fun while things load.'],
+  mascot_bubbles: ['Bubbles', 'Ring held to its mouth, it blows a bubble that swells off the wand, floats up and around, and pops right in its face; a flinch, a blink, a laugh, and the wand comes up for another.', 'Use it for: light waits, playful idle moments, a little fun while things load.'],
   mascot_water: ['Watering', 'A thirsty flower droops beside it; it tips its watering can, the flower perks up and blooms with a heart, then slowly droops again, ready for more.', 'Use it for: growing, syncing, a job that needs tending, progress that builds.'],
-  mascot_paint: ['Painting', 'Stroke by stroke it paints sky, a hill and a sun, steps back to squint, adds one tiny flower, beams, and flips to a fresh sheet.', 'Use it for: generating an image, designing, rendering, anything being made.'],
+  mascot_paint: ['Painting', 'At its little wooden easel it paints sky around a cloud, a sun and green hills, steps back to squint, adds one tiny flower, beams, and flips to a fresh sheet.', 'Use it for: generating an image, designing, rendering, anything being made.'],
   mascot_juggle: ['Juggling', 'Three balls cross over its head from hand to hand; one goes too high and bonks it, bounces into the other hand right on the beat, and it winks.', 'Use it for: busy work, many things at once, a queue being handled.'],
 };
 
@@ -1332,11 +1343,11 @@ const MASCOT_PROPS = [
   ['Beetle', 'A dark head and feeler, a shell with a glint', () => mArt(mbBugF[0], 0, 0)],
   ['Thought bubble', 'A soft cloud lit at the top right', () => mArt(MT_CLOUD, 0, 0)],
   ['Juggling balls', 'Red, gold and blue, each lit at its top right', () => [...mArt(['rp', 'Rr'], 0, 2), ...mArt(['yz', 'Yy'], 3, 0), ...mArt(['ul', 'Uu'], 6, 2)]],
-  ['Bubble wand', 'A wooden stick, a gold ring, a bubble with a glint', () => [...mArt(['.y.', 'Y.y', '.Y.', '.n.', '.n.', '.b.', '.B.'], 0, 4), ...meBubble(6, 3, 3)]],
-  ['Soap jar', 'Glass with a smoke contour, blue soap, a glint', () => mArt(ME_JAR, 0, 0)],
+  ['Bubble wand', 'A violet ring on a short stick, a bubble with a glint and a sheen', () => [...mArt([...ME_RING, '.v..', '.v..'], 0, 3), ...meBubble(8, 3, 3)]],
+  ['Soap bottle', 'A violet screw cap, clear plastic with the blue soap, a label with a bubble', () => mArt(ME_JAR, 0, 0)],
   ['Watering can', 'A handle over a round body, a long spout and its rose', () => mArt(ME_CAN, 0, 0)],
   ['Flower pot', 'Terracotta lit on the right, soil, a flower in bloom', () => [...mArt(ME_PLANT.bloom, 1, 0), ...mArt(ME_POT, 0, 8)]],
-  ['Easel', 'A spiral pad on an A-frame, a little landscape', () => [...mArt(ME_EASEL, 0, 0), ...ME_STROKES.flatMap(st => st.cells)]],
+  ['Easel', 'Lit wood: the mast, a spiral pad, a tray, splayed legs; a little landscape', () => [...mArt(ME_EASEL, 0, 0), ...ME_STROKES.flatMap(st => st.cells.map(([x, y, c]) => [x + 2, y + 3, c]))]],
 ].map(([name, note, draw]) => [name, note, () => draw().filter(([, , c]) => c !== 'o' && c !== 'O' && c !== 'd')]);
 
 /* ---------- every scene, ready for the page: a sprite with its frames, its still pose and its loop length ---------- */
