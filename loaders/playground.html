@@ -3719,11 +3719,12 @@ const mbHunt = t => {
 };
 
 /* ---------- Reading (state: reading docs) ----------
-   An open book lies in front of it, wide and low the way a real one lies open on a table, and it reads with its eyes
-   down on the pages, its hands resting on the far corners. The eyes follow each line, left page then right, while a
-   small gold mark keeps pace along the text, with a little nod at each new line. At the end of the spread its hand
-   flicks, and the right page swings over the spine like a real sheet: it lifts with its text, rises edge on in front
-   of its face, shows its back as it falls to the left, and lands with a puff of air. A happy nod follows: curved
+   An open book lies in front of it, wide and low the way a real one lies open on a table, facing the mascot, and it
+   reads with its eyes down on the pages, its hands resting on the far corners. From its side of the book the eyes
+   follow each line, its left page first (our right), while a small gold mark keeps pace along the text, with a little
+   nod at each new line. At the end of the spread its hand flicks, and its right page (our left) swings over the spine
+   like a real sheet: it lifts with its text, rises edge on in front of its face, shows its back as it falls toward
+   us on the right, and lands with a puff of air. A happy nod follows: curved
    eyes, a blush and a sparkle. It is the wait while something is read, and the turned page is the progress. */
 /* the open book, 25 x 9, in perspective: the pages are six rows, narrow at the far edge and one cell wider each row
    toward the near one, so the sides are clean diagonals; the far edge dips into the spine, a crease runs down the
@@ -3750,13 +3751,15 @@ const mbBookArt = (() => {
    right page swings round the spine, rising as it goes, the far rows a touch behind the near ones so the sheet bends.
    It carries its words on both faces, lit on the front and cream on the back, with a shade line round it so it
    reads against the pages under it; lying flat at either end it matches the page it lands on */
-const mbPage = a => {
+const mbPage = (a, dir = 1) => {
   const S = MB_BK.S, R = MB_BK.rows, k = 0.7, cells = new Map();
   const word = (r, d) => MB_TEXT.some(([rr, ws]) => rr === r && ws.some(([p, q]) => d >= p && d <= q));
   for (let r = 0; r < R; r++) { const h = mbHalf(r);
     for (let d = 0.5; d <= h + 0.01; d += 0.5) {
-      /* the near outer corner leads, so the turn starts as a peel and the sheet bends as it goes over */
-      const ar = Math.min(Math.PI, Math.max(0, a + 0.5 * Math.sin(Math.min(Math.PI, a * 1.4 + 0.25)) * (r / (R - 1)) * (d / h)));
+      /* the near outer corner leads (dir 1 turns a page from the right, -1 from the left), so the turn starts as a
+         peel and the sheet bends as it goes over */
+      const gone = dir > 0 ? a : Math.PI - a, lead = 0.5 * Math.sin(Math.min(Math.PI, gone * 1.4 + 0.25)) * (r / (R - 1)) * (d / h);
+      const ar = Math.min(Math.PI, Math.max(0, a + dir * lead));
       const x = Math.round(S + d * Math.cos(ar)), y = Math.round(r - d * Math.sin(ar) * k);
       cells.set(x + ',' + y, [x, y, word(r, Math.round(d)) && Math.sin(ar) < 0.22 ? 'C' : ar < Math.PI / 2 ? 'w' : 'c', d]); } }
   /* a shade line only where the sheet's edge stands clear of the pages, so a sheet still lying flat looks like the
@@ -3767,27 +3770,29 @@ const mbPage = a => {
     if (edge && (!onPage(x, y) || d >= mbHalf(Math.max(0, Math.min(R - 1, y))) - 0.5 && Math.sin(a) > 0.25)) c[2] = 'C'; }
   return out.map(([x, y, c]) => [x, y, c]);
 };
-/* the reading schedule, line by line as [row, first column, length] in the book, left page then right: the gold
-   mark moves along each line at a steady 70 ms a cell, the eyes take a beat to come back to the start of the next
-   line, and a longer one (with a blink) to cross to the right page */
-const MB_CELL = 70, MB_SCHED = (() => { let t = 0; return [[2, 4, 6], [4, 2, 8], [2, 15, 6], [4, 15, 8]].map(([r, c0, n], i) => {
-  t += i === 0 ? 0 : i === 2 ? 170 : 110; const line = { t0: t, t1: t + n * MB_CELL, r, c0, n, page: i < 2 ? 0 : 1 }; t = line.t1; return line; }); })();
+/* the reading schedule. The book faces the mascot, so from its side our right page is its left one and the line
+   nearest us is its top line: it reads our right page first, nearest line first, each line from our right to our
+   left, then our left page, and turns that page over toward us on the right with its own right hand (on our left).
+   Lines are [row, first cell it reads, length] in the book; the gold mark moves along at a steady 70 ms a cell, the
+   eyes take a beat to come back to the start of the next line, and a longer one (with a blink) to cross pages */
+const MB_CELL = 70, MB_SCHED = (() => { let t = 0; return [[4, 22, 8], [2, 20, 6], [4, 9, 8], [2, 9, 6]].map(([r, c0, n], i) => {
+  t += i === 0 ? 0 : i === 2 ? 170 : 110; const line = { t0: t, t1: t + n * MB_CELL, r, c0, n, page: i < 2 ? 1 : 0 }; t = line.t1; return line; }); })();
 const MB_READ_END = MB_SCHED[3].t1, MB_FLICK_T = MB_READ_END + 200, MB_TURN_T = MB_FLICK_T + 60, MB_TURN = 620;
 const MB_LAND = MB_TURN_T + MB_TURN, MB_JOY = MB_LAND + 180, MB_READ_T = MB_JOY + 780;
 const mbRead = t => {
-  let y = 15, eyes = 'open', look = [-1, 1], arms = ['rest', 'rest'], turn = null, blush = false, cursor = null;
+  let y = 15, eyes = 'open', look = [1, 1], arms = ['rest', 'rest'], turn = null, blush = false, cursor = null;
   const line = MB_SCHED.find(l => t >= l.t0 && t < l.t1), next = MB_SCHED.find(l => t < l.t0);
   if (line) { const u = (t - line.t0) / (line.t1 - line.t0);
-    cursor = [line.c0 + Math.min(line.n - 1, Math.floor((t - line.t0) / MB_CELL)), line.r];
-    look = [line.page === 0 ? (u < 0.5 ? -1 : 0) : (u < 0.5 ? 0 : 1), 1];
+    cursor = [line.c0 - Math.min(line.n - 1, Math.floor((t - line.t0) / MB_CELL)), line.r];
+    look = [line.page === 1 ? (u < 0.5 ? 1 : 0) : (u < 0.5 ? 0 : -1), 1];
     if (t - line.t0 < 80) y = 16; }                                             /* a small nod at each new line */
-  else if (next) look = [next.page === 0 ? -1 : 0, 1];                        /* back to the start of the next line */
-  if (t >= MB_SCHED[1].t1 + 30 && t < MB_SCHED[1].t1 + 120) eyes = 'blink';    /* a blink crossing to the right page */
-  if (t >= MB_READ_END && t < MB_TURN_T) look = [1, 1];                        /* the eyes go to the corner, a beat */
-  if (t >= MB_FLICK_T && t < MB_FLICK_T + 200) arms = ['rest', [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']]];   /* a flick */
+  else if (next) look = [next.page === 1 ? 1 : 0, 1];                         /* back to the start of the next line */
+  if (t >= MB_SCHED[1].t1 + 30 && t < MB_SCHED[1].t1 + 120) eyes = 'blink';    /* a blink crossing to the other page */
+  if (t >= MB_READ_END && t < MB_TURN_T) look = [-1, 1];                       /* the eyes go to the corner, a beat */
+  if (t >= MB_FLICK_T && t < MB_FLICK_T + 200) arms = [[[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']], 'rest'];   /* a flick */
   const ta = t - MB_TURN_T;
-  if (ta >= 0 && ta < MB_TURN) { turn = Math.PI * mEase.inOut(ta / MB_TURN); look = [turn < 1.2 ? 1 : turn < 1.9 ? 0 : -1, turn < 1.2 ? 0 : -1]; }
-  if (t >= MB_LAND && t < MB_JOY) look = [-1, 1];                             /* it watches the page settle */
+  if (ta >= 0 && ta < MB_TURN) { turn = Math.PI * (1 - mEase.inOut(ta / MB_TURN)); look = [turn > 1.9 ? -1 : turn > 1.2 ? 0 : 1, turn > 1.9 ? 0 : -1]; }
+  if (t >= MB_LAND && t < MB_JOY) look = [1, 1];                              /* it watches the page settle */
   if (t >= MB_JOY && t < MB_JOY + 560) { eyes = 'happy'; blush = true; look = [0, 0];
     if ((t >= MB_JOY + 60 && t < MB_JOY + 160) || (t >= MB_JOY + 300 && t < MB_JOY + 400)) y = 16; }
   if (t >= MB_JOY + 640 && t < MB_JOY + 730) eyes = 'blink';
@@ -3797,8 +3802,8 @@ const mbRead = t => {
   const fx = [], sa = t - MB_JOY - 80;
   if (sa >= 0 && sa < 480) { const p = mEase.out(sa / 480); fx.push(...fxSparkle(Math.round(bx + 16 + p), Math.round(14 - 4 * p), sa < 300 ? 1 : 0)); }
   const pa = t - MB_LAND + 40;                                                /* the air the page pushes out as it lands */
-  if (pa >= 0 && pa < 260) fx.push(...fxPuff(kx + 1 - Math.round(2 * mEase.out(pa / 260)), ky + 1, pa < 140 ? 2 : 1, true));
-  return [mascot({ x: bx, y, eyes, look, arms, blush }), book, turn == null ? [] : mbPage(turn).map(([a, b, c]) => [a + kx, b + ky, c]), fx];
+  if (pa >= 0 && pa < 260) fx.push(...fxPuff(kx + MB_BK.W - 2 + Math.round(2 * mEase.out(pa / 260)), ky + 1, pa < 140 ? 2 : 1, true));
+  return [mascot({ x: bx, y, eyes, look, arms, blush }), book, turn == null ? [] : mbPage(turn, -1).map(([a, b, c]) => [a + kx, b + ky, c]), fx];
 };
 
 /* the stills: the find with its wide eyes, a line being read, the pounce with the beetle already bolting beneath */
@@ -4215,6 +4220,223 @@ const MSC_D_META = {
   mascot_plane: ['Paper plane', 'It squints, aims and throws a paper plane that loops over its head trailing dashes, then hops up and catches it with happy eyes.', 'Use it for: uploading, sending, sharing, a message on its way.'],
 };
 
+/* Mascot scenes, set E: Juggling, Bubbles, Watering, Painting. Built only from kit.js; every helper here is prefixed 'me'. */
+
+/* an arc from a to b between t0 and t1, h cells above the straight line at its middle; returns [x, y] */
+const meArc = (t, t0, t1, [x0, y0], [x1, y1], h) => { const p = Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
+  return [Math.round(x0 + (x1 - x0) * p), Math.round(y0 + (y1 - y0) * p - 4 * h * p * (1 - p))]; };
+/* the frame at a given time, so a hero still can be cut from the same film */
+const meAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic()));
+
+/* ---------- Juggling ----------
+   Three balls in a cascade, red, gold and blue, crossing over its head from hand to hand on a steady beat, each hand
+   giving a little flick as it throws. On the second round the red ball goes up too high: the eyes follow it up, it
+   comes down on its head with a bonk (a squash, eyes squeezed shut, a star), bounces off and drops straight into the
+   other hand right on the beat. It never misses a catch, and gives a wink. */
+const ME_B = 265, ME_F = 480, ME_JUG_T = 12 * ME_B;
+const ME_HR = [23, 18], ME_HL = [6, 18], ME_HEAD = [14, 13];
+/* each ball is thrown every third beat, the hands taking turns: [first throw beat, colours] */
+const ME_BALLS = [[0, ['rp', 'Rr']], [1, ['yz', 'Yy']], [2, ['ul', 'Uu']]];
+const ME_FLICK = [[1, 0, 'o'], [2, -1, 'o'], [3, -1, 'o'], [1, 1, 'O'], [2, 0, 'O'], [3, 0, 'O']];
+const meBall = (t, i) => {
+  const first = ME_BALLS[i][0];
+  /* the last throw of this ball at or before t, and the hand it left from (even beats the right hand) */
+  const k = Math.floor((t / ME_B - first) / 3), T = (first + 3 * k) * ME_B, fromR = ((first + 3 * k) % 2 + 2) % 2 === 0;
+  const from = fromR ? ME_HR : ME_HL, to = fromR ? ME_HL : ME_HR;
+  /* the red ball's throw on the second round goes high, bonks the head and bounces into the left hand on the beat */
+  if (i === 0 && T === 6 * ME_B && t < T + ME_F)
+    return t < T + 300 ? meArc(t, T, T + 300, ME_HR, ME_HEAD, 13) : meArc(t, T + 300, T + ME_F, ME_HEAD, ME_HL, 4);
+  return t - T < ME_F ? meArc(t, T, T + ME_F, from, to, 11) : to;
+};
+const meJuggle = t => {
+  const o = { x: 9, y: 15, eyes: 'open', look: [0, -1], arms: ['out', 'out'] };
+  const beat = Math.floor(t / ME_B), inThrow = t - beat * ME_B < 70;
+  if (inThrow) o.arms = beat % 2 === 0 ? ['out', ME_FLICK] : [ME_FLICK, 'out'];
+  if (t >= 6 * ME_B && t < 6 * ME_B + 300) o.look = [t < 6 * ME_B + 160 ? 1 : 0, -1];       /* the eyes follow the high one */
+  const bonk = 6 * ME_B + 300;
+  if (t >= bonk && t < bonk + 80) { o.squash = 1; o.eyes = 'squeeze'; }
+  else if (t >= bonk + 80 && t < bonk + 200) { o.eyes = 'squeeze'; o.look = [0, 0]; }
+  else if (t >= bonk + 200 && t < bonk + 300) { o.eyes = 'dot'; o.look = [-1, 0]; }
+  else if (t >= bonk + 330 && t < bonk + 640) { o.eyes = ['open', 'closed']; o.look = [0, 0]; }   /* a wink: still got it */
+  if (t >= 900 && t < 990) o.eyes = 'blink';
+  const balls = ME_BALLS.map(([, art], i) => { let [x, y] = meBall(t, i); if (i === 0 && t >= bonk && t < bonk + 80) y += 1; return mArt(art, x, y); });
+  const fx = t >= bonk && t < bonk + 220 ? fxSparkle(18, 12, t < bonk + 110 ? 1 : 0) : [];
+  return [mShadow(0, 9), mascot(o), ...balls, fx];
+};
+
+/* ---------- Bubbles ----------
+   A bubble wand and a little jar of soap. It holds the wand up beside its face, takes a breath (it rises a cell), and
+   blows with its eyes shut while a bubble swells on the ring in four steps. The bubble lets go and floats: up and over
+   its head and slowly down, the eyes following it all the way, until it drifts right in front of its face. The eyes
+   go wide, and it pops: droplets fly, it flinches with its eyes squeezed shut, blinks with tiny eyes, then laughs it
+   off with happy eyes and a hop, and dips the wand back in the jar for the next one. */
+const ME_X = 7;
+/* the soap jar on the floor at its right: a glass jar with a smoke contour, blue soap, a glint */
+const ME_JAR = ['.MM.', 'MwlM', 'MluM', 'MuuM', '.MM.'];
+/* bubbles by radius: a thin light-blue ring with a white glint at its top right */
+const ME_BUB = {
+  1: ['.l.', 'l.l', '.l.'],
+  2: ['.lll.', 'l..wl', 'l...l', 'l...l', '.lll.'],
+  3: ['..lll..', '.l...l.', 'l....wl', 'l.....l', 'l.....l', '.l...l.', '..lll..'],
+  4: ['...lll...', '.ll...ll.', '.l....wl.', 'l......wl', 'l.......l', 'l.......l', '.l.....l.', '.ll...ll.', '...lll...'] };
+const meBubble = (cx, cy, r) => mArt(ME_BUB[r], cx - r, cy - r);
+/* the wand: a short wooden stick from the hand up to a gold ring; held up beside the face, or dipped in the jar */
+const ME_RING = [22, 13];
+const ME_ARM_UP = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
+const ME_ARM_DIP = [[1, 1, 'o'], [2, 2, 'o'], [1, 2, 'O'], [2, 3, 'O']];
+const meWand = up => up ? [[22, 18, 'B'], [22, 17, 'b'], [22, 16, 'n'], [22, 15, 'n'], ...mArt(['.y.', 'Y.y', '.Y.'], 21, 12)]
+  : [[22, 21, 'B'], [23, 21, 'b']];
+/* the bubble's centre while it floats, from where it leaves the ring to the pop in front of the face */
+const ME_FLOAT = [[1180, [26, 13]], [1450, [24, 8]], [1700, [19, 6]], [1900, [14, 8]], [2100, [13, 15]]];
+const meFloat = t => { for (let i = 0; i < ME_FLOAT.length - 1; i++) { const [t0, a] = ME_FLOAT[i], [t1, b] = ME_FLOAT[i + 1];
+  if (t >= t0 && t <= t1) { const p = mEase.inOut((t - t0) / (t1 - t0)); return [Math.round(a[0] + (b[0] - a[0]) * p), Math.round(a[1] + (b[1] - a[1]) * p)]; } }
+  return ME_FLOAT[ME_FLOAT.length - 1][1]; };
+const ME_POP = 2100, ME_BUB_T = 3200;
+const meBubbles = t => {
+  const o = { x: ME_X, y: 15, eyes: 'open', look: [1, 0], arms: ['rest', ME_ARM_UP] };
+  let up = true, bub = null;
+  if (t >= 250 && t < 400) o.y = 14;                                                     /* a breath in */
+  if (t >= 400 && t < 1100) { o.eyes = 'closed'; o.look = [0, 0];                         /* and blow */
+    const r = t < 600 ? 1 : t < 780 ? 2 : t < 960 ? 3 : 4; bub = [ME_RING[0] + r, ME_RING[1], r]; }
+  if (t >= 1100 && t < 1180) { bub = [26, 13, 4]; o.look = [1, -1]; }
+  if (t >= 1180 && t < ME_POP) { const [x, y] = meFloat(t); bub = [x, y, 4];
+    o.look = t < 1600 ? [1, -1] : t < 1850 ? [0, -1] : [0, 0]; if (t >= 1950) o.eyes = 'wide'; }
+  if (t >= ME_POP && t < ME_POP + 80) { o.squash = 1; o.eyes = 'squeeze'; o.look = [0, 0]; }   /* pop! */
+  else if (t >= ME_POP + 80 && t < ME_POP + 180) { o.eyes = 'squeeze'; o.look = [0, 0]; }
+  else if (t >= ME_POP + 180 && t < ME_POP + 320) { o.eyes = 'dot'; o.look = [0, 0]; }
+  else if (t >= ME_POP + 320 && t < ME_POP + 410) o.eyes = 'blink';
+  else if (t >= ME_POP + 410 && t < 2850) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0];
+    if (t >= 2580 && t < 2660) o.y = 14; else if (t >= 2510 && t < 2580) { o.squash = 1; o.legs = 'crouch'; } }
+  if (t >= 2850) o.look = [1, 1];                                                      /* to the jar for the next one */
+  if (t >= 2950 && t < 3100) { up = false; o.arms = ['rest', ME_ARM_DIP]; }
+  const fx = [], pa = t - ME_POP;
+  if (pa >= 0 && pa < 200) { const d = pa < 100 ? 4 : 5, [cx, cy] = [13, 15];
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [-1, 0], [1, 0], [0, 1]]) fx.push([cx + Math.round(dx * d * (dx && dy ? 0.75 : 1)), cy + Math.round(dy * d * (dx && dy ? 0.75 : 1)), pa < 100 ? 'l' : 'w']); }
+  const jar = mArt(ME_JAR, 23, 21);
+  return [mShadow(0, ME_X), up ? jar : [], mascot(o), meWand(up), up ? [] : jar, bub ? meBubble(...bub) : [], fx];
+};
+
+/* ---------- Watering ----------
+   A thirsty potted flower droops beside it, stem bent and bud hanging. Its tiny eyes say oh no. It lifts its watering
+   can, tips it over the pot and pours, drops pattering onto the soil. The flower perks up: the stem straightens, the
+   bud lifts, and the flower opens with a heart. A happy hop and a blush, a fond look, a blink. Then, slowly, the flower
+   closes and the stem bends again, thirsty, and its eyes go small: time to water it again. */
+const ME_WX = 3;
+/* the watering can, side on: a handle arching over a round body, lit at its top right, and a long spout with its rose
+   at the tip; and the same can tipped forward to pour */
+const ME_CAN = ['.UUU.....', 'U...U...l', 'UuuulU.Ul', 'UuuuuUUU.', 'UuuuuU...', '.UUUU....'];
+const ME_CAN_TIP = ['..UUU....', '.U...U...', 'UuuulU...', 'UuuuuUU..', '.UuuuU.U.', '..UUU...U', '........l'];
+/* the flower pot: a terracotta rim lit on its right with the soil showing inside, tapering to a narrow base */
+const ME_POT = ['DnBBBBnD', 'DbbbbbnD', '.DbbbnD.', '.DbbbnD.', '..DDDD..'];
+/* the flower by how well watered it is: drooping with its bud hanging, perking up with the bud lifting, in bloom */
+const ME_PLANT = {
+  droop: ['.....', '.....', '.....', '..EE.', '..E.E', '.eE.R', '..E..', 'e.E..'],
+  perk: ['.....', '.....', '..rR.', '..E..', '.eE..', '..Ee.', '..E..', '..E..'],
+  bud: ['.....', '..r..', '.rRr.', '..E..', '.eE..', '..Ee.', '..E..', '..E..'],
+  bloom: ['..p..', '.ryr.', '..r..', '..E..', '.eE..', '..Ee.', '..E..', '..E..'] };
+const ME_ARM_LIFT = [[1, 0, 'o'], [2, -1, 'o'], [1, 1, 'O'], [2, 0, 'O']];
+const ME_WAT_T = 3200;
+const meWater = t => {
+  const o = { x: ME_WX, y: 15, eyes: 'open', look: [1, 1], arms: ['rest', 'out'] };
+  let pour = false, plant = 'droop';
+  if (t < 350 || t >= 2950) o.eyes = 'dot';                                            /* oh no, it is thirsty */
+  if (t >= 350 && t < 1450) { o.arms = ['rest', ME_ARM_LIFT]; pour = t >= 550; o.look = [1, 1]; }
+  if (t >= 1000 && t < 1450) o.eyes = 'happy';
+  plant = t < 1250 ? 'droop' : t < 1450 ? 'perk' : t < 1650 ? 'bud' : t < 2700 ? 'bloom' : t < 2850 ? 'bud' : t < 2950 ? 'perk' : 'droop';
+  if (t >= 1650 && t < 2350) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0];
+    if (t >= 1800 && t < 1870) { o.squash = 1; o.legs = 'crouch'; } else if (t >= 1870 && t < 2050) { o.y = 14; o.legs = 'air'; } else if (t >= 2050 && t < 2110) { o.squash = 1; o.legs = 'crouch'; } }
+  if (t >= 2350 && t < 2950) o.look = [1, 0];
+  if (t >= 2500 && t < 2590) o.eyes = 'blink';
+  const can = pour ? mArt(ME_CAN_TIP, 17, 14) : mArt(ME_CAN, 18, o.arms[1] === ME_ARM_LIFT ? 14 : 15);
+  /* the water: a drop leaves the rose every 120 ms and falls onto the soil, landing with a splash */
+  const fx = [];
+  if (pour && t < 1400) for (let k = 0; k < 3; k++) { const a = (t - 550 - k * 40) % 120;
+    if (a >= 0 && a < 60) fx.push([25, 20, 'l']); else if (a >= 60) fx.push([25 + k % 2, 21, a < 90 ? 'l' : 'w']); }
+  /* the heart when it blooms */
+  const ha = t - 1680; if (ha >= 0 && ha < 520) fx.push(...fxHeart(26, Math.round(10 - 4 * mEase.out(ha / 520)), ha < 380 ? 1 : 0));
+  return [mShadow(o.y < 15 ? 1 : 0, ME_WX), mascot(o), can, mArt(ME_POT, 23, 21), mArt(ME_PLANT[plant], 24, 13), fx];
+};
+
+/* ---------- Painting ----------
+   A sketch pad on a little easel. It steps in, brush in hand, and paints a picture stroke by stroke: a sweep of blue
+   sky, a green hill, a gold sun. It steps back, squints at it, steps in again, draws the brush back and adds one last
+   touch, a tiny red flower on the hill. It steps back, proud: happy eyes, a blush, a sparkle. Then it flips the sheet
+   up over the top of the pad, and a fresh one waits. */
+const ME_PX = 6, ME_PAD = [22, 12];
+/* the easel: a spiral-bound pad (the binding in charcoal and steel) on a wooden A-frame with a ledge, lit on the
+   right, the paper cream with a shade down its left and along its foot */
+const ME_EASEL = [
+  'GmGmGmG',
+  'Cwwwwww',
+  'Cwwwwww',
+  'Cwwwwww',
+  'Cwwwwww',
+  'Cwwwwww',
+  'CCCCCCC',
+  'BbbbbnB',
+  '.B...b.',
+  '.B...b.',
+  'B.....b',
+  'B.....b',
+  'B.....b',
+  'B.....b'];
+/* the picture, stroke by stroke, as [x, y, colour] in pad cells: the sky, the hill, the sun, and the last touch */
+const ME_STROKES = [
+  { t0: 250, t1: 600, cells: [1, 2, 3, 4, 5, 6].map(x => [x, 1, 'l']) },
+  { t0: 650, t1: 1000, cells: [...[1, 2, 3, 4, 5, 6].map(x => [x, 5, 'E']), ...[2, 3, 4, 5].map(x => [x, 4, 'e'])] },
+  { t0: 1050, t1: 1200, cells: [[5, 1, 'z'], [5, 2, 'y'], [6, 2, 'Y']] },
+  { t0: 1940, t1: 1990, cells: [[3, 3, 'r']] }];
+/* a short brush from the hand to its tip: a wooden handle, a steel ferrule, bristles wet with the colour */
+const meBrush = ([x0, y0], [x1, y1], tip) => { const n = Math.max(1, Math.abs(x1 - x0), Math.abs(y1 - y0)), c = [];
+  for (let i = 1; i <= n; i++) c.push([Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), i === n ? tip : i === n - 1 ? 'm' : 'b']);
+  return c; };
+const ME_PAINT_T = 3200, ME_FLIP = 2660;
+const mePaint = t => {
+  const [px, py] = ME_PAD, at = (a, b) => t >= a && t < b;
+  let x = ME_PX, legs = 'stand', eyes = 'open', look = [1, -1], blush = false, arm = 'rest', tipAt = null, tip = 'm', y = 15;
+  /* in to paint, back to look, in for the last touch, back to admire */
+  if (at(120, 220) || at(1750, 1830)) { x = ME_PX + 1; legs = 'stepA'; } else if (at(220, 1250) || at(1830, 2000)) x = ME_PX + 2;
+  else if (at(1250, 1350) || at(2000, 2080)) { x = ME_PX + 1; legs = 'stepB'; }
+  /* the brush on the cell being painted, a stroke at a time: high strokes with the arm raised, low ones with it out */
+  const live = ME_STROKES.find(s => at(s.t0, s.t1));
+  if (live) { const k = Math.min(live.cells.length - 1, Math.floor((t - live.t0) / (live.t1 - live.t0) * live.cells.length));
+    const [cx, cy, c] = live.cells[k]; tipAt = [px + cx, py + cy]; tip = c; arm = cy <= 2 ? 'reach' : 'out'; look = [1, cy <= 2 ? -1 : 0]; }
+  if (at(1880, 1940)) { arm = 'out'; tipAt = [px + 2, py + 4]; tip = 'r'; look = [1, 0]; }      /* the brush draws back */
+  if (at(1450, 1750)) { eyes = 'squint'; look = [1, 0]; }
+  if (at(2150, ME_FLIP)) { eyes = 'happy'; blush = true; look = [0, 0]; if (at(2240, 2320)) y = 16; }
+  if (at(ME_FLIP - 40, ME_FLIP + 120)) { arm = 'up'; look = [1, -1]; }                          /* flip it over */
+  if (at(2950, 3040)) eyes = 'blink';
+  const o = { x, y, legs, eyes, look, blush, arms: ['rest', arm] };
+  /* the hand is the last top cell of the arm */
+  const top = (M_ARMS[arm] || []).filter(c => c[2] === 'o'), h = top[top.length - 1], hand = [x + 12 + h[0], y + 5 + h[1]];
+  const brush = tipAt ? meBrush(hand, tipAt, tip) : meBrush(hand, [hand[0] + 1, hand[1] - 3], 'm');
+  /* the picture so far; once the sheet goes over, a fresh one */
+  const fa = t - ME_FLIP;
+  let pic = ME_STROKES.flatMap(s => t < s.t0 ? [] : s.cells.slice(0, t >= s.t1 ? s.cells.length : Math.floor((t - s.t0) / (s.t1 - s.t0) * s.cells.length) + 1));
+  /* the flip: the sheet's foot comes up first, showing the fresh sheet under it and its own back as it curls, then it
+     stands up over the binding, then it is gone behind */
+  let flip = [];
+  if (fa >= 0) { pic = fa < 60 ? pic.filter(([, cy]) => cy <= 2) : [];
+    if (fa < 60) flip = mArt(['cccccc', 'CCCCCC'], px + 1, py + 3);
+    else if (fa < 120) flip = mArt(['cccccc', 'cccccc', 'CCCCCC'], px + 1, py - 3);
+    else if (fa < 180) flip = mArt(['CCCCCC'], px + 1, py - 1); }
+  const fx = at(2160, 2560) ? fxSparkle(px + 8, py - 1 - Math.round((t - 2160) / 200), t < 2420 ? 1 : 0) : [];
+  return [mShadow(0, x), mArt(ME_EASEL, px, py), pic.map(([cx, cy, c]) => [px + cx, py + cy, c]), flip, mascot(o), brush, fx];
+};
+
+const MSC_E = {
+  mascot_juggle: Object.assign(mFilm(meJuggle, ME_JUG_T), { still: meAt(meJuggle, 265) }),
+  mascot_bubbles: Object.assign(mFilm(meBubbles, ME_BUB_T), { still: meAt(meBubbles, 1000) }),
+  mascot_water: Object.assign(mFilm(meWater, ME_WAT_T), { still: meAt(meWater, 1900) }),
+  mascot_paint: Object.assign(mFilm(mePaint, ME_PAINT_T), { still: meAt(mePaint, 2300) }),
+};
+const MSC_E_META = {
+  mascot_bubbles: ['Bubbles', 'It blows a bubble that swells on the wand, floats up and around, and pops right in its face; a flinch, a blink, a laugh, and it dips the wand for another.', 'Use it for: light waits, playful idle moments, a little fun while things load.'],
+  mascot_water: ['Watering', 'A thirsty flower droops beside it; it tips its watering can, the flower perks up and blooms with a heart, then slowly droops again, ready for more.', 'Use it for: growing, syncing, a job that needs tending, progress that builds.'],
+  mascot_paint: ['Painting', 'Stroke by stroke it paints sky, a hill and a sun, steps back to squint, adds one tiny flower, beams, and flips to a fresh sheet.', 'Use it for: generating an image, designing, rendering, anything being made.'],
+  mascot_juggle: ['Juggling', 'Three balls cross over its head from hand to hand; one goes too high and bonks it, bounces into the other hand right on the beat, and it winks.', 'Use it for: busy work, many things at once, a queue being handled.'],
+};
+
 /* ---------- props: what the mascot wears and holds, gathered for the design rules page. The mascot is plain on
    purpose; its props carry the detail, and every one is drawn to the same standard ---------- */
 const MASCOT_PROPS = [
@@ -4234,17 +4456,23 @@ const MASCOT_PROPS = [
   ['Paper plane', 'Bright wings, a shaded fold, a smoke contour', () => mArt(MD_PLANE_R, 0, 0)],
   ['Beetle', 'A dark head and feeler, a shell with a glint', () => mArt(mbBugF[0], 0, 0)],
   ['Thought bubble', 'A soft cloud lit at the top right', () => mArt(MT_CLOUD, 0, 0)],
+  ['Juggling balls', 'Red, gold and blue, each lit at its top right', () => [...mArt(['rp', 'Rr'], 0, 2), ...mArt(['yz', 'Yy'], 3, 0), ...mArt(['ul', 'Uu'], 6, 2)]],
+  ['Bubble wand', 'A wooden stick, a gold ring, a bubble with a glint', () => [...mArt(['.y.', 'Y.y', '.Y.', '.n.', '.n.', '.b.', '.B.'], 0, 4), ...meBubble(6, 3, 3)]],
+  ['Soap jar', 'Glass with a smoke contour, blue soap, a glint', () => mArt(ME_JAR, 0, 0)],
+  ['Watering can', 'A handle over a round body, a long spout and its rose', () => mArt(ME_CAN, 0, 0)],
+  ['Flower pot', 'Terracotta lit on the right, soil, a flower in bloom', () => [...mArt(ME_PLANT.bloom, 1, 0), ...mArt(ME_POT, 0, 8)]],
+  ['Easel', 'A spiral pad on an A-frame, a little landscape', () => [...mArt(ME_EASEL, 0, 0), ...ME_STROKES.flatMap(st => st.cells)]],
 ].map(([name, note, draw]) => [name, note, () => draw().filter(([, , c]) => c !== 'o' && c !== 'O' && c !== 'd')]);
 
 /* ---------- every scene, ready for the page: a sprite with its frames, its still pose and its loop length ---------- */
 const MASCOT_SPRITES = {};
-for (const [id, sp] of Object.entries({ ...MSC_JAM, ...MSC_A, ...MSC_B, ...MSC_C, ...MSC_D }))
+for (const [id, sp] of Object.entries({ ...MSC_JAM, ...MSC_A, ...MSC_B, ...MSC_C, ...MSC_D, ...MSC_E }))
   MASCOT_SPRITES[id] = Object.assign(sp, { mascot: true, N: MN, period: sp.frames.reduce((a, f) => a + f.ms, 0) / 1000 });
-const MASCOT_META = { ...MSC_JAM_META, ...MSC_A_META, ...MSC_B_META, ...MSC_C_META, ...MSC_D_META };
+const MASCOT_META = { ...MSC_JAM_META, ...MSC_A_META, ...MSC_B_META, ...MSC_C_META, ...MSC_D_META, ...MSC_E_META };
 /* ---------- mascot: end ---------- */
 Object.assign(SPRITES, MASCOT_SPRITES);
 /* the scenes in the sidebar's order, each with the label it sits beside */
-const MASCOTS = [['mascot_think', 'Thinking'], ['mascot_read', 'Reading the docs'], ['mascot_detective', 'Searching'], ['mascot_type', 'Writing'], ['mascot_magic', 'Generating'], ['mascot_cook', 'Cooking something up'], ['mascot_build', 'Building'], ['mascot_bughunt', 'Hunting a bug'], ['mascot_plane', 'Sending'], ['mascot_jam', 'Hold tight'], ['mascot_sleep', 'Paused'], ['mascot_party', 'Done'], ['mascot_oops', 'Something went wrong']];
+const MASCOTS = [['mascot_think', 'Thinking'], ['mascot_read', 'Reading the docs'], ['mascot_detective', 'Searching'], ['mascot_type', 'Writing'], ['mascot_magic', 'Generating'], ['mascot_cook', 'Cooking something up'], ['mascot_build', 'Building'], ['mascot_bughunt', 'Hunting a bug'], ['mascot_plane', 'Sending'], ['mascot_juggle', 'Juggling'], ['mascot_bubbles', 'Blowing bubbles'], ['mascot_water', 'Watering the plant'], ['mascot_paint', 'Painting'], ['mascot_jam', 'Hold tight'], ['mascot_sleep', 'Paused'], ['mascot_party', 'Done'], ['mascot_oops', 'Something went wrong']];
 for (const [id, pillLabel] of MASCOTS) if (MASCOT_SPRITES[id]) { const [label, idea, use] = MASCOT_META[id];
   STATES.push({ id, label, idea, use, group: 'Mascot', hue: 18, hueName: 'clay', mascot: true, pillLabel, period: MASCOT_SPRITES[id].period }); }
 for (const st of STATES) st.sprite = SPRITES[st.id];
