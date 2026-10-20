@@ -35,29 +35,54 @@ const mFrame = (ms, ...layers) => ({ ms, b: mDone(layers.reduce((g, l) => mPut(g
 
 /* ---------- the mascot ----------
    A clay block 13 wide and 9 tall with square corners, two stubby arms and four short legs, and no mouth: it speaks
-   with its eyes, a brow, a blush and its whole body. Its home is x 9..21, y 15..23, feet on row 25, so a hat has rows
-   5 to 14 above it. Options:
+   with its eyes, its brows, a blush and its whole body. Its home is x 9..21, y 15..23, feet on row 25.
+   The face: the eyes sit on body rows 3 and 4, three cells in from each side; the brows sit on row 1 with a clear row
+   under them, and rise to row 0; rows 0 to 2 are the forehead, where a hat brim may rest. Nothing on the face ever
+   leaves the body. Options:
      x, y      top left of the body (home 9, 15)
-     eyes      'open' 'blink' 'happy' 'closed' 'squint' 'wide' 'x' 'dot' or [left, right] (a wink is ['open', 'closed'])
-     look      [dx, dy] the eyes look this way, one cell at most each way
-     brows     null 'up' 'down' 'worry' 'flat' (two-cell brows, one clear row above the eyes)
-     blush     true for two soft cells under the eyes
+     eyes      a kind from M_EYES, or [left, right] (a wink is ['open', 'closed'])
+     look      [dx, dy] the eyes look this way, one cell at most each way; the brows follow up and down
+     brows     a kind from M_BROWS, or [left, right] (one raised brow is [null, 'raise'])
+     blush     true for a soft cell under the outer corner of each eye
+     tear      true for a blue drop hanging under the left eye
      arms      [left, right], each 'rest' 'up' 'down' 'out' 'hold' 'reach' 'hide' or a list of cells relative to the shoulder
      legs      'stand' 'stepA' 'stepB' 'crouch' 'tuck' 'air'
-     squash    1 squashes (one row lower, one cell wider each side), -1 stretches (one row taller, a cell narrower) */
+     squash    1 squashes (one row lower, one cell wider each side), -1 stretches (one row taller, a cell narrower):
+               only at a contact or a take-off
+     breath    1 the top of the body rises a row (an in-breath), -1 it sinks a row (a sigh); the face rides with the
+               top while the arms and the feet stay put, so it reads as breathing, not jumping
+     lean      1 or -1, the body shifts a cell over its planted feet: weight going toward what it wants */
 const M_W = 13, M_H = 9;
+/* the eyes, as cells from the eye's anchor (its top cell when open), for the left eye; the right eye is the mirror,
+   except 'big', whose catchlight stays at the top right because the light does */
 const M_EYES = {
-  open: [[0, 0], [0, 1]],
-  wide: [[0, -1], [0, 0], [0, 1]],
-  blink: [[0, 1]],
-  closed: [[-1, 1], [0, 1]],
-  sleepy: [[-1, 1], [0, 1]],
-  happy: [[-1, 1], [0, 0], [1, 1]],
-  squint: [[-1, 1], [0, 1], [1, 1]],
-  x: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
-  dot: [[0, 1]],
+  open: [[0, 0], [0, 1]],                                    // the default: calm, attentive
+  half: [[0, 1]], blink: [[0, 1]],                           // lids half down: the middle of a blink, drowsy, unimpressed
+  closed: [[-1, 1], [0, 1]], sleepy: [[-1, 1], [0, 1]],      // shut: the bottom of a blink, content, asleep
+  wide: [[0, 0], [0, 1], [0, 2]],                            // surprise, alarm, an idea landing: a cell taller, downward
+  big: [[-1, 0], [0, 0, 'w'], [-1, 1], [0, 1]],              // round and shining: delight, awe, wanting
+  happy: [[-1, 1], [0, 0], [1, 1]],                          // ^ ^ joy
+  squeeze: [[-1, -1], [0, 0], [-1, 1]],                      // > < squeezed shut: effort, a big laugh, a bump
+  squint: [[0, 1]],                                          // narrowed under a low brow: focus, aim, suspicion
+  sad: [[-1, 1], [0, 2], [1, 1]],                            // drooping and cast down: sorry, let down
+  dot: [[0, 1]],                                             // tiny: blank, sheepish, small
+  x: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],           // knocked out, broken
+  heart: [[-1, -1, 'r'], [1, -1, 'r'], [-1, 0, 'r'], [0, 0, 'r'], [1, 0, 'r'], [0, 1, 'R']],
+  star: [[0, -1, 'y'], [-1, 0, 'y'], [0, 0, 'z'], [1, 0, 'y'], [0, 1, 'Y']],
 };
-const mEye = (kind, ex, ey, side) => (M_EYES[kind] || M_EYES.open).map(([dx, dy]) => [ex + (side === 'R' && kind !== 'x' && kind !== 'happy' ? -dx : dx), ey + dy, 'k']);
+/* the brows, as cells from the left eye's column and the brow row; +1 is toward the middle of the face */
+const M_BROWS = {
+  flat: [[-1, 0], [0, 0]],                                   // a plain brow: attention
+  up: [[-1, -1], [0, -1]],                                   // raised: surprise, interest
+  down: [[-1, 0], [0, 0], [1, 1]],                           // knitted toward the middle: determination, anger
+  worry: [[-1, 1], [0, 0], [1, 0]],                          // lifted in the middle: worry, sorry
+  raise: [[-1, -1], [0, -1], [1, 0]],                        // one brow cocked: curious, skeptical, thinking
+  low: [[-1, 1], [0, 1]],                                    // pressed down on the eye: a squint, focus
+};
+/* left eyes whose right partner is the same shape moved over a cell, not mirrored */
+const M_EYE_FIXED = new Set(['big']);
+const mEye = (kind, ex, ey, side) => kind === 'none' ? [] : (M_EYES[kind] || M_EYES.open).map(([dx, dy, c]) =>
+  [side === 'R' ? (M_EYE_FIXED.has(kind) ? ex + dx + 1 : ex - dx) : ex + dx, ey + dy, c || 'k']);
 /* arms: cells relative to the shoulder, for the right arm; the left arm is the mirror. The shoulder is the body cell at
    the arm's root, row 5 of the body. Tone 'o' on top, 'O' underneath */
 const M_ARMS = {
@@ -71,32 +96,44 @@ const M_ARMS = {
 };
 const M_LEGS = { stand: [2, 2, 2, 2], stepA: [1, 2, 1, 2], stepB: [2, 1, 2, 1], crouch: [1, 1, 1, 1], tuck: [1, 0, 0, 1], air: [2, 2, 2, 2] };
 const M_LEG_X = [1, 3, 9, 11];
+/* where the body really is for a set of options, exactly as mascot() draws it: its top left, its size, the right
+   shoulder (the body cell on the arm row), the arm row and the centre column. Props hang off it, so a hat rides up
+   with an in-breath and a held thing follows a lean or a squash */
+const mBody = (o = {}) => { const sq = o.squash || 0, br = sq ? 0 : o.breath || 0, ln = o.lean || 0;
+  const bx = (o.x ?? 9) - (sq > 0 ? 1 : sq < 0 ? -1 : 0) + ln, by = (o.y ?? 15) + (sq > 0 ? 1 : sq < 0 ? -1 : 0) - br;
+  const W = M_W + (sq > 0 ? 2 : sq < 0 ? -2 : 0), H = M_H - (sq > 0 ? 1 : 0) + (sq < 0 ? 1 : 0) + br;
+  return { bx, by, W, H, sx: bx + W - 1, ay: sq ? by + 5 - (sq > 0 ? 1 : 0) : by + H - 4, cx: bx + (W >> 1) }; };
 function mascot(o = {}) {
-  const sq = o.squash || 0, bx = (o.x ?? 9) - (sq > 0 ? 1 : sq < 0 ? -1 : 0), by = (o.y ?? 15) + (sq > 0 ? 1 : sq < 0 ? -1 : 0);
-  const W = M_W + (sq > 0 ? 2 : sq < 0 ? -2 : 0), H = M_H - (sq > 0 ? 1 : 0) + (sq < 0 ? 1 : 0);
+  const sq = o.squash || 0, ln = o.lean || 0, { bx, by, W, H, ay } = mBody(o), bottom = by + H;
   const cells = [];
-  /* legs first, they sit under the body */
+  /* legs first, they sit under the body; a lean leaves them planted where they were */
   const legs = M_LEGS[o.legs || 'stand'];
-  M_LEG_X.forEach((lx, i) => { const x = bx + lx + (sq > 0 ? (i < 2 ? 0 : 2) : sq < 0 ? (i < 2 ? 0 : -2) : 0);
-    for (let k = 0; k < legs[i]; k++) cells.push([x, by + H + k, i === 0 || i === 2 ? 'O' : 'o']); });
+  M_LEG_X.forEach((lx, i) => { const x = bx - ln + lx + (sq > 0 ? (i < 2 ? 0 : 2) : sq < 0 ? (i < 2 ? 0 : -2) : 0);
+    for (let k = 0; k < legs[i]; k++) cells.push([x, bottom + k, i === 0 || i === 2 ? 'O' : 'o']); });
   /* the body: base clay, the left column and the bottom row in shade */
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) cells.push([bx + x, by + y, x === 0 || y === H - 1 ? 'O' : 'o']);
-  /* arms at body row 5 */
-  const [la, ra] = o.arms || ['rest', 'rest'], ay = by + 5 - (sq > 0 ? 1 : 0);
+  /* arms at body row 5, counted from the bottom so a breath leaves them where they are (mBody works out the row) */
+  const [la, ra] = o.arms || ['rest', 'rest'];
   const arm = (a, side) => (Array.isArray(a) ? a : M_ARMS[a] || []).map(([dx, dy, t]) => side === 'R' ? [bx + W - 1 + dx, ay + dy, t] : [bx - dx, ay + dy, t === 'o' ? 'O' : 'd']);
   cells.push(...arm(la, 'L'), ...arm(ra, 'R'));
   /* eyes */
   const [le, re] = Array.isArray(o.eyes) ? o.eyes : [o.eyes || 'open', o.eyes || 'open'];
-  const [lx, ly] = o.look || [0, 0], ey = by + 2 + ly - (sq > 0 ? 1 : 0) + (sq < 0 ? 1 : 0);
+  const [lx, ly] = o.look || [0, 0], ey = by + 3 + ly - (sq > 0 ? 1 : 0) + (sq < 0 ? 1 : 0);
   const exL = bx + 3 + lx + (sq > 0 ? 1 : sq < 0 ? -1 : 0), exR = bx + W - 4 + lx - (sq > 0 ? 1 : sq < 0 ? -1 : 0);
-  cells.push(...mEye(le, exL, ey, 'L'), ...mEye(re, exR, ey, 'R'));
-  if (o.brows) {
-    /* a brow sits one clear row above the top of the eye: raised, knitted down toward the middle, or worried */
-    const top = Math.min(...[le, re].map(e => Math.min(...(M_EYES[e] || M_EYES.open).map(([, dy]) => dy)))) - 2;
-    const b = { up: [[-1, top], [0, top - 1]], down: [[-1, top], [0, top + 1]], worry: [[-1, top + 1], [0, top]], flat: [[-1, top], [0, top]] }[o.brows];
-    cells.push(...b.map(([dx, dy]) => [exL + dx, ey + dy, 'k']), ...b.map(([dx, dy]) => [exR - dx, ey + dy, 'k']));
-  }
-  if (o.blush) cells.push([exL - 1, ey + 3, 'p'], [exR + 1, ey + 3, 'p']);
+  const eyes = [...mEye(le, exL, ey, 'L'), ...mEye(re, exR, ey, 'R')];
+  cells.push(...eyes);
+  /* brows: a squint brings its own low brow. They follow the eyes up and down; a brow that would rise off the top of
+     the body comes down whole, keeping its shape, and one that would then sit right on its eye is left out, so the
+     face never loses its clear row between brow and eye */
+  const [lb, rb] = (Array.isArray(o.brows) ? o.brows : [o.brows, o.brows]).map((b, i) => b || ([le, re][i] === 'squint' ? 'low' : null));
+  const row = ey - 2, eyeCells = new Set(eyes.map(c => c[0] + ',' + c[1]));
+  const brow = (k, ex, side) => { if (!k) return [];
+    let b = M_BROWS[k].map(([dx, dy]) => [side === 'R' ? ex - dx : ex + dx, row + dy, 'k']);
+    const top = Math.min(...b.map(c => c[1])); if (top < by) b = b.map(([x, y, c]) => [x, y + by - top, c]);
+    return b.some(([x, y]) => eyeCells.has(x + ',' + (y + 1)) || eyeCells.has(x + ',' + y)) ? [] : b; };
+  cells.push(...brow(lb, exL, 'L'), ...brow(rb, exR, 'R'));
+  if (o.blush) cells.push([exL - 1, ey + 2, 'p'], [exR + 1, ey + 2, 'p']);
+  if (o.tear) { const low = Math.max(...eyes.filter(c => c[0] <= exL + 1 && c[0] >= exL - 1).map(c => c[1])); cells.push([exL, low + 1, 'l'], [exL, low + 2, 'u']); }
   return cells;
 }
 /* the shadow under the feet: shorter as the mascot rises */
@@ -108,6 +145,21 @@ const mShadow = (lift = 0, x = 9, w = 13) => { const s = Math.max(5, w - lift * 
 const mEase = { inOut: p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, out: p => 1 - Math.pow(1 - p, 3), in: p => p * p * p,
   back: p => 1 + 2.2 * Math.pow(p - 1, 3) + 1.2 * Math.pow(p - 1, 2) };
 const mTween = (t, t0, t1, a, b, e = mEase.inOut) => t <= t0 ? a : t >= t1 ? b : a + (b - a) * e((t - t0) / (t1 - t0));
+/* a blink starting at t0: the lids come half down, shut, and lift again, 170 ms in all. Returns the eyes to show,
+   or null when the blink is not on, so a scene writes: o.eyes = mBlink(t, 900) || o.eyes */
+const mBlink = (t, t0) => t < t0 || t >= t0 + 170 ? null : t < t0 + 50 ? 'half' : t < t0 + 120 ? 'closed' : 'half';
+/* breathing: 1 while the breath is in, 0 while it is out, on a cycle of period ms; for o.breath */
+const mBreathe = (t, period = 1600, phase = 0) => (((t + phase) % period) + period) % period < period * 0.45 ? 1 : 0;
+/* a hop starting at t0, h cells high, 560 ms: a crouch with the arms down (the anticipation), a stretch off the
+   ground, the rise and the hang with the arms up, the fall, a squash on landing with the arms still up (they lag),
+   and the settle. Returns { dy, squash, legs, arms, lift } to merge into the pose, or null outside the hop */
+const mHop = (t, t0, h = 2) => { const a = t - t0; if (a < 0 || a >= 560) return null;
+  if (a < 100) return { dy: 0, squash: 1, legs: 'crouch', arms: ['down', 'down'], lift: 0 };
+  if (a < 160) return { dy: -1, squash: -1, legs: 'stand', arms: ['up', 'up'], lift: 1 };
+  if (a < 340) return { dy: -h, squash: 0, legs: 'air', arms: ['up', 'up'], lift: h };
+  if (a < 400) return { dy: -1, squash: 0, legs: 'air', arms: ['out', 'out'], lift: 1 };
+  if (a < 470) return { dy: 0, squash: 1, legs: 'crouch', arms: ['up', 'up'], lift: 0 };
+  return { dy: 0, squash: 0, legs: 'stand', arms: ['out', 'out'], lift: 0 }; };
 function mFilm(fn, total, minMs = 45) {
   const raw = [];
   for (let t = 0; t < total; t += 5) { const b = mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic())), last = raw[raw.length - 1];
@@ -142,8 +194,8 @@ const fxMark = (x, y, kind = '!', tone = kind === '!' ? 'r' : 'l') => (kind === 
 /* ---------- scenes ---------- */
 
 /* Jamming: headphones on (a padded band lit along its top, round cups with dark cushions against its head), eyes
-   shut, lost in the music. The beat lands every 600 ms: the body dips a cell and the
-   headphones follow a beat behind, the way a loose band settles on a bobbing head; one foot taps; on every beat a note
+   shut, lost in the music. The beat lands every 600 ms: its head dips a cell (the feet stay planted, a foot taps) and
+   the headphones ride with it; on the big beat of each bar it squeezes its eyes shut, feeling it. On every beat a note
    leaves a cup and floats up and out, slowing as it goes, and fades to a dot. Use it for: waiting in a queue, a
    long job that runs in the background, hold music. */
 const jamPhones = (bx, by) => mArt([
@@ -168,7 +220,7 @@ const jamFilm = mFilm(t => {
     const bob = jamBob(t), beat = Math.floor(t / JAM_BEAT);
     const tap = (t % JAM_BEAT) < 230 && (t % JAM_BEAT) >= 70;
     return [mShadow(), ...[-1, 0, 1, 2, 3].map(k => jamNote(t + 2400 * (k < 0 ? 1 : 0), k < 0 ? 3 : k)),
-      mascot({ y: 15 + bob, eyes: 'happy', blush: true, legs: bob ? (beat % 2 ? 'stepA' : 'stepB') : 'stand', arms: bob ? ['down', 'down'] : ['rest', 'rest'] }),
+      mascot({ y: 15, breath: -bob, eyes: bob && beat % 4 === 2 ? 'squeeze' : 'happy', blush: true, legs: bob ? (beat % 2 ? 'stepA' : 'stepB') : 'stand', arms: bob ? ['down', 'down'] : ['rest', 'rest'] }),
       jamPhones(9, 15 + bob)];
   }, 2400);
 /* the still: mid-bob with a note in the air on each side */
@@ -179,11 +231,7 @@ const MSC_JAM_META = { mascot_jam: ['Jamming', 'Headphones on and eyes shut, it 
 
 /* where the body actually is for a given set of mascot options, mirroring mascot() in the kit: its top left, width,
    the right shoulder (the body cell at arm row) and the centre column. Props use it so they stay attached on a squash */
-const maBody = (o = {}) => {
-  const sq = o.squash || 0, x = o.x ?? 9, y = o.y ?? 15;
-  const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0), by = y + (sq > 0 ? 1 : sq < 0 ? -1 : 0), W = 13 + (sq > 0 ? 2 : sq < 0 ? -2 : 0);
-  return { bx, by, W, sx: bx + W - 1, sy: by + 5 - (sq > 0 ? 1 : 0), cx: bx + (W >> 1) };
-};
+const maBody = (o = {}) => { const b = mBody(o); return { ...b, sy: b.ay }; };
 /* a hat sits with its lowest row on body top minus 1, centred on the body (off moves it sideways); a hat whose
    last row is its contour sinks one row, so that row rests on the top of the head */
 const maHat = (rows, o, off = 0, sink = 0) => { const b = maBody(o); return mArt(rows, b.cx - (rows[0].length >> 1) + off, b.by - rows.length + sink); };
@@ -247,19 +295,26 @@ function maCook(t) {
   else if (t >= 770 && t < 830) { arm = MA_ARM_TOSS; tilt = -1; }
   else if (t >= 830 && t < 930) { arm = MA_ARM_PEAK; }
   else if (t >= MA_DOWN && t < MA_DOWN + 110) { y = 16; legs = 'crouch'; arm = MA_ARM_DIP; }
-  else if (t >= 1760 && t < 1900) { y = 14; }
-  else if (t >= 2330 && t < 2480) { y = 16; legs = 'crouch'; }
-  const o = { x: MA_CX, y, legs, arms: ['rest', arm] };
+  /* a little hop of joy: a crouch, a stretch up, a hang, a squash on landing */
+  let squash = 0, lift = 0;
+  if (t >= 1700 && t < 1770) { squash = 1; legs = 'crouch'; }
+  else if (t >= 1770 && t < 1830) { squash = -1; y = 14; lift = 1; }
+  else if (t >= 1830 && t < 1930) { y = 13; legs = 'air'; lift = 2; }
+  else if (t >= 1930 && t < 1990) { squash = 1; legs = 'crouch'; }
+  const o = { x: MA_CX, y, legs, squash, arms: ['rest', arm], breath: t < 380 || t >= 2200 ? mBreathe(t, 1300, 300) : 0 };
   /* the eyes: idle ahead, down to the pan before the dip, then they ride with the pancake, a beat ahead of it */
   let look = [0, 0], eyes = 'open', blush = false;
   if (t >= 380 && t < 790) look = [1, 1];
   else if (t >= 790 && t < MA_DOWN + 200) { const ahead = Math.min(t + 90, MA_DOWN), cy = maCakePos(ahead)[1]; look = cy < 11 ? [1, -1] : cy < 16 ? [1, 0] : [1, 1]; }
-  if (t >= 160 && t < 260) eyes = 'blink';
-  if (t >= 1690 && t < 1760) { eyes = 'closed'; blush = true; }
-  else if (t >= 1760 && t < 2200) { eyes = 'happy'; blush = true; }
-  o.eyes = eyes; o.look = eyes === 'open' ? look : [0, 0]; o.blush = blush;
+  /* shining eyes as the pancake hangs at the top, a flinch as it lands, then joy */
+  if (t >= 1020 && t < 1300) eyes = 'big';
+  eyes = mBlink(t, 160) || mBlink(t, 2420) || eyes;
+  if (t >= MA_DOWN && t < MA_DOWN + 90) { eyes = 'squeeze'; look = [0, 0]; }
+  else if (t >= MA_DOWN + 90 && t < 1700) { eyes = 'closed'; blush = true; }
+  else if (t >= 1700 && t < 2200) { eyes = 'happy'; blush = true; }
+  o.eyes = eyes; o.look = eyes === 'open' || eyes === 'big' ? look : [0, 0]; o.blush = blush;
   const [hx, hy] = maHand(o, arm);
-  L.push(mShadow(y < 15 ? 1 : 0, MA_CX));
+  L.push(mShadow(lift, MA_CX));
   /* steam: a thin wisp in the idle, two puffs on the catch. Each rises, thins and shrinks to a dot */
   const puff = (t0, x0, life, big) => { const a = t - t0; if (a < 0 || a > life) return [];
     const p = mEase.out(a / life), x = Math.round(x0 + (big ? 2 * Math.sign(x0 - 26) * p : p)), yy = Math.round(hy - 3 - 5 * p);
@@ -329,17 +384,18 @@ function maMagic(t) {
   else if (t >= MA_FLICK && t < MA_FLICK + 50) { arm = MA_ARM_POINT; wand = 'up'; tip = 'droop'; }
   else if (t >= MA_FLICK + 50 && t < MA_FLICK + 110) { x = MA_MX + 1; arm = MA_ARM_OUT; wand = 'out'; tip = 'droop'; }
   else if (t >= MA_FLICK + 110 && t < 2150) { arm = MA_ARM_POINT; wand = 'up'; if (t < MA_FLICK + 230) { x = MA_MX + 1; tip = 'droop'; } else if (t < MA_FLICK + 360) tip = 'lift'; }
-  else if (t >= 2480 && t < 2630) { y = 16; legs = 'crouch'; }
-  const o = { x, y, legs, arms: ['rest', arm] };
+  const o = { x, y, legs, arms: ['rest', arm], breath: t < 420 || t >= 2300 ? mBreathe(t, 1400, 200) : 0 };
+  if (t >= 2480 && t < 2630) o.breath = -1;                                         /* a pleased sigh */
   /* the eyes: on the tip before the wind up, squinting through it, then riding with the spark to the star */
   let eyes = 'open', look = [0, 0], blush = false;
   if (t >= 420 && t < 560) look = [1, -1];
   else if (t >= 560 && t < MA_FLICK) eyes = 'squint';
   else if (t >= MA_FLICK && t < MA_BLOOM + 80) look = [1, -1];
-  else if (t >= MA_BLOOM + 80 && t < 2150) { eyes = 'happy'; blush = true; }
+  else if (t >= MA_BLOOM + 80 && t < MA_BLOOM + 380) { eyes = 'big'; look = [1, -1]; }            /* wonder at the star */
+  else if (t >= MA_BLOOM + 380 && t < 2150) { eyes = 'happy'; blush = true; }
   else if (t >= 2150 && t < 2300) look = [1, -1];
-  if (t >= 200 && t < 300) eyes = 'blink';
-  Object.assign(o, { eyes, look: eyes === 'open' ? look : [0, 0], blush });
+  eyes = mBlink(t, 200) || mBlink(t, 2620) || eyes;
+  Object.assign(o, { eyes, look: eyes === 'open' || eyes === 'big' ? look : [0, 0], blush });
   const [hx, hy] = maHand(o, arm);
   const [wc, wt] = maWand(hx, hy, wand, (t % 400) < 120 && (t < 520 || t > 2300));
   L.push(mShadow(0, x));
@@ -425,9 +481,12 @@ function maBuild(t) {
   else if (lift(1500, MA_SLIDE + 420)) pose = 'proud';
   if (lift(1500, 1960)) { eyes = 'closed'; blush = true; }
   else if (lift(1960, MA_SLIDE + 300)) look = [1, 0];
-  if (lift(100, 200)) eyes = 'blink';
-  if (lift(2580, 2720)) { y = 16; legs = 'crouch'; }
-  const o = { x, y, legs, squash, eyes, look: eyes === 'open' ? look : [0, 0], blush };
+  /* focus while it aims and lifts, a squeeze on each blow */
+  if (pose === 'aim' && !dent && t < 1500 || pose === 'up' || pose === 'swing') eyes = 'squint';
+  if (dent != null) { eyes = 'squeeze'; look = [0, 0]; }
+  eyes = mBlink(t, 100) || mBlink(t, 2300) || eyes;
+  const o = { x, y, legs, squash, eyes, look: eyes === 'open' || eyes === 'squint' ? look : [0, 0], blush, breath: lift(1960, 2580) ? mBreathe(t, 1200) : 0 };
+  if (lift(2580, 2720)) o.breath = -1;
   /* hand positions: aim puts the hammer face on the nail head; up raises it; swing is half way down */
   /* once the board has slid, the nail under the hammer is the next one, still standing */
   const aimAt = t >= MA_SLIDE + 380 ? 20 : head;
@@ -463,8 +522,7 @@ const MSC_A_META = {
 
 /* ---------- shared helpers for this file ---------- */
 /* the body geometry the kit uses, so props can hang off the real shoulder and the real top of the head */
-const mbBody = (x, y, sq = 0) => { const bx = x - (sq > 0 ? 1 : sq < 0 ? -1 : 0), by = y + (sq > 0 ? 1 : sq < 0 ? -1 : 0), W = 13 + (sq > 0 ? 2 : sq < 0 ? -2 : 0);
-  return { bx, by, W, sx: bx + W - 1, ay: by + 5 - (sq > 0 ? 1 : 0) }; };
+const mbBody = (x, y, sq = 0, o = {}) => mBody({ ...o, x, y, squash: sq });
 /* one picture of a film, for the still */
 const mbAt = (fn, t) => mDone([].concat(fn(t)).reduce((g, l) => mPut(g, l), mPic()));
 
@@ -526,16 +584,17 @@ const mbDetective = t => {
   if (t >= 520 && t < 1000) { x = Math.round(mTween(t, 520, 760, 6, 8)); dx = 1; legs = t < 640 ? 'stepA' : 'stand'; }
   if (t >= 470 && t < 520) dx = 1;                                       /* the eye leads the lean */
   if (t >= 1000 && t < MB_FIND) { x = 8; dx = t < 1240 ? 1 : 0; y = 16; legs = 'crouch'; }       /* duck to peer at the floor */
-  if (t >= 300 && t < 400) eye = 'blink';
-  if (t >= 1320 && t < 1400) eye = 'blink';
+  const bl = mBlink(t, 300) || mBlink(t, 1320);
+  if (bl) { eye = 'blink'; left = bl; }
   if (t >= MB_FIND) { x = 8; eye = 'wide'; dx = 1; left = 'wide'; brows = 'up'; }
   if (t >= MB_FIND && t < MB_FIND + 90) { sq = -1; y = 14; legs = 'air'; }                    /* the jolt */
   else if (t >= MB_FIND + 90 && t < MB_FIND + 180) { y = 14; legs = 'air'; }
   else if (t >= MB_FIND + 180 && t < MB_FIND + 260) { sq = 1; legs = 'crouch'; }
   if (t >= MB_FIND && t < MB_FIND + 420) glint = t < MB_FIND + 140 ? 1 : t < MB_FIND + 300 ? 2 : 1;
   if (t >= 2260) { eye = 'open'; left = 'squint'; brows = null; dx = t < 2450 ? 1 : 0; }      /* settle, and the eye looks left first */
+  if (bl && t >= 2260) left = bl;
   if (t >= 2500) { x = Math.round(mTween(t, 2500, 2800, 8, 6)); legs = t < 2650 ? 'stepB' : 'stand'; }
-  const b = mbBody(x, y, sq), cx = b.bx + 10, cy = b.by + 3;
+  const b = mbBody(x, y, sq), cx = b.bx + 10, cy = b.by + 4;
   return [mShadow(legs === 'air' ? 2 : 0, x), mascot({ x, y, legs, squash: sq, eyes: [left, 'open'], brows, arms: ['rest', 'rest'] }),
     mbHatAt(x, y, sq), mbGlass(cx, cy, glint), mbBigEye(cx, cy, eye, dx)];
 };
@@ -566,25 +625,27 @@ const mbBugAt = t => {
 };
 const mbHunt = t => {
   let x = 6, y = 15, legs = 'stand', sq = 0, eyes = 'open', look = [1, 1], brows = null, arms = ['rest', 'rest'], lift = 0, blush = false;
+  let lean = 0;
   if (t >= 640 && t < 1100) eyes = 'squint';                                        /* it locks on */
-  if (t >= 700 && t < 1100) { y = 16; legs = 'crouch'; x = [6, 5, 6, 5, 6][Math.floor((t - 700) / 80)]; }   /* crouch and wiggle */
-  if (t >= 1100 && t < 1160) { sq = -1; arms = ['up', 'up']; eyes = 'wide'; }       /* take-off */
+  if (t >= 700 && t < 1100) { y = 16; legs = 'crouch'; lean = [0, -1, 0, -1, 0][Math.floor((t - 700) / 80)]; }   /* crouch and wiggle over its feet */
+  if (t >= 1100 && t < 1160) { sq = -1; arms = ['up', 'up']; eyes = 'wide'; brows = 'down'; }   /* take-off, fierce */
   if (t >= 1160 && t < 1400) {                                                       /* the pounce */
     const p = (t - 1160) / 240; x = 6 + Math.round(5 * mEase.out(p)); y = 15 - Math.round(4 * Math.sin(Math.PI * p)); lift = 15 - y;
-    legs = 'air'; arms = ['up', 'up']; eyes = 'wide'; if (t < 1210) sq = -1; }
+    legs = 'air'; arms = ['up', 'up']; eyes = 'wide'; brows = 'down'; if (t < 1210) sq = -1; }
   if (t >= 1400 && t < 2300) x = 11;
-  if (t >= 1400 && t < 1500) { sq = 1; eyes = 'closed'; arms = ['out', 'out']; }    /* splat */
+  if (t >= 1400 && t < 1500) { sq = 1; eyes = 'squeeze'; arms = ['out', 'out']; }   /* splat, eyes squeezed shut */
   if (t >= 1500 && t < 1660) { eyes = 'happy'; blush = true; look = [0, 0]; }       /* got it! */
   if (t >= 1660 && t < 1800) { eyes = 'open'; look = [0, 1]; }                      /* a peek underneath */
   if (t >= 1800 && t < 2300) { eyes = 'dot'; look = t < 2050 ? [1, 0] : [-1, 0]; }  /* nothing there: tiny eyes, right, left */
-  if (t >= 2300 && t < 3020) { look = [-1, 0]; eyes = 'squint'; }                   /* huffy, staring the wrong way */
+  if (t >= 2300 && t < 3020) { look = [-1, 0]; eyes = 'half'; brows = 'down'; }     /* huffy, glaring the wrong way */
   if (t >= 2300 && t < 2750) { const k = Math.floor((t - 2300) / 90); x = 10 - k; legs = k % 2 ? 'stepB' : 'stepA'; }
-  if (t >= 3020 && t < 3110) eyes = 'blink';
+  const bl = mBlink(t, 3020); if (bl) { eyes = bl; brows = null; }
+  if (t >= 1800 && t < 2300) brows = 'worry';                                        /* and a little lost */
   const b = mbBugAt(t), bug = b ? [mbBug(b.x, b.ph), b.dash ? fxDash(b.x + 6, 24, 2, 1) : []] : [];
   /* the question mark pops up over its head when it finds nothing, bobs once and goes */
   const fx = [], qa = t - 1820;
   if (qa >= 0 && qa < 480) fx.push(...fxMark(x + 6, 7 - (qa < 80 ? 0 : qa < 160 ? 1 : 0) + (qa > 400 ? 1 : 0), '?'));
-  return [mShadow(lift, x), ...bug, mascot({ x, y, legs, squash: sq, eyes, look, brows, arms, blush }), fx];
+  return [mShadow(lift, x), ...bug, mascot({ x, y, legs, squash: sq, eyes, look, brows, arms, blush, lean }), fx];
 };
 
 /* ---------- Reading (state: reading docs) ----------
@@ -620,27 +681,27 @@ const mbPage = st => ({
 }[st] || []);
 const MB_READ_END = 1400;
 const mbRead = t => {
-  let y = 15, eyes = 'open', look = [0, 1], arms = ['rest', 'rest'], st = 0, blush = false, cursor = null;
+  let y = 15, nod = 0, eyes = 'open', look = [0, 1], arms = ['rest', 'rest'], st = 0, blush = false, cursor = null;
   if (t < MB_READ_END) { const k = Math.floor(t / 350), u = (t % 350) / 350, [r, c0, n] = MB_LINES[k];
     cursor = [c0 + Math.min(n - 1, Math.floor(u * n)), r]; look = [k < 2 ? (u < 0.5 ? -1 : 0) : (u < 0.5 ? 0 : 1), 1];
-    if (t % 350 < 70) y = 16; }                                                 /* a nod at each new line */
-  if (t >= 560 && t < 650) eyes = 'blink';
+    if (t % 350 < 70) nod = -1; }                                               /* a nod at each new line */
+  eyes = mBlink(t, 560) || eyes;
   if (t >= MB_READ_END) look = [1, 1];                                        /* the eyes go to the corner first */
   if (t >= MB_READ_END && t < MB_READ_END + 180) arms = ['rest', [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']]];   /* a flick */
   if (t >= MB_READ_END + 60 && t < MB_READ_END + 510) { st = Math.floor((t - MB_READ_END - 60) / 90) + 1; look = [st < 3 ? 1 : st === 3 ? 0 : -1, 0]; }
   if (t >= MB_READ_END + 510) look = [-1, 1];
   if (t >= 2000 && t < 2560) { eyes = 'happy'; blush = true; look = [0, 0]; }
-  if ((t >= 2060 && t < 2160) || (t >= 2280 && t < 2380)) y = 16;
+  if ((t >= 2060 && t < 2160) || (t >= 2280 && t < 2380)) nod = -1;
   if (t >= 2560) look = [-1, 1];
-  if (t >= 2760 && t < 2850) eyes = 'blink';
-  const bx = 9, bk = [bx - 2, y + 5];
+  eyes = mBlink(t, 2760) || eyes;
+  const bx = 9, bk = [bx - 2, y + 6];
   const book = mArt(mbBookArt, bk[0], bk[1]);
   if (cursor) book.push([bk[0] + cursor[0], bk[1] + cursor[1], 'y']);
   const fx = [], sa = t - 2080;
   if (sa >= 0 && sa < 440) { const p = mEase.out(sa / 440); fx.push(...fxSparkle(Math.round(bx + 16 + p), Math.round(y + 1 - 4 * p), sa < 280 ? 1 : 0)); }
   const pa = t - (MB_READ_END + 420);                                          /* the air the page pushes out as it lands */
   if (pa >= 0 && pa < 220) fx.push(...fxPuff(bk[0] - 2 - Math.round(2 * mEase.out(pa / 220)), bk[1] - 1, pa < 120 ? 2 : 1, true));
-  const m = mascot({ x: bx, y, eyes, look, arms, blush });
+  const m = mascot({ x: bx, y, eyes, look, arms, blush, breath: nod });
   /* the hands: the outer cells of each arm stay in front of the book's edges */
   const hands = m.filter(([x, yy]) => (x < bk[0] + 2 || x > bk[0] + 14) && yy >= bk[1]);
   return [mShadow(0, bx), m, book, mbPage(st).map(([a, b, k]) => [a + bk[0], b + bk[1], k]), hands, fx];
@@ -702,14 +763,14 @@ const mtTypePose = t => {
   const tapIn = list => { const k = list.findIndex(t0 => t >= t0 && t < t0 + 90); return k < 0 ? null : k % 2; };
   const hands = k => k === null ? [MT_HOVER, MT_HOVER] : k === 0 ? [MT_PRESS, MT_HOVER] : [MT_HOVER, MT_PRESS];
   let glint = 0;
-  if (t < 1200) { o.arms = hands(tapIn(MT_TAPS)); if ((t < 90) || (t >= 620 && t < 710)) o.y = 16; }   /* a nod on each first key */
+  if (t < 1200) { o.arms = hands(tapIn(MT_TAPS)); if ((t < 90) || (t >= 620 && t < 710)) o.breath = -1; }   /* a nod on each first key */
   else if (t < 1880) {                                                    /* hands up off the keys, a pause to think */
-    o.eyes = 'open'; o.blush = false; o.look = [1, -1];
-    if (t >= 1240 && t < 1340) o.eyes = 'blink';
+    o.eyes = 'open'; o.blush = false; o.look = [1, -1]; o.brows = [null, 'raise'];
+    const bl = mBlink(t, 1240); if (bl) o.eyes = bl;
     const dots = Math.min(3, Math.floor((t - 1360) / 120) + 1);
     if (t >= 1360 && t < 1720) for (let k = 0; k < dots; k++) fx.push([23 + 2 * k, 12 - k, 'y']);
     if (t >= 1720) {                                                      /* the idea: a raised hand and a sparkle */
-      o.eyes = 'happy'; o.blush = true; o.look = [0, 0]; o.arms = [MT_HOVER, 'up']; o.y = t < 1780 ? 14 : 15;
+      o.eyes = t < 1780 ? 'big' : 'happy'; o.brows = t < 1780 ? 'up' : null; o.blush = t >= 1780; o.look = [0, 0]; o.arms = [MT_HOVER, 'up']; o.y = t < 1780 ? 14 : 15;
       fx.push(...fxSparkle(26, 10, t < 1780 ? 1 : 2));
     }
   }
@@ -724,11 +785,13 @@ const mtType = t => { const { o, fx, glint } = mtTypePose(t);
   return [mtShadow(), mascot({ ...o, arms: ['hide', 'hide'] }), mtLaptop(glint), mtArms(o), fx,
     glint > 1 ? fxSparkle(24, 17, t < 2720 ? 1 : 0) : []]; };
 
-/* Thinking: arms at rest and eyes turned up to the side, it ponders. Little puffs rise off the top of its head and a
-   thought bubble forms, three dots light one by one while one pair of feet taps in time, and it gives one slow blink
-   as they fill. Then it squints as the dots draw together and become a gold sparkle: the idea. The bubble pops, the
-   eyes go wide under raised brows, it crouches and hops for joy, lands with a squash and a happy blush, then the eyes
-   drift back up to the bubble's corner.
+/* Thinking: it ponders with its whole face and body. First it looks up to the left with that brow cocked, leaning
+   that way and breathing slowly; a blink, and its eyes swing up to the right, the other brow goes up and its weight
+   follows. Thoughts puff up off its head into a cloud, and three dots light in it one at a time, a foot tapping with
+   each; it narrows one eye, concentrating. The dots squeeze together while its eyes squeeze shut with the effort,
+   and become a gold spark: the idea. Its eyes snap wide, it crouches, then hops with shining eyes and a hand thrown
+   up, the cloud bursting as the spark rises and twinkles. It lands happy and blushing, nods, and lets out a pleased
+   sigh before its eyes wander up again.
    Use it for: thinking, planning, working out an answer before it streams. */
 const MT_TX = 7;
 const MT_CLOUD = [
@@ -745,40 +808,53 @@ const MT_CLOUD_S = [
   'MmccccM',
   '.MMMMM.'];
 const mtDot = (x, y, lit) => [[x, y, lit ? 'y' : 'm'], [x + 1, y, lit ? 'y' : 'm'], [x, y + 1, lit ? 'Y' : 'M'], [x + 1, y + 1, lit ? 'Y' : 'M']];
+/* the beats: a dot lights on each foot tap, then they gather and spark */
+const MT_DOTS = [1250, 1450, 1650], MT_GATHER = 1880, MT_IDEA = 2000, MT_POP = 2120;
 const mtThought = t => {
   const out = [], cx = 17, cy = 2;
-  if (t < 120 || t >= 2080) return [];
-  out.push(fxPuff(19, t < 200 ? 14 : 13, 1, true));
-  if (t >= 280) out.push(fxPuff(20, t < 360 ? 11 : 10, 2, true));
-  if (t >= 460 && t < 540) out.push(mArt(MT_CLOUD_S, 20, 3));
-  if (t < 540) return out.flat();
+  if (t < 800 || t >= MT_POP + 120) return [];
+  if (t >= MT_POP) return [...fxPuff(18, 6, t < MT_POP + 60 ? 2 : 1, true), ...fxPuff(28, 4, t < MT_POP + 60 ? 2 : 1, true)];
+  out.push(fxPuff(19, t < 880 ? 14 : 13, 1, true));                                   /* thoughts puff up off the head */
+  if (t >= 950) out.push(fxPuff(20, t < 1030 ? 11 : 10, 2, true));
+  if (t >= 1100 && t < 1180) out.push(mArt(MT_CLOUD_S, 20, 3));
+  if (t < 1180) return out.flat();
   out.push(mArt(MT_CLOUD, cx, cy));
-  if (t < 1800) { const lit = t < 880 ? -1 : t < 1650 ? Math.floor((t - 880) / 250) : 3;
-    [0, 1, 2].forEach(i => out.push(mtDot(cx + 3 + 3 * i, cy + 3, lit === i || lit === 3))); }
-  else if (t < 1880) out.push(mtDot(cx + 4, cy + 3, 1), mtDot(cx + 8, cy + 3, 1));
-  else if (t < 1960) out.push(mtDot(cx + 6, cy + 3, 1));
-  else out.push(fxSparkle(cx + 6, cy + 4, 1));
+  if (t < MT_GATHER) { const lit = MT_DOTS.filter(d => t >= d).length;
+    [0, 1, 2].forEach(i => out.push(mtDot(cx + 3 + 3 * i, cy + 3, i < lit))); }
+  else if (t < MT_GATHER + 60) out.push(mtDot(cx + 4, cy + 3, 1), mtDot(cx + 8, cy + 3, 1));
+  else if (t < MT_IDEA) out.push(mtDot(cx + 6, cy + 3, 1));
+  else out.push(fxSparkle(cx + 6, cy + 4, t < MT_IDEA + 60 ? 1 : 2));
   return out.flat();
 };
-const mtPop = t => t >= 2080 && t < 2200 ? [...fxPuff(18, 6, t < 2140 ? 2 : 1, true), ...fxPuff(28, 4, t < 2140 ? 2 : 1, true)] : [];
-const mtIdea = t => { const a = t - 1960; if (a < 0 || a >= 560) return [];
-  const y = Math.round(6 - 2 * mEase.out(a / 560));
-  return fxSparkle(23, y, a < 90 ? 1 : a < 300 ? 2 : a < 440 ? 1 : 0); };
+/* the idea rising out of the burst cloud, twinkling, and fading to a dot */
+const mtIdea = t => { const a = t - MT_POP; if (a < 0 || a >= 620) return [];
+  const y = Math.round(6 - 3 * mEase.out(a / 620));
+  return fxSparkle(23, y, a < 100 ? 2 : a < 260 ? 1 : a < 400 ? 2 : a < 520 ? 1 : 0); };
+/* the hand thrown up with the idea: the right arm reaching straight up, one cell higher than the kit's reach */
+const MT_AHA = [[1, -1, 'o'], [2, -2, 'o'], [2, -3, 'o'], [2, -4, 'o'], [1, 0, 'O'], [2, -1, 'O'], [3, -2, 'O'], [3, -3, 'O']];
 const mtThinkPose = t => {
-  const o = { x: MT_TX, y: 15, look: [1, -1], arms: ['rest', 'rest'], lift: 0 };
-  if ([880, 1130, 1380].some(k => t >= k && t < k + 110)) o.legs = 'stepA';            /* a foot taps as each dot lights */
-  if (t >= 1490 && t < 1740) o.eyes = t < 1570 || t >= 1660 ? 'blink' : 'closed';      /* one slow blink while they fill */
-  if (t >= 1800 && t < 1960) o.eyes = 'squint';                                         /* straining as the dots gather */
-  if (t >= 1960 && t < 2040) { o.eyes = 'wide'; o.brows = 'up'; }                       /* the idea lands */
-  else if (t >= 2040 && t < 2120) { o.eyes = 'wide'; o.brows = 'up'; o.squash = 1; o.arms = ['down', 'down']; }
-  else if (t >= 2120 && t < 2180) { o.eyes = 'wide'; o.brows = 'up'; o.squash = -1; o.y = 14; o.arms = ['up', 'up']; o.lift = 1; }
-  else if (t >= 2180 && t < 2380) { o.eyes = 'wide'; o.brows = 'up'; o.y = 13; o.legs = 'air'; o.arms = ['up', 'up']; o.lift = 2; }
-  else if (t >= 2380 && t < 2460) { o.eyes = 'happy'; o.blush = true; o.squash = 1; o.arms = ['down', 'down']; o.look = [0, 0]; }
-  else if (t >= 2460 && t < 2820) { o.eyes = 'happy'; o.blush = true; o.arms = ['rest', 'rest']; o.look = [0, 0]; }
+  const o = { x: MT_TX, y: 15, look: [0, 0], arms: ['rest', 'rest'], breath: mBreathe(t, 800, 200), lift: 0 };
+  /* ponder left, then right: the eyes lead, the brow and the weight follow */
+  if (t >= 150 && t < 770) { o.look = [-1, -1]; if (t >= 250) { o.lean = -1; o.brows = ['raise', null]; } }
+  else if (t >= 770 && t < MT_IDEA) { o.look = [1, -1]; if (t >= 870) { o.lean = 1; o.brows = [null, 'raise']; } }
+  if (MT_DOTS.some(d => t >= d && t < d + 100)) o.legs = 'stepB';                    /* a tap with each dot */
+  if (t >= 1450 && t < MT_GATHER) o.eyes = ['squint', 'open'];                         /* concentrating */
+  if (t >= MT_GATHER && t < MT_IDEA) { o.eyes = 'squeeze'; o.brows = null; o.look = [0, 0]; o.breath = 0; }   /* the effort */
+  const b = mBlink(t, 600); if (b) o.eyes = b;
+  /* the idea lands: wide eyes and a crouch, then a hop with shining eyes and a hand up */
+  if (t >= MT_IDEA && t < MT_IDEA + 90) Object.assign(o, { eyes: 'wide', brows: 'up', look: [0, 0], lean: 0, breath: 0, squash: 1, legs: 'crouch', arms: ['down', 'down'] });
+  const hop = mHop(t, MT_IDEA - 10, 2);
+  if (hop && t >= MT_IDEA + 90) { Object.assign(o, { squash: hop.squash, legs: hop.legs, lift: hop.lift, look: [0, 0], lean: 0, breath: 0 }); o.y += hop.dy;
+    o.arms = hop.squash > 0 && hop.legs === 'crouch' ? ['up', 'up'] : [hop.arms[0], MT_AHA];
+    o.eyes = hop.legs === 'air' || hop.dy < 0 ? 'big' : 'happy'; o.brows = o.eyes === 'big' ? 'up' : null; o.blush = o.eyes === 'happy'; }
+  /* happy, a nod, a pleased sigh, then the eyes wander up again */
+  if (t >= MT_IDEA + 550 && t < 2950) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0]; o.lean = 0; o.breath = 0;
+    if (t < MT_IDEA + 650) o.arms = ['out', 'out']; if (t >= 2650 && t < 2730) o.breath = -1; }
+  if (t >= 2780 && t < 3050) { o.eyes = 'closed'; o.blush = true; o.breath = -1; }
   return o;
 };
 const mtThink = t => { const o = mtThinkPose(t);
-  return [mShadow(o.lift, MT_TX), mtThought(t), mtPop(t), mascot(o), mtIdea(t)]; };
+  return [mShadow(o.lift, MT_TX), mtThought(t), mascot(o), mtIdea(t)]; };
 
 /* Snoozing: it has dozed off on its feet, eyes shut and cheeks blushing, slumped a little with its arms hanging. It
    breathes slowly: up a cell on the in-breath, a soft squash on the way out. Zs drift up from its head, a small z
@@ -797,7 +873,7 @@ const mtZ = (t, born, popAt) => {
 };
 const mtSleepPose = t => {
   const o = { x: MT_SX, y: 16, legs: 'crouch', eyes: 'closed', blush: true, arms: ['rest', 'rest'] };
-  if (t >= 320 && t < 880) { o.y = 15; o.legs = 'stand'; }                                   /* in-breath */
+  if (t >= 320 && t < 880) o.breath = 1;                                                     /* in-breath */
   else if (t >= 1040 && t < 1200) { o.look = [0, 1]; o.arms = ['down', 'down']; }           /* nodding, arms gone limp */
   else if (t >= 1200 && t < 1330) { o.look = [0, 1]; o.squash = 1; o.arms = ['down', 'down']; }   /* sinks */
   else if (t >= 1330 && t < 2350) {                                                          /* the catch */
@@ -805,28 +881,24 @@ const mtSleepPose = t => {
     if (t < 1400) o.squash = -1;
     else if (t < 1580) o.look = [-1, 0];
     else if (t < 1750) o.look = [1, 0];
-    else if (t < 1850) { o.eyes = 'blink'; o.brows = null; o.arms = ['rest', 'rest']; }
-    else if (t < 2050) { o.eyes = 'open'; o.brows = null; o.arms = ['rest', 'rest']; }
-    else { o.eyes = 'squint'; o.brows = null; o.arms = ['rest', 'rest']; }
+    else { o.eyes = t < 2120 ? mBlink(t, 1750) || 'open' : 'half'; o.brows = t < 1750 ? 'up' : null; o.arms = ['rest', 'rest']; }   /* a blink, then the lids grow heavy */
   }
-  else if (t >= 2650 && t < 3020) { o.y = 15; o.legs = 'stand'; }                            /* in-breath */
-  else if (t >= 3090) o.squash = 1;                                                          /* and softly out */
+  else if (t >= 2650 && t < 3020) o.breath = 1;                                              /* in-breath */
+  else if (t >= 3090) o.breath = -1;                                                         /* and softly out */
   return o;
 };
 const mtSleep = t => [mShadow(0, MT_SX), mascot(mtSleepPose(t)), mtZ(t, 2700), mtZ(t, 500, 1330)];
 
 const MSC_C = {
   mascot_type: Object.assign(mFilm(mtType, 3000), { still: mDone([].concat(mtType(180)).reduce((g, l) => mPut(g, l), mPic())) }),
-  mascot_think: Object.assign(mFilm(mtThink, 3200), { still: mDone([mShadow(0, MT_TX), mArt(MT_CLOUD, 17, 2),
-    mtDot(20, 5, 1), mtDot(23, 5, 1), mtDot(26, 5, 0), fxPuff(19, 13, 1, true), fxPuff(20, 10, 2, true),
-    mascot({ x: MT_TX, look: [1, -1] })].reduce((g, l) => mPut(g, l), mPic())) }),
+  mascot_think: Object.assign(mFilm(mtThink, 3200), { still: mDone([].concat(mtThink(1600)).reduce((g, l) => mPut(g, l), mPic())) }),
   mascot_sleep: Object.assign(mFilm(mtSleep, 3200), { still: mDone([mShadow(0, MT_SX),
     mascot({ x: MT_SX, y: 16, legs: 'crouch', eyes: 'closed', blush: true }),
     fxZ(21, 10), fxZ(24, 4, true)].reduce((g, l) => mPut(g, l), mPic())) }),
 };
 const MSC_C_META = {
   mascot_type: ['Typing', 'Happy behind its laptop, it types a careful phrase, stops to think as three little dots appear, raises a hand when the idea sparkles, types on, and presses Enter as the logo glints.', 'Use it for: writing, composing a reply, saving or sending.'],
-  mascot_think: ['Thinking', 'Eyes turned up and a foot tapping, it watches three dots light in a thought bubble until they spark into an idea and it hops for joy.', 'Use it for: thinking, planning, working out an answer.'],
+  mascot_think: ['Thinking', 'It ponders up to one side, then the other, a brow cocked and its weight shifting. Three dots light in a thought cloud as a foot taps and one eye narrows, they squeeze into a spark with its eyes squeezed tight, and it hops with shining eyes and a hand up: got it.', 'Use it for: thinking, planning, working out an answer.'],
   mascot_sleep: ['Snoozing', 'It dozes on its feet, breathing slowly with Zs drifting up, nods off, catches itself wide eyed, and drifts back to sleep.', 'Use it for: paused jobs, idle sessions, anything waiting on you.'],
 };
 
@@ -836,11 +908,7 @@ const MSC_C_META = {
 
 /* where the body really is for a set of mascot options: squash and stretch move and resize it, so a hat or a held prop
    asks this and stays glued to the clay */
-const mdBody = (o = {}) => {
-  const s = Math.sign(o.squash || 0), x = o.x ?? 9, y = o.y ?? 15;
-  const bx = x - s, by = y + s, W = 13 + 2 * s;
-  return { bx, by, W, cx: x + 6, ay: by + 5 - (s > 0 ? 1 : 0), rx: bx + W - 1, lx: bx };
-};
+const mdBody = (o = {}) => { const b = mBody(o); return { ...b, rx: b.sx, lx: b.bx }; };
 /* art centred on (x, y) */
 const mdAt = (rows, x, y) => mArt(rows, Math.round(x - (Math.max(...rows.map(r => r.length)) - 1) / 2), Math.round(y - (rows.length - 1) / 2));
 /* turn art a quarter to the left */
@@ -887,13 +955,12 @@ const mdBit = (t, b) => {
   return s === 0 ? [[X, Y, k], [X + 1, Y, K]] : s === 1 ? [[X, Y, k], [X + 1, Y + 1, K]] : s === 2 ? [[X, Y, k], [X, Y + 1, K]] : [[X, Y, k]];
 };
 const mdPartyPose = t => {
-  const o = { y: 15, legs: 'stand', arms: ['rest', 'rest'], eyes: 'open' };
-  if (t >= 150 && t < 250) o.eyes = 'blink';
+  const o = { y: 15, legs: 'stand', arms: ['rest', 'rest'], eyes: mBlink(t, 150) || 'open', breath: t < 470 || t >= 2150 ? mBreathe(t, 1200, 300) : 0 };
   if (t >= 380 && t < 1300) o.look = [0, -1];                                                   /* the eyes go up first */
   if (t >= 470 && t < 620) Object.assign(o, { y: 16, legs: 'crouch', arms: ['down', 'down'] }); /* sink */
   else if (t >= 620 && t < 700) Object.assign(o, { y: 16, squash: 1, legs: 'crouch', arms: ['down', 'down'], eyes: 'closed' });
-  else if (t >= 700 && t < 770) Object.assign(o, { y: 14, squash: -1, legs: 'air', arms: ['up', 'up'] }); /* spring */
-  else if (t >= 770 && t < 1150) Object.assign(o, { y: Math.round(mTween(t, 770, 1020, 13, 11, mEase.out)), legs: 'tuck', arms: ['up', 'up'] });
+  else if (t >= 700 && t < 770) Object.assign(o, { y: 14, squash: -1, legs: 'air', arms: ['up', 'up'], eyes: 'big', brows: 'up' }); /* spring */
+  else if (t >= 770 && t < 1150) Object.assign(o, { y: Math.round(mTween(t, 770, 1020, 13, 11, mEase.out)), legs: 'tuck', arms: ['up', 'up'], eyes: 'star', look: [0, 0] });   /* stars in its eyes as the confetti bursts */
   else if (t >= 1150 && t < 1300) Object.assign(o, { y: Math.round(mTween(t, 1150, 1300, 11, 15, mEase.in)), legs: 'air', arms: ['up', 'up'] });
   else if (t >= 1300 && t < 1385) Object.assign(o, { y: 16, squash: 1, legs: 'crouch', arms: ['out', 'out'] }); /* land */
   else if (t >= 1385 && t < 1480) Object.assign(o, { y: 16, legs: 'crouch', arms: ['rest', 'rest'] });
@@ -928,7 +995,7 @@ const mdArc = (t, t0, t1, a, b, h, lead = 0) => { const p = Math.min(1, Math.max
 const mdOopsPose = t => {
   const o = { x: 8, y: 15, legs: 'stand', arms: ['rest', 'hold'], eyes: 'open' };
   const w = t % 400; if (t < 800) Object.assign(o, w < 140 ? { legs: 'stepA' } : w < 200 ? { y: 16, legs: 'crouch' } : w < 340 ? { legs: 'stepB' } : { y: 16, legs: 'crouch' });
-  if (t >= 410 && t < 510) o.eyes = 'blink';
+  o.eyes = mBlink(t, 410) || o.eyes;
   if (t >= 800 && t < 1140) Object.assign(o, { eyes: 'wide', brows: 'up' });                      /* the eyes know first */
   if (t >= 800 && t < 880) o.legs = 'stepA';
   else if (t >= 880 && t < 980) Object.assign(o, { x: 9, legs: 'tuck', arms: ['up', 'hold'] });  /* the foot catches */
@@ -937,14 +1004,14 @@ const mdOopsPose = t => {
   else if (t >= 1140 && t < 1230) Object.assign(o, { x: 9, y: 16, squash: 1, legs: 'crouch', arms: ['out', 'out'], eyes: 'x' });
   else if (t >= 1230 && t < 1650) Object.assign(o, { x: 9, y: 16, legs: 'crouch', arms: ['down', 'down'], eyes: t < 1460 ? 'x' : 'dot',
     look: t < 1460 ? [0, 0] : t < 1560 ? [1, 1] : [-1, 1] });
-  else if (t >= 1650 && t < 1900) Object.assign(o, { x: [10, 8, 10, 9, 8][Math.floor((t - 1650) / 50)] ?? 8, legs: 'stand', arms: ['rest', 'rest'], eyes: 'closed' });
-  else if (t >= 1900 && t < 2060) Object.assign(o, { arms: ['rest', 'rest'], look: [0, 1] });
+  else if (t >= 1650 && t < 1900) Object.assign(o, { x: [10, 8, 10, 9, 8][Math.floor((t - 1650) / 50)] ?? 8, legs: 'stand', arms: ['rest', 'rest'], eyes: 'squeeze' });   /* shakes it off */
+  else if (t >= 1900 && t < 2060) Object.assign(o, { arms: ['rest', 'rest'], look: [0, 1], brows: 'worry' });                       /* sheepish at the mess */
   else if (t >= 2060 && t < 2200) Object.assign(o, { y: 16, legs: 'crouch', arms: ['down', 'down'], look: [0, 1] }); /* grab both */
   else if (t >= 2200 && t < 2270) Object.assign(o, { y: 16, legs: 'crouch', arms: ['out', 'out'], look: [-1, 0] });
   else if (t >= 2270 && t < 2380) Object.assign(o, { arms: ['out', 'hold'], look: [-1, 0] });
   else if (t >= 2380 && t < 2720) Object.assign(o, { arms: [t < 2500 ? 'up' : 'rest', 'hold'], look: t < 2520 ? [-1, -1] : t < 2630 ? [0, -1] : [1, -1] }); /* toss */
-  else if (t >= 2720 && t < 2800) Object.assign(o, { y: 16, legs: 'crouch', arms: ['rest', 'hold'], eyes: 'happy' }); /* it lands on the stack */
-  else if (t >= 2800 && t < 2980) Object.assign(o, { eyes: 'happy' });
+  else if (t >= 2720 && t < 2800) Object.assign(o, { y: 16, legs: 'crouch', arms: ['rest', 'hold'], eyes: 'happy', blush: true }); /* it lands on the stack */
+  else if (t >= 2800 && t < 2980) Object.assign(o, { eyes: 'happy', blush: true, breath: -1 });                                     /* phew */
   else if (t >= 2980) Object.assign(o, t < 3120 ? { legs: 'stepB' } : { y: 16, legs: 'crouch' });
   return o;
 };
@@ -1010,8 +1077,7 @@ const mdFly = dist => { const { d, L, len } = MD_FLIGHT, q = Math.max(0, Math.mi
 /* fast off the hand, a slow glide over the top, a quicker swoop home */
 const mdFlightDist = t => { const p = Math.min(1, Math.max(0, (t - MD_THROW) / (MD_CATCH - MD_THROW))); return MD_FLIGHT.len * (p + 0.06 * Math.sin(2 * Math.PI * p)); };
 const mdPlanePose = t => {
-  const o = { x: 6, y: 15, legs: 'stand', arms: ['rest', 'out'], eyes: 'open' };
-  if (t >= 150 && t < 250) o.eyes = 'blink';
+  const o = { x: 6, y: 15, legs: 'stand', arms: ['rest', 'out'], eyes: mBlink(t, 150) || 'open', breath: t < 380 || t >= 2780 ? mBreathe(t, 1200) : 0 };
   if (t >= 380 && t < 860) o.look = [1, -1];                                                      /* eyes on the sky */
   if (t >= 480 && t < 700) Object.assign(o, { arms: ['rest', 'up'], eyes: ['squint', 'open'] });  /* take aim */
   else if (t >= 700 && t < 860) Object.assign(o, { x: 5, legs: 'stepB', arms: ['out', [[1, 0, 'o'], [1, -1, 'o'], [2, -2, 'o'], [1, 1, 'O'], [2, -1, 'O']]], eyes: ['squint', 'open'] });
@@ -1019,7 +1085,7 @@ const mdPlanePose = t => {
   else if (t >= 960 && t < 1120) Object.assign(o, { x: t < 1040 ? 7 : 6, arms: ['rest', 'reach'] });
   if (t >= 960 && t < MD_CATCH) { const [px, py] = mdFly(mdFlightDist(t)), b = mdBody(o);
     o.look = [Math.abs(px - b.cx) < 4 ? 0 : Math.sign(px - b.cx), py < b.by + 1 ? -1 : 0]; }
-  if (t >= 2120 && t < MD_CATCH) Object.assign(o, { arms: ['rest', 'reach'], eyes: 'wide' });  /* ready */
+  if (t >= 2120 && t < MD_CATCH) Object.assign(o, { arms: ['rest', 'reach'], eyes: 'big', brows: 'up' });  /* ready, eager */
   if (t >= 2200 && t < 2260) Object.assign(o, { y: 16, legs: 'crouch' });                       /* a hop to meet it */
   else if (t >= 2260 && t < 2300) Object.assign(o, { y: 14, legs: 'air' });
   else if (t >= 2300 && t < 2440) Object.assign(o, { y: 13, legs: 'tuck' });
@@ -1081,9 +1147,49 @@ const MASCOT_PROPS = [
   ['Thought bubble', 'A soft cloud lit at the top right', () => mArt(MT_CLOUD, 0, 0)],
 ].map(([name, note, draw]) => [name, note, () => draw().filter(([, , c]) => c !== 'o' && c !== 'O' && c !== 'd')]);
 
+/* ---------- the face and the moves, gathered for the design rules page ----------
+   Expressions: what each look means and how to ask the kit for it. Motion: the shared moves every scene is built
+   from, each as a short loop. */
+const MASCOT_EXPRESSIONS = [
+  ['Calm', "eyes 'open'", {}],
+  ['Happy', "'happy', blush", { eyes: 'happy', blush: true }],
+  ['Joy', "'squeeze', blush", { eyes: 'squeeze', blush: true }],
+  ['Delight', "'big', blush", { eyes: 'big', blush: true }],
+  ['Starstruck', "eyes 'star'", { eyes: 'star' }],
+  ['Smitten', "eyes 'heart'", { eyes: 'heart' }],
+  ['Content', "'closed', blush", { eyes: 'closed', blush: true }],
+  ['Surprised', "'wide', brows 'up'", { eyes: 'wide', brows: 'up' }],
+  ['Curious', "look, one brow 'up'", { look: [1, 0], brows: [null, 'up'] }],
+  ['Thinking', "look up, 'raise'", { look: [1, -1], brows: [null, 'raise'] }],
+  ['Skeptical', "['squint', 'open']", { eyes: ['squint', 'open'], brows: [null, 'raise'] }],
+  ['Focused', "eyes 'squint'", { eyes: 'squint' }],
+  ['Determined', "brows 'down'", { brows: 'down' }],
+  ['Fierce', "'wide', brows 'down'", { eyes: 'wide', brows: 'down' }],
+  ['Worried', "brows 'worry'", { brows: 'worry' }],
+  ['Sad', "'sad', 'worry', tear", { eyes: 'sad', brows: 'worry', tear: true, breath: -1 }],
+  ['Grumpy', "'half', brows 'down'", { eyes: 'half', brows: 'down' }],
+  ['Drowsy', "eyes 'half'", { eyes: 'half', breath: -1 }],
+  ['Lost', "'dot', brows 'worry'", { eyes: 'dot', brows: 'worry' }],
+  ['Knocked out', "eyes 'x'", { eyes: 'x' }],
+];
+/* a demo loop: the mascot with its shadow, posed by fn(t) */
+const mmFilm = (fn, ms) => { const f = mFilm(t => { const o = fn(t); return [mShadow(o.lift || 0, (o.x ?? 9) - (o.lean || 0)), mascot(o)]; }, ms);
+  return Object.assign(f, { still: f.frames[0].b }); };
+const MASCOT_MOTION = [
+  ['Breathe', 'mBreathe(t): the top rises a row and settles; arms and feet stay put', mmFilm(t => ({ breath: mBreathe(t, 1600), eyes: mBlink(t, 1200) || 'open' }), 1600)],
+  ['Blink', 'mBlink(t, t0): half, shut, half, open, 170 ms', mmFilm(t => ({ eyes: mBlink(t, 500) || mBlink(t, 1250) || 'open' }), 1600)],
+  ['Eyes lead', 'the eyes go first, the brow and the weight follow', mmFilm(t => { const a = t % 2400, s = a < 1200 ? 1 : -1, b = a % 1200;
+    return { look: b < 150 ? [0, 0] : [s, 0], lean: b >= 330 && b < 1000 ? s : 0, brows: b >= 240 && b < 1000 ? (s > 0 ? [null, 'up'] : ['up', null]) : null }; }, 2400)],
+  ['Nod', 'breath -1 for a beat: the head dips, the feet stay planted', mmFilm(t => ({ breath: (t % 800) < 120 ? -1 : 0, eyes: 'happy', blush: true }), 1600)],
+  ['Hop', 'mHop(t, t0): crouch, stretch, hang, squash, settle; the arms lag', mmFilm(t => { const h = mHop(t, 300, 2); if (!h) return {};
+    return { y: 15 + h.dy, squash: h.squash, legs: h.legs, arms: h.arms, lift: h.lift, eyes: h.legs === 'air' ? 'big' : h.squash > 0 && t > 600 ? 'squeeze' : 'open', brows: h.legs === 'air' ? 'up' : null }; }, 1400)],
+  ['Squash and stretch', 'squash only at a contact, stretch only at a take-off', mmFilm(t => { const a = t % 1200;
+    return a < 300 ? {} : a < 400 ? { squash: 1, legs: 'crouch' } : a < 500 ? { squash: -1, y: 14, lift: 1 } : a < 760 ? { y: 13, legs: 'air', lift: 2 } : a < 860 ? { squash: 1, legs: 'crouch' } : {}; }, 1200)],
+];
+
 /* ---------- every scene, ready for the page: a sprite with its frames, its still pose and its loop length ---------- */
 const MASCOT_SPRITES = {};
 for (const [id, sp] of Object.entries({ ...MSC_JAM, ...MSC_A, ...MSC_B, ...MSC_C, ...MSC_D }))
   MASCOT_SPRITES[id] = Object.assign(sp, { mascot: true, N: MN, period: sp.frames.reduce((a, f) => a + f.ms, 0) / 1000 });
 const MASCOT_META = { ...MSC_JAM_META, ...MSC_A_META, ...MSC_B_META, ...MSC_C_META, ...MSC_D_META };
-if (typeof module !== 'undefined') module.exports = { MASCOT_SPRITES, MASCOT_META, MASCOT_PROPS, MPAL };
+if (typeof module !== 'undefined') module.exports = { MASCOT_SPRITES, MASCOT_META, MASCOT_PROPS, MASCOT_EXPRESSIONS, MASCOT_MOTION, MPAL };
