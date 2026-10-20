@@ -3644,24 +3644,30 @@ const mbBigEye = (cx, cy, kind, dx = 0) => {
   if (kind === 'wide') return mArt(['kw', 'kk', 'kk', 'kk'], x, y - 1);
   return mArt(['kw', 'kk', 'kk'], x, y);
 };
-const MB_FIND = 1500;
+const MB_FIND = 1400;
 const mbDetective = t => {
-  /* lean left, lean right, duck to the floor, find it, hold, settle, lean left again */
-  let x = 6, y = 15, legs = 'stand', sq = 0, eye = 'open', dx = 0, left = 'squint', brows = null, glint = 0;
-  if (t >= 520 && t < 1000) { x = Math.round(mTween(t, 520, 760, 6, 8)); dx = 1; legs = t < 640 ? 'stepA' : 'stand'; }
-  if (t >= 470 && t < 520) dx = 1;                                       /* the eye leads the lean */
-  if (t >= 1000 && t < MB_FIND) { x = 8; dx = t < 1240 ? 1 : 0; y = 16; legs = 'crouch'; }       /* duck to peer at the floor */
-  if (t >= 300 && t < 400) eye = 'blink';
-  if (t >= 1320 && t < 1400) eye = 'blink';
-  if (t >= MB_FIND) { x = 8; eye = 'wide'; dx = 1; left = 'wide'; }
-  if (t >= MB_FIND && t < MB_FIND + 90) { sq = -1; y = 14; legs = 'air'; }                    /* the jolt */
-  else if (t >= MB_FIND + 90 && t < MB_FIND + 180) { y = 14; legs = 'air'; }
-  else if (t >= MB_FIND + 180 && t < MB_FIND + 260) { sq = 1; legs = 'crouch'; }
-  if (t >= MB_FIND && t < MB_FIND + 420) glint = t < MB_FIND + 140 ? 1 : t < MB_FIND + 300 ? 2 : 1;
-  if (t >= 2260) { eye = 'open'; left = 'squint'; brows = null; dx = t < 2450 ? 1 : 0; }      /* settle, and the eye looks left first */
-  if (t >= 2500) { x = Math.round(mTween(t, 2500, 2800, 8, 6)); legs = t < 2650 ? 'stepB' : 'stand'; }
+  /* look left, then step right (the eye leads), duck to peer at the floor, find it: the eyes go wide first, then an
+     arc up off the ground and a squash on landing, a held look, a blink to settle, and two steps back to the start */
+  let x = 6, y = 15, legs = 'stand', sq = 0, eye = 'open', dx = 0, left = 'squint', glint = 0, lift = 0;
+  const at = (a, b) => t >= a && t < b;
+  if (t >= 470) dx = 1;                                                   /* the eye leads the steps */
+  if (at(560, 660)) { x = 7; legs = 'stepA'; } else if (at(660, 760)) x = 7;
+  else if (at(760, 860)) { x = 8; legs = 'stepB'; } else if (t >= 860) x = 8;
+  if (at(1000, MB_FIND + 80)) { y = 16; legs = 'crouch'; dx = t < 1200 ? 1 : 0; }   /* duck to peer at the floor */
+  if (at(300, 400) || at(1220, 1300)) eye = 'blink';
+  if (t >= MB_FIND && t < 2200) { eye = 'wide'; left = 'wide'; dx = 1; }  /* found it: the eyes first */
+  if (at(MB_FIND + 80, MB_FIND + 140)) { y = 15; sq = -1; lift = 1; }      /* the arc up */
+  else if (at(MB_FIND + 140, MB_FIND + 200)) { y = 14; legs = 'air'; lift = 1; }
+  else if (at(MB_FIND + 200, MB_FIND + 320)) { y = 13; legs = 'air'; lift = 2; }
+  else if (at(MB_FIND + 320, MB_FIND + 380)) { y = 14; legs = 'air'; lift = 1; }
+  else if (at(MB_FIND + 380, MB_FIND + 460)) { sq = 1; legs = 'crouch'; }  /* and down */
+  if (at(MB_FIND + 140, MB_FIND + 520)) glint = t < MB_FIND + 220 ? 1 : t < MB_FIND + 400 ? 2 : 1;
+  if (at(2200, 2290)) { eye = 'blink'; left = 'blink'; dx = 1; }            /* a blink to settle */
+  if (t >= 2290) { eye = 'open'; left = 'squint'; dx = t < 2380 ? 1 : 0; }  /* and the eye looks left first */
+  if (at(2450, 2550)) { x = 7; legs = 'stepB'; } else if (at(2550, 2650)) x = 7;
+  else if (at(2650, 2750)) { x = 6; legs = 'stepA'; } else if (t >= 2750) x = 6;
   const b = mbBody(x, y, sq), cx = b.bx + 10, cy = b.by + 3;
-  return [mShadow(legs === 'air' ? 2 : 0, x), mascot({ x, y, legs, squash: sq, eyes: [left, 'open'], brows, arms: ['rest', 'rest'] }),
+  return [mShadow(lift, x), mascot({ x, y, legs, squash: sq, eyes: [left, 'open'], arms: ['rest', 'rest'] }),
     mbHatAt(x, y, sq), mbGlass(cx, cy, glint), mbBigEye(cx, cy, eye, dx)];
 };
 
@@ -3714,65 +3720,84 @@ const mbHunt = t => {
 
 /* ---------- Reading (state: reading docs) ----------
    An open book lies in front of it, wide and low the way a real one lies open on a table, and it reads with its eyes
-   down on the pages, its hands resting on the top edge. The eyes follow each line, left page then right, while a
+   down on the pages, its hands resting on the far corners. The eyes follow each line, left page then right, while a
    small gold mark keeps pace along the text, with a little nod at each new line. At the end of the spread its hand
-   flicks, the right page peels at its corner, lifts and curls, stands up on the spine, falls over to the left and
-   lands with a puff of air. A happy nod follows: curved eyes, a blush and a sparkle. It is the wait while something
-   is read, and the turned page is the progress. */
-/* the open book, 23 x 9, lying flat and seen a little from above, after the reference: narrow at the far edge and
-   wide at the near one, two pages rising from the spine with a crease down the gutter, the left page in cream and
-   the right one lit, two lines of text a page, the edges of the page block at the corners, and the blue cover
-   underneath, lit at its right corner, with the spine dipping at the bottom. A navy contour runs round it */
-const mbBookArt = [
-  '......UUUUU.UUUUU......',
-  '....UUcccccUwwwwwUU....',
-  '..UUcCCCCccTwCCCCwwUU..',
-  '.UcccccccccTwwwwwwwwwU.',
-  'UccCCCCCcccTwCCCCCwwwwU',
-  'UTTcccccccCTCwwwwwwwTTU',
-  'UuuTTTTTTTTUTTTTTTTTulU',
-  '.UUUuuuuuuuUuuuuuuuuUU.',
-  '....UUUUUUUUUUUUUUUU...'];
-const MB_BK = [4, 21];
-/* the lines in reading order, as [row, first column, length] in the book */
-const MB_LINES = [[2, 5, 4], [4, 3, 5], [2, 13, 4], [4, 13, 5]];
-/* the turning page, by stage, relative to the book's top left: 1 its top corner peels up, 2 it lifts off the right
-   page, curling, 3 it stands on the spine, 4 it falls over to the left, 5 it lands with the corner still curled */
-const mbPage = st => ({
-  1: mArt(['..Cw', '.Cww'], 16, -1),
-  2: mArt(['.....wwC', '...wwwC.', '.CwwC...', 'Cw......'], 12, -3),
-  3: mArt(['.w', 'Cw', 'Cw', 'Cw', 'Cw'], 11, -4),
-  4: mArt(['Cww.....', '.Cwww...', '...CwwC.', '......wC'], 3, -3),
-  5: mArt(['wC.', 'wwC'], 5, -1),
-}[st] || []);
-const MB_READ_END = 1400;
+   flicks, and the right page swings over the spine like a real sheet: it lifts with its text, rises edge on in front
+   of its face, shows its back as it falls to the left, and lands with a puff of air. A happy nod follows: curved
+   eyes, a blush and a sparkle. It is the wait while something is read, and the turned page is the progress. */
+/* the open book, 25 x 9, in perspective: the pages are six rows, narrow at the far edge and one cell wider each row
+   toward the near one, so the sides are clean diagonals; the far edge dips into the spine, a crease runs down the
+   gutter with a soft shade beside it, the left page is cream and the right one lit, and each page has two lines of
+   words. Under the pages, the edge of the page block, the blue cover lit at its right corner, and a navy contour */
+const MB_BK = { x: 3, y: 21, W: 25, S: 12, rows: 6, wf: 6 };
+const mbHalf = r => MB_BK.wf + r;
+const MB_TEXT = [[2, [[3, 4], [6, 8]]], [4, [[3, 5], [7, 10]]]];   /* rows of words, as [from, to] cells out from the spine */
+const mbBookArt = (() => {
+  const S = MB_BK.S, R = MB_BK.rows, g = Array.from({ length: R + 3 }, () => Array(MB_BK.W).fill('.'));
+  for (let r = 0; r < R; r++) { const h = mbHalf(r);
+    for (let x = S - h; x <= S + h; x++) g[r][x] = x < S ? 'c' : x > S ? 'w' : 'T';
+    g[r][S - h - 1] = 'U'; g[r][S + h + 1] = 'U'; }
+  const h0 = mbHalf(0); for (let x = S - h0; x <= S + h0; x++) g[0][x] = 'U'; g[0][S] = '.'; g[1][S] = 'U';
+  for (let r = 1; r < R; r++) { g[r][S - 1] = 'C'; if (r > 1) g[r][S + 1] = r > 2 ? 'w' : 'C'; }
+  for (const [r, words] of MB_TEXT) for (const [a, b] of words) for (let d = a; d <= b; d++) { g[r][S - d] = 'C'; g[r][S + d] = 'C'; }
+  const hn = mbHalf(R - 1);
+  for (let x = S - hn - 1; x <= S + hn + 1; x++) { g[R][x] = 'T'; g[R + 1][x] = 'u'; g[R + 2][x] = 'U'; }
+  for (const r of [R, R + 1]) { g[r][S - hn - 1] = 'U'; g[r][S + hn + 1] = 'U'; g[r][S] = 'U'; }
+  g[R + 1][S + hn] = 'l'; g[R + 2][S - hn - 1] = '.'; g[R + 2][S + hn + 1] = '.';
+  return g.map(r => r.join(''));
+})();
+/* the lines in reading order, as [row, first column, length] in the book: left page then right, top line first */
+const MB_LINES = [[2, 4, 6], [4, 2, 8], [2, 15, 6], [4, 15, 8]];
+/* the page being turned, at angle a (0 lying on the right, PI lying on the left), in book cells: every cell of the
+   right page swings round the spine, rising as it goes, the far rows a touch behind the near ones so the sheet bends.
+   It carries its words on both faces, lit on the front and cream on the back, with a shade line round it so it
+   reads against the pages under it; lying flat at either end it matches the page it lands on */
+const mbPage = a => {
+  const S = MB_BK.S, R = MB_BK.rows, k = 0.7, cells = new Map();
+  const word = (r, d) => MB_TEXT.some(([rr, ws]) => rr === r && ws.some(([p, q]) => d >= p && d <= q));
+  for (let r = 0; r < R; r++) { const h = mbHalf(r);
+    for (let d = 0.5; d <= h + 0.01; d += 0.5) {
+      /* the near outer corner leads, so the turn starts as a peel and the sheet bends as it goes over */
+      const ar = Math.min(Math.PI, Math.max(0, a + 0.5 * Math.sin(Math.min(Math.PI, a * 1.4 + 0.25)) * (r / (R - 1)) * (d / h)));
+      const x = Math.round(S + d * Math.cos(ar)), y = Math.round(r - d * Math.sin(ar) * k);
+      cells.set(x + ',' + y, [x, y, word(r, Math.round(d)) && Math.sin(ar) < 0.22 ? 'C' : ar < Math.PI / 2 ? 'w' : 'c', d]); } }
+  /* a shade line only where the sheet's edge stands clear of the pages, so a sheet still lying flat looks like the
+     page it is, and one rising shows its edge */
+  const onPage = (x, y) => y >= 0 && y < R && 'cwCT'.includes(mbBookArt[y][x] || '.');
+  const out = [...cells.values()], has = (x, y) => cells.has(x + ',' + y);
+  for (const c of out) { const [x, y, , d] = c, edge = !has(x - 1, y) || !has(x + 1, y) || !has(x, y - 1) || !has(x, y + 1);
+    if (edge && (!onPage(x, y) || d >= mbHalf(Math.max(0, Math.min(R - 1, y))) - 0.5 && Math.sin(a) > 0.25)) c[2] = 'C'; }
+  return out.map(([x, y, c]) => [x, y, c]);
+};
+const MB_READ_END = 1400, MB_TURN = 480;
 const mbRead = t => {
-  let y = 15, eyes = 'open', look = [0, 1], arms = ['rest', 'rest'], st = 0, blush = false, cursor = null;
+  let y = 15, eyes = 'open', look = [0, 1], arms = ['rest', 'rest'], turn = null, blush = false, cursor = null;
   if (t < MB_READ_END) { const k = Math.floor(t / 350), u = (t % 350) / 350, [r, c0, n] = MB_LINES[k];
     cursor = [c0 + Math.min(n - 1, Math.floor(u * n)), r]; look = [k < 2 ? (u < 0.5 ? -1 : 0) : (u < 0.5 ? 0 : 1), 1];
     if (t % 350 < 70) y = 16; }                                                 /* a nod at each new line */
   if (t >= 560 && t < 650) eyes = 'blink';
   if (t >= MB_READ_END) look = [1, 1];                                        /* the eyes go to the corner first */
   if (t >= MB_READ_END && t < MB_READ_END + 180) arms = ['rest', [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']]];   /* a flick */
-  if (t >= MB_READ_END + 60 && t < MB_READ_END + 510) { st = Math.floor((t - MB_READ_END - 60) / 90) + 1; look = [st < 3 ? 1 : st === 3 ? 0 : -1, 0]; }
-  if (t >= MB_READ_END + 510) look = [-1, 1];
+  const ta = t - MB_READ_END - 60;
+  if (ta >= 0 && ta < MB_TURN) { turn = Math.PI * mEase.inOut(ta / MB_TURN); look = [turn < 1.2 ? 1 : turn < 1.9 ? 0 : -1, turn < 1.2 ? 0 : -1]; }
+  if (ta >= MB_TURN) look = [-1, 1];
   if (t >= 2000 && t < 2560) { eyes = 'happy'; blush = true; look = [0, 0]; }
   if ((t >= 2060 && t < 2160) || (t >= 2280 && t < 2380)) y = 16;
   if (t >= 2560) look = [-1, 1];
   if (t >= 2760 && t < 2850) eyes = 'blink';
-  const bx = 9, [kx, ky] = MB_BK;
+  const bx = 9, { x: kx, y: ky } = MB_BK;
   const book = mArt(mbBookArt, kx, ky);
   if (cursor) book.push([kx + cursor[0], ky + cursor[1], 'y']);
   const fx = [], sa = t - 2080;
   if (sa >= 0 && sa < 440) { const p = mEase.out(sa / 440); fx.push(...fxSparkle(Math.round(bx + 16 + p), Math.round(14 - 4 * p), sa < 280 ? 1 : 0)); }
-  const pa = t - (MB_READ_END + 420);                                          /* the air the page pushes out as it lands */
-  if (pa >= 0 && pa < 220) fx.push(...fxPuff(kx + 1 - Math.round(2 * mEase.out(pa / 220)), ky - 1, pa < 120 ? 2 : 1, true));
-  return [mascot({ x: bx, y, eyes, look, arms, blush }), book, mbPage(st).map(([a, b, k]) => [a + kx, b + ky, k]), fx];
+  const pa = ta - MB_TURN + 40;                                                /* the air the page pushes out as it lands */
+  if (pa >= 0 && pa < 220) fx.push(...fxPuff(kx + 1 - Math.round(2 * mEase.out(pa / 220)), ky + 1, pa < 120 ? 2 : 1, true));
+  return [mascot({ x: bx, y, eyes, look, arms, blush }), book, turn == null ? [] : mbPage(turn).map(([a, b, c]) => [a + kx, b + ky, c]), fx];
 };
 
 /* the stills: the find with its wide eyes, a line being read, the pounce with the beetle already bolting beneath */
 const MSC_B = {
-  mascot_detective: Object.assign(mFilm(mbDetective, 3000), { still: mbAt(mbDetective, 1900) }),
+  mascot_detective: Object.assign(mFilm(mbDetective, 3000), { still: mbAt(mbDetective, 1950) }),
   mascot_read: Object.assign(mFilm(mbRead, 3000), { still: mbAt(mbRead, 1100) }),
   mascot_bughunt: Object.assign(mFilm(mbHunt, MB_HUNT), { still: mbAt(mbHunt, 1330) }),
 };
