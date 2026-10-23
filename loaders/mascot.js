@@ -701,63 +701,40 @@ const mtKey = c => c[0] + ',' + c[1];
 const mtArms = o => { const bare = new Set(mascot({ ...o, arms: ['hide', 'hide'] }).map(mtKey));
   return mascot(o).filter(c => !bare.has(mtKey(c))); };
 
-/* Typing: it sits behind its laptop, seen from the front: the back of the lid toward us, a charcoal panel lit along
-   its top edge with a small ring for a logo, and the thin deck below. Its happy eyes say it is enjoying this. It types
-   a careful phrase, its hands taking turns on the keys behind the lid in a gentle rhythm with a small nod, then lifts
-   its hands to think: the eyes open and look up, three little dots appear one by one, and the idea arrives with a
-   raised hand and a sparkle. It types the rest a little quicker, winds up and presses Enter with a bounce, and the
-   logo on the lid glints. */
-const MT_LAP_X = 8, MT_LAP_Y = 21;
-/* the laptop from the front: lid lit along its top edge and right side, dark on its left and lower edges, a ring
-   logo in the middle; under it the front of the deck, a thin plate lit on top */
-const MT_LAPTOP = [
-  '..hhhhhhhhh..',
-  '.Gggggcggggh.',
-  '.Ggggcgcgggh.',
-  '.Gggggcggggh.',
-  '.GGGGGGGGGGG.',
-  'GhhhhhhhhhhhG',
-  '.GGGGGGGGGGG.'];
-const MT_LOGO = [[6, 1], [5, 2], [7, 2], [6, 3]].map(([x, y]) => [MT_LAP_X + x, MT_LAP_Y + y]);
-const mtLaptop = glint => { const c = mArt(MT_LAPTOP, MT_LAP_X, MT_LAP_Y);
-  if (glint) c.push(...MT_LOGO.map(([x, y]) => [x, y, 'w']), [MT_LAP_X + 6, MT_LAP_Y + 2, glint > 1 ? 'z' : 'y']);
+/* Typing: it sits behind its laptop with its straight arms resting on the lid's top edge, and types by dropping one
+   arm, then the other, onto the keys, a small click of light at each. The lid is turned a little so it leans and a
+   corner of the keyboard shows on the right. Its eyes are on the keys; once it looks up at us and blinks. Then it
+   lifts an arm, taps Enter with a bounce and squints, happy. */
+const MT_X = 9, MT_Y = 11;
+/* the lid seen from behind, leaning a little to the right, lit along its top, with the keyboard's corner going back */
+const MT_LID_Y = 18, MT_LID_H = 7, MT_LID_W = 21, mtLidX = y => 5 + Math.floor((y - MT_LID_Y) / 3);
+const mtLaptop = () => { const c = [];
+  for (let y = MT_LID_Y; y < MT_LID_Y + MT_LID_H; y++) { const x0 = mtLidX(y);
+    for (let x = x0; x < x0 + MT_LID_W; x++)
+      c.push([x, y, y === MT_LID_Y ? 'h' : x === x0 || y === MT_LID_Y + MT_LID_H - 1 ? 'G' : 'g']);
+    const k = y - MT_LID_Y - 2;
+    for (let i = 0; i < Math.min(k, 3); i++) c.push([x0 + MT_LID_W + i, y, i === k - 1 ? 'g' : 'G']); }
+  c.push([15, 21, 'C'], [16, 21, 'C'], [15, 22, 'C'], [16, 22, 'C']);
+  for (let x = 6; x <= 28; x++) c.push([x, 25, 's']);
   return c; };
-const mtShadow = () => Array.from({ length: 13 }, (_, i) => [MT_LAP_X + i, MT_LAP_Y + 7, 's']);
-/* the hands (right arm, relative to the shoulder; the kit mirrors the left): they hover at the sides of the lid and
-   drop one cell for a key; the wind up before Enter lifts the hand above the lid */
-const MT_HOVER = 'rest';
-const MT_PRESS = [[1, 1, 'o'], [2, 1, 'o'], [1, 2, 'O'], [2, 2, 'O']];
-const MT_LIFT = [[1, -1, 'o'], [2, -2, 'o'], [1, 0, 'O'], [2, -1, 'O']];
-/* the beats of a careful phrase with a breath in the middle, and of the quicker one after the idea */
-const MT_TAPS = [0, 170, 340, 620, 790, 960];
-const MT_TAPS2 = [1960, 2080, 2200, 2320, 2440];
+/* the kit's straight arm, resting on the lid, or dropped one cell onto the keys */
+const MT_UP_ARM = 'rest', MT_DOWN_ARM = [[1, 1, 'o'], [2, 1, 'o'], [1, 2, 'O'], [2, 2, 'O']];
+const MT_TAPS = [80, 220, 360, 500, 640, 780, 920, 1560, 1680, 1800, 1920, 2040, 2160];
+const MT_PRESS = 100;
 const mtTypePose = t => {
-  const o = { x: 8, y: 15, eyes: 'happy', blush: true, arms: [MT_HOVER, MT_HOVER] }, fx = [];
-  /* the hands take turns, left then right, each key a short press */
-  const tapIn = list => { const k = list.findIndex(t0 => t >= t0 && t < t0 + 90); return k < 0 ? null : k % 2; };
-  const hands = k => k === null ? [MT_HOVER, MT_HOVER] : k === 0 ? [MT_PRESS, MT_HOVER] : [MT_HOVER, MT_PRESS];
-  let glint = 0;
-  if (t < 1200) { o.arms = hands(tapIn(MT_TAPS)); if ((t < 90) || (t >= 620 && t < 710)) o.y = 16; }   /* a nod on each first key */
-  else if (t < 1880) {                                                    /* hands up off the keys, a pause to think */
-    o.eyes = 'open'; o.blush = false; o.look = [1, -1];
-    if (t >= 1240 && t < 1340) o.eyes = 'blink';
-    const dots = Math.min(3, Math.floor((t - 1360) / 120) + 1);
-    if (t >= 1360 && t < 1720) for (let k = 0; k < dots; k++) fx.push([23 + 2 * k, 12 - k, 'y']);
-    if (t >= 1720) {                                                      /* the idea: a raised hand and a sparkle */
-      o.eyes = 'happy'; o.blush = true; o.look = [0, 0]; o.arms = [MT_HOVER, 'up']; o.y = t < 1780 ? 14 : 15;
-      fx.push(...fxSparkle(26, 10, t < 1780 ? 1 : 2));
-    }
-  }
-  else if (t < 2520) { o.arms = hands(tapIn(MT_TAPS2)); if (t < 1940) fx.push([26, 10, 'z']); }
-  else if (t < 2620) o.arms = [MT_HOVER, MT_LIFT];                         /* the wind up */
-  else if (t < 2720) { o.y = 16; o.squash = 1; o.legs = 'crouch'; o.arms = [MT_HOVER, MT_PRESS]; glint = 2; }   /* Enter */
-  else if (t < 2820) { o.y = 14; glint = 2; }
-  else if (t < 2920) glint = 1;
-  return { o, fx, glint };
+  const o = { x: MT_X, y: MT_Y, eyes: 'open', look: [0, 1], arms: [MT_UP_ARM, MT_UP_ARM] };
+  const fx = [];
+  MT_TAPS.forEach((t0, i) => { if (t >= t0 && t < t0 + MT_PRESS) {
+    const right = i % 2 === 1; o.arms = right ? [MT_UP_ARM, MT_DOWN_ARM] : [MT_DOWN_ARM, MT_UP_ARM];
+    fx.push(right ? [24, MT_LID_Y, 'w'] : [6, MT_LID_Y, 'w']); } });
+  if (t >= 1080 && t < 1460) { o.look = [0, 0]; if (t >= 1220 && t < 1300) o.eyes = 'blink'; }   /* a look up at us */
+  if (t >= 2300 && t < 2420) { o.arms = [MT_UP_ARM, 'up']; o.y = MT_Y - 1; }                       /* lifts an arm */
+  else if (t >= 2420 && t < 2520) { o.arms = [MT_UP_ARM, MT_DOWN_ARM]; o.squash = 1; fx.push(...fxSparkle(26, 16, 1)); }   /* Enter */
+  else if (t >= 2520 && t < 2940) { o.eyes = 'happy'; o.blush = true; o.look = [0, 0]; if (t < 2600) fx.push(...fxSparkle(26, 16, 0)); }
+  return { o, fx };
 };
-const mtType = t => { const { o, fx, glint } = mtTypePose(t);
-  return [mtShadow(), mascot({ ...o, arms: ['hide', 'hide'] }), mtLaptop(glint), mtArms(o), fx,
-    glint > 1 ? fxSparkle(24, 17, t < 2720 ? 1 : 0) : []]; };
+const mtType = t => { const { o, fx } = mtTypePose(t);
+  return [mascot({ ...o, arms: ['hide', 'hide'] }), mtLaptop(), mtArms(o), fx]; };
 
 /* Thinking: arms at rest and eyes turned up to the side, it ponders. Little puffs rise off the top of its head and a
    thought bubble forms, three dots light one by one while one pair of feet taps in time, and it gives one slow blink
@@ -860,7 +837,7 @@ const MSC_C = {
     fxZ(21, 10), fxZ(24, 4, true)].reduce((g, l) => mPut(g, l), mPic())) }),
 };
 const MSC_C_META = {
-  mascot_type: ['Typing', 'Happy behind its laptop, it types a careful phrase, stops to think as three little dots appear, raises a hand when the idea sparkles, types on, and presses Enter as the logo glints.', 'Use it for: writing, composing a reply, saving or sending.'],
+  mascot_type: ['Typing', 'Behind its laptop, its straight arms resting on the lid, it types by dropping one arm then the other onto the keys; it looks up at you and blinks, then taps Enter and squints, happy.', 'Use it for: writing, composing a reply, saving or sending.'],
   mascot_think: ['Thinking', 'Eyes turned up and a foot tapping, it watches three dots light in a thought bubble until they spark into an idea and it hops for joy.', 'Use it for: thinking, planning, working out an answer.'],
   mascot_sleep: ['Snoozing', 'It dozes on its feet, breathing slowly with Zs drifting up, nods off, catches itself wide eyed, and drifts back to sleep.', 'Use it for: paused jobs, idle sessions, anything waiting on you.'],
 };
@@ -1335,7 +1312,7 @@ const MASCOT_PROPS = [
   ['Deerstalker', 'A tweed crown, a flap tied up with a bow, peaks front and back', () => mArt(mbHat, 0, 0)],
   ['Magnifier', 'A rim lit and shaded, glass with a glint, a steel collar', () => mbGlass(3, 3, 0)],
   ['Book', 'Lying open: pages rising from the spine, a gutter crease, page edges, a blue cover', () => mArt(mbBookArt, 0, 0)],
-  ['Laptop', 'A lid lit on top, a ring logo that glints, a thin deck', () => mArt(MT_LAPTOP, 0, 0)],
+  ['Laptop', 'A lid seen from behind, leaning a little, lit along its top, the keyboard corner showing', () => mtLaptop().map(([x, y, c]) => [x - 5, y - 18, c]).filter(([, , c]) => c !== 's')],
   ['Headphones', 'A padded band lit on top, dark cushions', () => jamPhones(2, 3)],
   ['Party hat', 'Stripes round the cone, a fluffy pom-pom', () => mArt(MD_HAT, 0, 0)],
   ['Boxes', 'Cardboard with a shaded side, tape and a label', () => [...mArt(MD_BOX_B, 1, 0), ...mArt(MD_BOX_A, 0, 4)]],
